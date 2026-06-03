@@ -118,7 +118,7 @@ export function Copilot({ open, onClose, go, openEntity }){
 
   if(!open) return null;
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:130 }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:130, background:"var(--scrim-soft)", backdropFilter:"var(--scrim-blur)" }}>
       <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:420, background:"var(--bg-1)",
         borderLeft:"1px solid var(--line)", boxShadow:"var(--shadow-3)", display:"flex", flexDirection:"column", animation:"slideIn .26s both" }}>
         <div className="row between center" style={{ padding:"14px 18px", borderBottom:"1px solid var(--line-soft)" }}>

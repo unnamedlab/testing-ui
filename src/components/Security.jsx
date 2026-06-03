@@ -1,5 +1,5 @@
 import { CLASS_LEVELS, CLASSIFICATION, lineageFor, markingFor } from '../data/data_ext.js';
-import { Badge, Icon } from './ui.jsx';
+import { Badge, Icon, Lineage as LineageRows } from './ui.jsx';
 
 /* ============================================================
    AXIOM — Security: classification banner, markings,
@@ -41,31 +41,17 @@ export function MarkingChip({ id, level, size }) {
   );
 }
 
+// Card wrapper around the single ui.Lineage renderer (cluster ⑨: one lineage
+// primitive). lineageFor() yields {stage,label,icon,meta}; map icon→glyph.
 export function Lineage({ id }) {
-  const chain = lineageFor(id);
+  const chain = lineageFor(id).map(s => ({ stage: s.stage, label: s.label, meta: s.meta, glyph: s.icon }));
   return (
     <div className="card" style={{ padding:16 }}>
       <div className="row between center" style={{ marginBottom:14 }}>
         <div className="eyebrow">Data lineage</div>
         <Badge kind="accent"><Icon name="check" size={12}/>Verified</Badge>
       </div>
-      <div style={{ position:"relative" }}>
-        {chain.map((s,i)=>(
-          <div key={i} className="row gap-12 center" style={{ position:"relative", paddingBottom: i<chain.length-1?16:0 }}>
-            {i<chain.length-1 && <div style={{ position:"absolute", left:17, top:34, height:18, width:2, background:"var(--line)" }}/>}
-            <div style={{ width:36, height:36, borderRadius:10, flex:"none", display:"grid", placeItems:"center",
-              background: s.stage==="Object"?"var(--accent-ghost)":"var(--bg-2)",
-              color: s.stage==="Object"?"var(--accent)":"var(--text-dim)",
-              boxShadow: s.stage==="Object"?"inset 0 0 0 1px var(--accent-dim)":"inset 0 0 0 1px var(--line)" }}>
-              <Icon name={s.icon} size={17}/>
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13, fontWeight:600 }}>{s.label}</div>
-              <div className="t-faint mono" style={{ fontSize:11 }}>{s.stage} · {s.meta}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <LineageRows chain={chain} />
     </div>
   );
 }

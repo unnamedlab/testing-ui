@@ -107,17 +107,9 @@ export const CONNECTORS = [
 ];
 
 // ---------- Audit log ----------
-export const AUDIT = [
-  { actor:"AR", action:"viewed", target:"MV Blackfrost · 360°", time:"09:12:44", cls:"SECRET", ip:"10.4.2.18" },
-  { actor:"MC", action:"exported", target:"Dossier · Case BLACKFROST", time:"09:08:10", cls:"SECRET", ip:"10.4.2.31" },
-  { actor:"SYS",action:"resolved", target:"14 Person objects (ER merge)", time:"09:02:55", cls:"CONFIDENTIAL", ip:"—" },
-  { actor:"JD", action:"assigned", target:"AL-3371 → self", time:"08:54:02", cls:"CONFIDENTIAL", ip:"10.4.7.9" },
-  { actor:"AR", action:"created link", target:"Helios → Northwind", time:"08:41:19", cls:"SECRET", ip:"10.4.2.18" },
-  { actor:"MC", action:"queried", target:"vessels @ Novorossiysk, >$1M", time:"08:33:47", cls:"SECRET", ip:"10.4.2.31" },
-  { actor:"SYS",action:"ingested", target:"Customs Manifests · 12,402 rows", time:"08:20:00", cls:"CONFIDENTIAL", ip:"—" },
-  { actor:"JD", action:"flagged", target:"a-aurora-usd as high-risk", time:"08:11:30", cls:"CONFIDENTIAL", ip:"10.4.7.9" },
-  { actor:"AR", action:"login", target:"AXIOM session start", time:"08:02:14", cls:"UNCLASS", ip:"10.4.2.18" },
-];
+// Cluster ⑥: el registro de auditoría vive ahora en data_audit.js (fuente única).
+// Admin consume la LENTE de seguridad; se re-exporta como AUDIT por compatibilidad.
+export { ADMIN_AUDIT as AUDIT } from './data_audit.js';
 
 // ---------- Lineage (per entity provenance chain) ----------
 export function lineageFor(id){

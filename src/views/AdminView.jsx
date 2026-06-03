@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ROLES, USERS } from '../data/data_admin.js';
-import { ANALYSTS, AUDIT, CONNECTORS, SOURCES } from '../data/data_ext.js';
+import { ANALYSTS, AUDIT, CONNECTORS } from '../data/data_ext.js';
 import { MarkingChip } from '../components/Security.jsx';
-import { Badge, Icon, SectionHead } from '../components/ui.jsx';
-import { Avatar2 } from './CasesView.jsx';
+import { Avatar, Badge, Icon, SectionHead } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Admin: data sources, onboarding wizard, audit log
@@ -16,7 +15,7 @@ export function SourceWizard({ open, onClose }){
   if(!open) return null;
   const steps = ["Connector","Configure","Map to ontology","Review"];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:140, background:"oklch(0 0 0/0.5)", backdropFilter:"blur(3px)", display:"grid", placeItems:"center" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:140, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
       <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(680px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
         <div className="row between center" style={{ padding:"16px 20px", borderBottom:"1px solid var(--line-soft)" }}>
           <span className="serif" style={{ fontSize:18 }}>Connect a data source</span>
@@ -81,8 +80,7 @@ export function SourceWizard({ open, onClose }){
 }
 
 export function AdminView(){
-  const [tab, setTab] = useState("sources");
-  const [wizard, setWizard] = useState(false);
+  const [tab, setTab] = useState("access");
   const [users, setUsers] = useState(USERS);
   const [inviting, setInviting] = useState(false);
   const [inv, setInv] = useState({ name:"", role:"Analyst" });
@@ -98,43 +96,18 @@ export function AdminView(){
         <div className="row between center" style={{ marginBottom:20 }}>
           <div style={{ flex:1, minWidth:0 }}>
             <div className="eyebrow" style={{ marginBottom:6 }}>Administration</div>
-            <h1 className="serif" style={{ fontSize:28, fontWeight:500, margin:0 }}>{tab==="sources"?"Data sources":tab==="audit"?"Audit log":"Users & roles"}</h1>
+            <h1 className="serif" style={{ fontSize:28, fontWeight:500, margin:0 }}>{tab==="audit"?"Audit log":"Users & roles"}</h1>
           </div>
           <div className="row gap-10 center">
             <div className="seg">
-              <button className={tab==="sources"?"on":""} onClick={()=>setTab("sources")}>Sources</button>
               <button className={tab==="access"?"on":""} onClick={()=>setTab("access")}>Access</button>
               <button className={tab==="audit"?"on":""} onClick={()=>setTab("audit")}>Audit</button>
             </div>
-            {tab==="sources" && <button className="btn primary" onClick={()=>setWizard(true)}><Icon name="plus"/>Add source</button>}
             {tab==="access" && <button className="btn primary" onClick={()=>setInviting(true)}><Icon name="plus"/>Invite user</button>}
           </div>
         </div>
 
-        {tab==="sources" ? (          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))", gap:14 }}>
-            {SOURCES.map(s=>(
-              <div key={s.id} className="card" style={{ padding:16 }}>
-                <div className="row between center" style={{ marginBottom:14 }}>
-                  <div className="row gap-10 center">
-                    <div style={{ width:38,height:38,borderRadius:10,display:"grid",placeItems:"center",background:"var(--bg-2)",color:"var(--accent)" }}><Icon name={s.icon} size={19}/></div>
-                    <div><div style={{ fontSize:14, fontWeight:600 }}>{s.name}</div><div className="t-faint" style={{ fontSize:11.5 }}>{s.vendor} · {s.proto}</div></div>
-                  </div>
-                  <Badge kind={s.status==="healthy"?"ok":"warn"} dot>{s.status}</Badge>
-                </div>
-                <div className="row between" style={{ marginBottom:10 }}>
-                  {[["Records",s.records],["Cadence",s.cadence],["Freshness",s.fresh]].map(([k,v])=>(
-                    <div key={k}><div className="t-faint" style={{ fontSize:10.5 }}>{k}</div><div className="mono" style={{ fontSize:12.5, color:"var(--text)" }}>{v}</div></div>
-                  ))}
-                </div>
-                <div className="row gap-8 center">
-                  <span className="t-faint" style={{ fontSize:11, width:42 }}>health</span>
-                  <div className="meter" style={{ flex:1 }}><i style={{ width:s.health+"%", background: s.health>=90?"var(--ok)":"var(--warn)" }}/></div>
-                  <span className="mono t-dim" style={{ fontSize:11 }}>{s.health}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : tab==="access" ? (
+        {tab==="access" ? (
           <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:24 }}>
             <div>
               <SectionHead eyebrow={"Users · "+USERS.length} title="Members" />
@@ -144,7 +117,7 @@ export function AdminView(){
                   <tbody>
                     {users.map(u=>(
                       <tr key={u.id}>
-                        <td><span className="row gap-10 center"><Avatar2 who={u.id} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{u.name}</span></span></td>
+                        <td><span className="row gap-10 center"><Avatar who={u.id} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{u.name}</span></span></td>
                         <td>{u.role}</td>
                         <td><MarkingChip level={u.clearance==="TS/SCI"?"SECRET":u.clearance} size="sm"/></td>
                         <td><Badge kind={u.status==="active"?"ok":"alert"} dot>{u.status}</Badge></td>
@@ -180,7 +153,7 @@ export function AdminView(){
                 {AUDIT.map((a,i)=>(
                   <tr key={i}>
                     <td className="mono">{a.time}</td>
-                    <td><span className="row gap-8 center">{a.actor==="SYS"?<span style={{color:"var(--accent)"}}><Icon name="sparkles" size={15}/></span>:<Avatar2 who={a.actor} size={22}/>}<span style={{color:"var(--text)"}}>{a.actor==="SYS"?"System":ANALYSTS[a.actor]?.name||a.actor}</span></span></td>
+                    <td><span className="row gap-8 center">{a.actor==="SYS"?<span style={{color:"var(--accent)"}}><Icon name="sparkles" size={15}/></span>:<Avatar who={a.actor} size={22}/>}<span style={{color:"var(--text)"}}>{a.actor==="SYS"?"System":ANALYSTS[a.actor]?.name||a.actor}</span></span></td>
                     <td><span style={{ color:"var(--text-dim)" }}>{a.action}</span></td>
                     <td style={{ color:"var(--text)" }}>{a.target}</td>
                     <td><MarkingChip level={a.cls} size="sm"/></td>
@@ -192,9 +165,8 @@ export function AdminView(){
           </div>
         )}
       </div>
-      <SourceWizard open={wizard} onClose={()=>setWizard(false)} />
       {inviting && (
-        <div onClick={()=>setInviting(false)} style={{ position:"fixed", inset:0, zIndex:140, background:"oklch(0 0 0/0.5)", backdropFilter:"blur(3px)", display:"grid", placeItems:"center" }}>
+        <div onClick={()=>setInviting(false)} style={{ position:"fixed", inset:0, zIndex:140, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
           <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(440px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
             <div className="row between center" style={{ padding:"15px 18px", borderBottom:"1px solid var(--line-soft)" }}>
               <span className="serif" style={{ fontSize:17, whiteSpace:"nowrap" }}>Invite user</span>

@@ -172,8 +172,8 @@ export function DashboardView({ go }) {
             <div className="row between center" style={{ marginBottom:16 }}>
               <div className="eyebrow">Alert volume · last 7 days</div>
               <div className="row gap-12">
-                {[["Layering","var(--alert)"],["AIS gap","var(--warn)"],["Sanctions","var(--accent)"]].map(([l,c])=>(
-                  <button key={l} onClick={()=>setCat(l)} className="row gap-6 center" style={{ fontSize:11.5, border:"none", background:"none", cursor:"pointer", padding:"2px 4px", borderRadius:5, opacity: filter&&filter.kind==="pattern"&&filter.value!==l?0.4:1, outline: filter&&filter.value===l?"1px solid var(--accent)":"none" }}><i style={{ width:8,height:8,borderRadius:2,background:c,display:"inline-block" }}/><span className="t-dim">{l}</span></button>
+                {[["Layering","var(--alert)","tri"],["AIS gap","var(--warn)","sq"],["Sanctions","var(--accent)","dot"]].map(([l,c,sh])=>(
+                  <button key={l} onClick={()=>setCat(l)} className="row gap-6 center" style={{ fontSize:11.5, border:"none", background:"none", cursor:"pointer", padding:"2px 4px", borderRadius:5, opacity: filter&&filter.kind==="pattern"&&filter.value!==l?0.4:1, outline: filter&&filter.value===l?"1px solid var(--accent)":"none" }}><i style={{ width:9,height:9,background:c,display:"inline-block", borderRadius: sh==="dot"?"50%":sh==="sq"?2:0, clipPath: sh==="tri"?"polygon(50% 0,100% 100%,0 100%)":"none" }}/><span className="t-dim">{l}</span></button>
                 ))}
               </div>
             </div>

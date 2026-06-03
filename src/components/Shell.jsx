@@ -6,20 +6,57 @@ import { Badge, Icon, RiskPill, TypeGlyph } from './ui.jsx';
    AXIOM — App shell (rail, topbar, command palette, notifs)
    ============================================================ */
 
+/* Phase 1 — navigation grouped by capability (resolves H-01).
+   The case/workspace is no longer a rail section; it lives in the
+   TopBar context switcher. Views are unchanged — this is pure IA. */
+export const NAV_GROUPS = [
+  { id: "explore", label: "Explore & Model", items: [
+    { view: "ontology", icon: "share", label: "Ontology" },
+    { view: "resolve", icon: "merge", label: "Entity Resolution" },
+  ]},
+  { id: "analyze", label: "Analyze", items: [
+    { view: "graph", icon: "graph", label: "Graph" },
+    { view: "map", icon: "globe", label: "Geospatial" },
+    { view: "dashboard", icon: "layers", label: "Operations" },
+    { view: "analytics", icon: "bars", label: "Analytics" },
+    { view: "notebook", icon: "note", label: "Notebook" },
+  ]},
+  { id: "act", label: "Decide & Act", items: [
+    { view: "cases", icon: "bell", label: "Alerts & triage" },
+    { view: "actions", icon: "bolt", label: "Actions" },
+    { view: "reason", icon: "cpu", label: "Reason" },
+    { view: "reports", icon: "doc", label: "Reports" },
+    { view: "workshop", icon: "blocks", label: "Workshop" },
+    { view: "watchlist", icon: "bookmark", label: "Watchlists" },
+  ]},
+  { id: "integrate", label: "Integrate", items: [
+    { view: "sources", icon: "database", label: "Sources" },
+    { view: "pipeline", icon: "pipeline", label: "Pipelines" },
+    { view: "code", icon: "code", label: "Code" },
+    { view: "models", icon: "model", label: "Models" },
+  ]},
+  { id: "govern", label: "Govern", items: [
+    { view: "govern", icon: "shield", label: "Governance & Audit" },
+  ]},
+];
+
+// Flat list for the command palette & router fallback. Includes the sub-destinations
+// that Phase 2 folded into a parent module (explore, graph2, brushing, evidence, health):
+// they no longer sit in the rail, but stay searchable and open their parent in the right mode.
 export const NAV = [
   { view: "home", icon: "grid", label: "Workspace" },
+  { view: "projects", icon: "folder", label: "Workspaces" },
+  ...NAV_GROUPS.flatMap(g => g.items),
   { view: "explore", icon: "table", label: "Explore" },
-  { view: "ontology", icon: "share", label: "Ontology" },
-  { view: "resolve", icon: "merge", label: "Entity Resolution" },
-  { view: "graph", icon: "graph", label: "Graph" },
-  { view: "map", icon: "globe", label: "Geospatial" },
-  { view: "pipeline", icon: "pipeline", label: "Pipelines" },
-  { view: "notebook", icon: "note", label: "Notebook" },
-  { view: "cases", icon: "bell", label: "Alerts & Cases" },
-  { view: "watchlist", icon: "bookmark", label: "Watchlists" },
-  { view: "dashboard", icon: "layers", label: "Operations" },
-  { view: "workshop", icon: "blocks", label: "Workshop" },
+  { view: "graph2", icon: "route", label: "Graph Analysis" },
+  { view: "brushing", icon: "focus", label: "Linked analysis" },
+  { view: "evidence", icon: "doc", label: "Evidence" },
+  { view: "health", icon: "pulse", label: "Data Health" },
+  { view: "admin", icon: "settings", label: "Admin · Sources" },
 ];
+
+// The active case shown in the context switcher (single source of truth).
+export const ACTIVE_CASE = "BLACKFROST";
 
 export const PALETTE_ACTIONS = [
   { id:"new-case", label:"New investigation", icon:"plus" },
@@ -31,26 +68,64 @@ export const PALETTE_ACTIONS = [
 ];
 
 export function Rail({ view, go }) {
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem("axiom.rail") === "expanded"; } catch { return false; }
+  });
+  function toggle() {
+    setExpanded(e => {
+      const next = !e;
+      try { localStorage.setItem("axiom.rail", next ? "expanded" : "collapsed"); } catch {}
+      return next;
+    });
+  }
   return (
-    <nav className="rail">
-      <div className="rail-logo" onClick={()=>go("home")} title="AXIOM">
-        <Icon name="axiom" />
-      </div>
+    <nav className={"rail" + (expanded ? " expanded" : "")} aria-label="Primary">
+      <button type="button" className="rail-logo" onClick={()=>go("home")} aria-label="AXIOM — Workspace home">
+        <span className="rail-logo-mk"><Icon name="axiom" /></span>
+        <span className="rail-wordmark" aria-hidden="true">AXIOM</span>
+      </button>
+
       <div className="rail-scroll">
-        {NAV.map(n => (
-          <button key={n.view} className={"rail-btn" + (view===n.view ? " active":"")} onClick={()=>go(n.view)}>
-            <Icon name={n.icon} />
-            <span className="tip">{n.label}</span>
-          </button>
+        {NAV_GROUPS.map(g => (
+          <div className="rail-group" key={g.id} role="group" aria-label={g.label}>
+            <div className="rail-group-h">
+              <span className="rail-group-label">{g.label}</span>
+              <span className="rail-group-line" aria-hidden="true"></span>
+            </div>
+            {g.items.map(n => (
+              <button key={n.view} type="button"
+                className={"rail-btn" + (view===n.view ? " active":"")}
+                aria-label={n.label} aria-current={view===n.view ? "page" : undefined}
+                onClick={()=>go(n.view)}>
+                <Icon name={n.icon} />
+                <span className="rail-text">{n.label}</span>
+                <span className="tip" aria-hidden="true">{n.label}</span>
+              </button>
+            ))}
+          </div>
         ))}
       </div>
-      <button className={"rail-btn" + (view==="admin"?" active":"")} onClick={()=>go("admin")}><Icon name="settings" /><span className="tip">Admin · Sources</span></button>
-      <button className="rail-btn"><Icon name="history" /><span className="tip">History</span></button>
+
+      <button type="button"
+        className={"rail-btn rail-pinned" + (view==="admin"?" active":"")}
+        aria-label="Admin · Sources" aria-current={view==="admin" ? "page" : undefined}
+        onClick={()=>go("admin")}>
+        <Icon name="settings" />
+        <span className="rail-text">Admin · Sources</span>
+        <span className="tip" aria-hidden="true">Admin · Sources</span>
+      </button>
+
+      <button type="button" className="rail-toggle" onClick={toggle}
+        aria-label={expanded ? "Collapse navigation" : "Expand navigation"} aria-pressed={expanded}>
+        <Icon name="chevron" />
+        <span className="rail-text">Collapse</span>
+      </button>
     </nav>
   );
 }
 
 export const CRUMBS = {
+  projects: ["Workspaces"],
   home: ["Workspace"],
   explore: ["Object Explorer"],
   ontology: ["Ontology Explorer"],
@@ -58,20 +133,87 @@ export const CRUMBS = {
   graph: ["Case BLACKFROST", "Graph"],
   map: ["Case BLACKFROST", "Geospatial"],
   pipeline: ["Data Integration", "Pipeline Builder"],
+  sources: ["Data Integration", "Sources"],
   notebook: ["Analysis", "Notebook"],
   watchlist: ["Watchlists"],
-  cases: ["Alerts & Cases"],
+  cases: ["Alerts & triage"],
   dashboard: ["Case BLACKFROST", "Operations"],
   workshop: ["Workshop"],
+  actions: ["Operations", "Actions"],
+  health: ["Data Integration", "Data Health"],
+  models: ["Machine Learning", "Models"],
+  graph2: ["Case BLACKFROST", "Graph analysis"],
+  analytics: ["Analysis", "Flagged transactions"],
+  reason: ["Reason", "Agent Studio"],
+  brushing: ["Case BLACKFROST", "Linked analysis"],
+  evidence: ["Case BLACKFROST", "Evidence"],
+  code: ["Data Integration", "Repositories"],
   admin: ["Administration"],
+  reports: ["Reports"],
+  govern: ["Governance & Audit"],
   entity: ["Case BLACKFROST", "Graph"],
   search: ["Search"],
 };
 
-export function TopBar({ view, leaf, openSearch, theme, setTheme, openNotifs, notifCount, openCopilot }) {
-  const crumbs = CRUMBS[view] || ["Workspace"];
+// ---- Context switcher: the active case/workspace lives here, not in the rail ----
+function ContextSwitcher({ go }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e){ if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    function onKey(e){ if (e.key === "Escape") setOpen(false); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  return (
+    <div className="ctx" ref={ref}>
+      <button type="button" className="ctx-btn" onClick={()=>setOpen(o=>!o)}
+        aria-expanded={open} aria-haspopup="menu" aria-label={"Active context: Case " + ACTIVE_CASE}>
+        <span className="ctx-dot" aria-hidden="true"></span>
+        <span className="ctx-meta">
+          <span className="ctx-kind">Case</span>
+          <span className="ctx-name">{ACTIVE_CASE}</span>
+        </span>
+        <Icon name="chevron" size={13} />
+      </button>
+      {open && (
+        <div className="ctx-menu panel" role="menu">
+          <div className="ctx-sec">Active case</div>
+          <button type="button" className="ctx-item active" role="menuitem" onClick={()=>{ setOpen(false); go("dashboard"); }}>
+            <span className="ctx-dot" aria-hidden="true"></span>
+            <span className="ctx-item-name">Case {ACTIVE_CASE}</span>
+            <span className="ctx-pill">lead</span>
+          </button>
+          <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("cases"); }}>
+            <span className="ctx-dot amber" aria-hidden="true"></span>
+            <span className="ctx-item-name">Case NIGHTJAR</span>
+          </button>
+          <div className="ctx-divider" aria-hidden="true"></div>
+          <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("cases"); }}>
+            <Icon name="bell" size={15}/><span className="ctx-item-name">All alerts &amp; triage</span>
+          </button>
+          <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("projects"); }}>
+            <Icon name="folder" size={15}/><span className="ctx-item-name">All workspaces…</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, openNotifs, notifCount, openCopilot }) {
+  // F-09: for the entity 360 the trail comes from where it was opened (origin),
+  // not a constant — so opening an object from Search reads "Search › Name".
+  const raw = (view === "entity" ? CRUMBS[origin] : CRUMBS[view]) || ["Workspace"];
+  // The active case is shown in the context switcher, so drop it from the trail.
+  const crumbs = (raw[0] === "Case " + ACTIVE_CASE || raw[0] === "Case BLACKFROST") && raw.length > 1
+    ? raw.slice(1) : raw;
   return (
     <header className="topbar">
+      <ContextSwitcher go={go} />
+      <div className="vdivider" style={{ height:22, margin:"0 12px 0 2px" }} />
       <div className="crumbs">
         {crumbs.map((c,i)=>(
           <React.Fragment key={i}>
@@ -124,8 +266,8 @@ export function CommandPalette({ open, onClose, go, openEntity, runSearch, runAc
   if (!open) return null;
   return (
     <div onClick={onClose} style={{
-      position:"fixed", inset:0, zIndex:200, background:"oklch(0 0 0 / 0.5)",
-      backdropFilter:"blur(3px)", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12vh",
+      position:"fixed", inset:0, zIndex:200, background:"var(--scrim)",
+      backdropFilter:"var(--scrim-blur)", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12vh",
     }}>
       <div onClick={e=>e.stopPropagation()} className="panel rise" style={{
         width:"min(640px, 92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden",
@@ -231,7 +373,7 @@ export function ShortcutsModal({ open, onClose }) {
     ["Actions", [["G then C","New investigation"],["E","Export dossier"],["T","Toggle theme"]]],
   ];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"oklch(0 0 0 / 0.5)", backdropFilter:"blur(3px)", display:"grid", placeItems:"center" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
       <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(560px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
         <div className="row between center" style={{ padding:"15px 20px", borderBottom:"1px solid var(--line-soft)" }}>
           <span className="serif" style={{ fontSize:18, whiteSpace:"nowrap" }}>Keyboard shortcuts</span>

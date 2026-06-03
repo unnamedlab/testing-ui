@@ -46,6 +46,7 @@ export const ICONS = {
   zoomIn: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/>',
   zoomOut: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11h6"/>',
   target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+  focus: '<circle cx="12" cy="12" r="2.8"/><circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="3.8" r="1.7"/><circle cx="19.1" cy="16" r="1.7"/><circle cx="4.9" cy="16" r="1.7"/>',
   link: '<path d="M9 15l6-6M10 6l1-1a4 4 0 0 1 6 6l-1 1M14 18l-1 1a4 4 0 0 1-6-6l1-1"/>',
   doc: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 16h6"/>',
   play: '<path d="M7 5v14l11-7z"/>',
@@ -54,6 +55,33 @@ export const ICONS = {
   note: '<path d="M5 4h14v12l-5 5H5z"/><path d="M14 21v-5h5"/>',
   bookmark: '<path d="M6 3h12v18l-6-4-6 4z"/>',
   sparkles: '<path d="M12 3l1.8 4.8L19 9l-5.2 1.2L12 15l-1.8-4.8L5 9l5.2-1.2z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m4 17 5-4 4 3 3-2 4 3"/>',
+  lock: '<rect x="4.5" y="11" width="15" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  bolt: '<path d="M13 3 5 13h6l-1 8 8-10h-6z"/>',
+  x: '<path d="M6 6l12 12M18 6 6 18"/>',
+  pulse: '<path d="M3 12h4l2.5-7 5 14L17 12h4"/>',
+  drift: '<path d="M4 7h7M4 12h12M4 17h7"/><path d="m16 5 4 4-4 4"/>',
+  model: '<circle cx="12" cy="5" r="2.4"/><circle cx="5" cy="18" r="2.4"/><circle cx="19" cy="18" r="2.4"/><circle cx="12" cy="13" r="2.2"/><path d="M12 7.2v3.6M10.4 14.4 6.4 16.4M13.6 14.4l4 2"/>',
+  func: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+  crown: '<path d="M5 18h14l1.5-9-5 4-3.5-7-3.5 7-5-4z"/>',
+  rocket: '<path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M9 13l-2 2m8-12c3 1 5 3 6 6l-7 7-5-5 7-7zM14 7a1.5 1.5 0 1 0 2 2"/>',
+  route: '<circle cx="6" cy="19" r="2.4"/><circle cx="18" cy="5" r="2.4"/><path d="M8 17.5 16 6.5M6 16.6V13a3 3 0 0 1 3-3h6a3 3 0 0 0 3-3v-.4"/>',
+  bars: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+  line: '<path d="M3 17l5-6 4 3 8-9M3 21h18"/>',
+  area: '<path d="M3 16l5-5 4 2 8-7v11H3z"/>',
+  donut: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/>',
+  pivot: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/>',
+  database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  cpu: '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"/>',
+  report: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 15h4"/>',
+  beaker: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 14h9"/>',
+  code: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
+  folderOpen: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2H7l-4 9z"/><path d="M3 7v11h17l3-9H7"/>',
+  branch: '<circle cx="6" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="7" r="2.6"/><path d="M6 8.6v6.8M8.6 6.4H13a4 4 0 0 1 4 4v.4M18 9.6c0 5-4 6.4-9 6.4"/>',
+  commit: '<circle cx="12" cy="12" r="3.2"/><path d="M12 3v5.8M12 15.2V21"/>',
+  hdd: '<rect x="3" y="13" width="18" height="7" rx="2"/><path d="M5 13l2.5-7h9L19 13M7 16.5h.01M11 16.5h6"/>',
 };
 
 export function Icon({ name, size, style, className }) {
@@ -88,6 +116,24 @@ export function Badge({ kind, children, dot }) {
 export function RiskPill({ r }) {
   const band = riskBand(r);
   return <span className={"badge " + band}><span className="dt" />{r} · {riskLabel(r)}</span>;
+}
+
+// ---- F-06: single source of truth for on/off toggles ----
+// role="switch" + aria-checked so assistive tech announces state; accent fill;
+// consistent sizing. Replaces the per-view hand-rolled <span>-in-<button> toggles.
+export function Switch({ on, onChange, label, size }) {
+  const w = size === "sm" ? 30 : 34;
+  const h = size === "sm" ? 17 : 19;
+  const knob = h - 4;
+  return (
+    <button type="button" role="switch" aria-checked={!!on} aria-label={label} className="hit-pad"
+      onClick={(e)=>{ e.stopPropagation(); onChange && onChange(!on); }}
+      style={{ width:w, height:h, borderRadius:h, border:"none", padding:0, flex:"none", cursor:"pointer",
+        background: on ? "var(--accent)" : "var(--bg-3)", position:"relative", transition:"background .15s" }}>
+      <span style={{ position:"absolute", top:2, left: on ? w-knob-2 : 2, width:knob, height:knob, borderRadius:"50%",
+        background:"var(--bg-1)", boxShadow:"0 1px 2px oklch(0 0 0 / 0.4)", transition:"left .15s" }}/>
+    </button>
+  );
 }
 
 // ---- sparkline ----
@@ -160,7 +206,7 @@ export function SectionHead({ eyebrow, title, children }) {
 }
 
 // stat card
-export function Stat({ label, value, sub, trend, series, color, icon }) {
+export function Stat({ label, value, sub, trend, series, color, icon, valueColor }) {
   return (
     <div className="card" style={{ padding: 16, display:"flex", flexDirection:"column", gap:10, minWidth:0 }}>
       <div className="row between center">
@@ -169,7 +215,7 @@ export function Stat({ label, value, sub, trend, series, color, icon }) {
       </div>
       <div className="row between center" style={{ gap:10 }}>
         <div>
-          <div className="mono" style={{ fontSize: 26, fontWeight: 600, lineHeight:1, letterSpacing:"-0.02em" }}>{value}</div>
+          <div className="mono" style={{ fontSize: 26, fontWeight: 600, lineHeight:1, letterSpacing:"-0.02em", color: valueColor||"var(--text)" }}>{value}</div>
           {sub && <div style={{ fontSize:12, marginTop:6 }} className={trend==="up"?"t-accent":trend==="down"?"":"t-dim"}>
             <span style={{ color: trend==="up"?"var(--ok)":trend==="down"?"var(--alert)":"var(--text-faint)" }}>{sub}</span>
           </div>}
@@ -200,4 +246,82 @@ export function useLoad(ms){
   const [loading, setLoading] = useState(true);
   useEffect(()=>{ const id=setTimeout(()=>setLoading(false), ms||650); return ()=>clearTimeout(id); }, []);
   return loading;
+}
+
+// F-10: shared loading placeholder for object lists. Makes the skeleton a reused
+// pattern (Explorer + Search) instead of a one-off, so the brief load state reads
+// as an intentional system decision across the "browse objects" surfaces.
+export function ListSkeleton({ rows }){
+  return (
+    <div className="col gap-8">
+      {Array.from({length:rows||6}).map((_,i)=>(
+        <div key={i} className="card" style={{ padding:14 }}>
+          <div className="row gap-14 center">
+            <Skeleton w={40} h={40} r={11}/>
+            <div className="col gap-8" style={{ flex:1, minWidth:0 }}>
+              <Skeleton w={`${38+(i*11)%40}%`} h={13}/>
+              <Skeleton w={`${22+(i*7)%18}%`} h={11}/>
+            </div>
+            <Skeleton w={72} h={20} r={20}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
+   Capa de primitivas compartida (integración de la auditoría)
+   Mueve aquí componentes que vivían dentro de vistas y unifica
+   los que estaban reimplementados: Avatar, Tabs, Lineage.
+   ============================================================ */
+
+// ---- Avatar (antes Avatar2 en CasesView.jsx) ----
+// `who` = iniciales; `name` opcional para el tooltip. Sin dependencia de datos.
+export function Avatar({ who, name, size }) {
+  const s = size || 26;
+  if (!who) return (
+    <span style={{ width:s, height:s, borderRadius:7, border:"1.5px dashed var(--line-strong)", display:"grid", placeItems:"center", color:"var(--text-faint)", flex:"none" }}>
+      <Icon name="user" size={s*0.5} />
+    </span>
+  );
+  return (
+    <span title={name || who} style={{ width:s, height:s, borderRadius:7, display:"grid", placeItems:"center",
+      fontSize:s*0.4, fontWeight:600, color:"var(--accent-text)", background:"linear-gradient(150deg,var(--accent),var(--accent-2))", flex:"none" }}>{who}</span>
+  );
+}
+
+// ---- Tabs (reemplaza las 7 copias .act-tab/.rsn-tab/.mdl-tab/.gov-tab/.proj-tab/.ent-tab/.cr-tab) ----
+// items: [{ label, icon?, badge? }]; value: índice activo; onChange(i).
+export function Tabs({ items, value, onChange, variant }) {
+  return (
+    <div className={"tabs" + (variant ? " " + variant : "")} role="tablist">
+      {items.map((it, i) => (
+        <button key={i} type="button" role="tab" aria-selected={value === i}
+          className={"tab" + (value === i ? " on" : "")} onClick={() => onChange(i)}>
+          {it.icon && <Icon name={it.icon} size={14} />}{it.label}
+          {it.badge != null && <span className="tab-badge">{it.badge}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---- Lineage (reemplaza Security.Lineage + las 3 versiones inline de Health/Models/Code) ----
+// chain: [{ stage?, label, meta?, glyph? }] · origen → transformación → destino.
+export function Lineage({ chain }) {
+  return (
+    <div className="lin">
+      {chain.map((s, i) => (
+        <div key={i} className={"lin-step" + (i === chain.length - 1 ? " dest" : "")}>
+          <span className="lin-ic">{s.glyph && <Icon name={s.glyph} size={17} />}</span>
+          <div style={{ minWidth: 0 }}>
+            {s.stage && <div className="lin-stage">{s.stage}</div>}
+            <div className="lin-l">{s.label}</div>
+            {s.meta && <div className="lin-m">{s.meta}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }

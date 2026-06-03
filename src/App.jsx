@@ -4,21 +4,28 @@ import { CLASSIFICATION } from './data/data_ext.js';
 import { ENTITY_BY_ID, NOTIFS } from './data/data.js';
 import { DossierModal } from './components/Reports.jsx';
 import { ClassificationBanner } from './components/Security.jsx';
-import { CommandPalette, NotifDrawer, Rail, ShortcutsModal, TopBar } from './components/Shell.jsx';
+import { CommandPalette, NAV, NotifDrawer, Rail, ShortcutsModal, TopBar } from './components/Shell.jsx';
 import { TweakRadio, TweakRow, TweakSection, TweakSelect, TweakToggle, TweaksPanel, useTweaks } from './components/TweaksPanel.jsx';
 import { AdminView } from './views/AdminView.jsx';
 import { CasesView } from './views/CasesView.jsx';
 import { EntityView } from './views/EntityView.jsx';
-import { ExploreView } from './views/ExploreView.jsx';
-import { GraphView } from './views/GraphView.jsx';
 import { DashboardView, HomeView } from './views/HomeView.jsx';
 import { MapView } from './views/MapView.jsx';
 import { NotebookView } from './views/NotebookView.jsx';
-import { OntologyView, SearchView } from './views/OntologyView.jsx';
-import { PipelineView } from './views/PipelineView.jsx';
+import { SearchView } from './views/OntologyView.jsx';
 import { ResolveView } from './views/ResolveView.jsx';
 import { WatchlistView } from './views/WatchlistView.jsx';
 import { WorkshopView } from './views/WorkshopView.jsx';
+// --- Phase 2 fusions: tabbed workbenches composing existing views ---
+import { DataWorkbench, GraphWorkbench, OntologyWorkbench } from './views/Workbenches.jsx';
+// --- Routes restored for NAV destinations that had no router entry ---
+import { ProjectsView } from './views/ProjectsView.jsx';
+import { ActionsView } from './views/ActionsView.jsx';
+import { AnalyticsView } from './views/AnalyticsView.jsx';
+import { ReasonView } from './views/ReasonView.jsx';
+// --- Phase 3 authoring modules (★ net-new, born from existing seeds) ---
+import { ReportsView } from './views/ReportsView.jsx';
+import { GovernanceView } from './views/GovernanceView.jsx';
 
 /* ============================================================
    AXIOM — App root: router, tweaks, mount
@@ -41,9 +48,45 @@ export const ACCENTS = [
 ];
 export const UI_FONTS = ["Space Grotesk", "IBM Plex Sans", "Archivo"];
 
+// Every view id the router knows how to render. Used to guarantee that no NAV
+// destination ever falls through to a blank canvas.
+export const ROUTED = new Set([
+  "home", "explore", "ontology", "resolve", "graph", "map", "pipeline",
+  "notebook", "cases", "watchlist", "dashboard", "workshop", "projects",
+  "actions", "health", "models", "graph2", "analytics", "reason",
+  "brushing", "evidence", "code", "admin", "entity", "search",
+  "reports", "govern", "sources",
+]);
+
+// Phase 2: merged sub-destinations highlight their parent module in the rail.
+const RAIL_PARENT = {
+  entity: "graph",
+  graph2: "graph", brushing: "graph",
+  explore: "ontology",
+  health: "pipeline",
+  evidence: "cases",
+};
+
+// Fallback shown if a destination is ever opened without a matching route.
+function EmptyRoute({ view, go }) {
+  const item = NAV.find(n => n.view === view);
+  return (
+    <div className="content" style={{ display:"grid", placeItems:"center", padding:40 }}>
+      <div className="panel" style={{ maxWidth:420, padding:32, textAlign:"center" }}>
+        <div className="eyebrow" style={{ marginBottom:10 }}>Módulo no disponible</div>
+        <div className="serif" style={{ fontSize:22, fontWeight:500, marginBottom:8 }}>{item?.label || view}</div>
+        <p className="t-dim" style={{ fontSize:14, margin:"0 0 20px" }}>Esta vista aún no está conectada. Vuelve al espacio de trabajo mientras la habilitamos.</p>
+        <button className="btn primary" onClick={()=>go("home")}>Ir al Workspace</button>
+      </div>
+    </div>
+  );
+}
+
 export function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [view, setView] = useState("home");
+  const [originView, setOriginView] = useState("graph"); // F-09: de dónde se abrió el 360°
+  const viewRef = useRef("home");
   const [entityId, setEntityId] = useState(null);
   const [query, setQuery] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -75,7 +118,9 @@ export function App() {
   }, []);
 
   const go = useCallback((v)=>{ setView(v); setNotifOpen(false); }, []);
-  const openEntity = useCallback((id)=>{ setEntityId(id); setView("entity"); }, []);
+  // F-09: al abrir un objeto, recuerda la vista de origen (salvo si ya estabas en
+  // el 360° navegando objeto→objeto) para que "Back to …" y el breadcrumb sean reales.
+  const openEntity = useCallback((id)=>{ if(viewRef.current!=="entity") setOriginView(viewRef.current); setEntityId(id); setView("entity"); }, []);
   const runSearch = useCallback((q)=>{ setQuery(q); setView("search"); }, []);
 
   const runAction = useCallback((id)=>{
@@ -91,30 +136,55 @@ export function App() {
 
   return (
     <div className="app">
-      <Rail view={view==="entity"?"graph":view} go={go} />
+      <Rail view={RAIL_PARENT[view] || view} go={go} />
       <div className="main">
         <ClassificationBanner level={CLASSIFICATION.level} />
-        <TopBar view={view} leaf={leaf} go={go}
+        <TopBar view={view} origin={originView} leaf={leaf} go={go}
           openSearch={()=>setPaletteOpen(true)}
           theme={t.theme} setTheme={(th)=>setTweak("theme",th)}
           openNotifs={()=>setNotifOpen(o=>!o)} notifCount={NOTIFS.length}
           openCopilot={()=>setCopilotOpen(true)} />
 
-        {view==="home" && <HomeView go={go} openEntity={openEntity} openProject={()=>go("cases")} />}
-        {view==="explore" && <ExploreView openEntity={openEntity} go={go} />}
-        {view==="ontology" && <OntologyView openEntity={openEntity} go={go} />}
+        {view==="home" && <HomeView go={go} openEntity={openEntity} openProject={()=>go("projects")} />}
+        {/* Explore = navegar objetos/instancias (tab browse) · Ontology = el modelo/esquema (tab model).
+            Antes ambos abrían 'browse' → destinos idénticos. Ahora cada uno abre su pestaña natural. */}
+        {view==="explore" && <OntologyWorkbench openEntity={openEntity} go={go} initialTab="browse" />}
+        {view==="ontology" && <OntologyWorkbench openEntity={openEntity} go={go} initialTab="model" />}
         {view==="resolve" && <ResolveView />}
-        {view==="graph" && <GraphView openEntity={openEntity} focusId={null} />}
+        {view==="graph" && <GraphWorkbench openEntity={openEntity} go={go} initialMode="graph" />}
         {view==="map" && <MapView openEntity={openEntity} />}
-        {view==="pipeline" && <PipelineView />}
+        {view==="pipeline" && <DataWorkbench go={go} openEntity={openEntity} initialTab="build" />}
         {view==="notebook" && <NotebookView go={go} />}
         {view==="cases" && <CasesView openEntity={openEntity} go={go} openDossier={()=>setDossier("blackfrost")} />}
         {view==="watchlist" && <WatchlistView go={go} openEntity={openEntity} />}
         {view==="dashboard" && <DashboardView openEntity={openEntity} go={go} />}
         {view==="workshop" && <WorkshopView go={go} />}
+
+        {/* Phase 2: merged sub-destinations open their parent workbench in the right mode */}
+        {view==="graph2" && <GraphWorkbench openEntity={openEntity} go={go} initialMode="analysis" />}
+        {view==="brushing" && <GraphWorkbench openEntity={openEntity} go={go} initialMode="linked" />}
+        {view==="health" && <DataWorkbench go={go} openEntity={openEntity} initialTab="health" />}
+        {view==="evidence" && <CasesView openEntity={openEntity} go={go} openDossier={()=>setDossier("blackfrost")} initialMode="evidence" />}
+
+        {/* Routes restored so every NAV destination renders its module */}
+        {view==="projects" && <ProjectsView go={go} openEntity={openEntity} />}
+        {view==="actions" && <ActionsView go={go} openEntity={openEntity} />}
+        {view==="models" && <DataWorkbench go={go} openEntity={openEntity} initialTab="models" />}
+        {view==="analytics" && <AnalyticsView openEntity={openEntity} go={go} />}
+        {view==="reason" && <ReasonView go={go} />}
+        {view==="code" && <DataWorkbench go={go} openEntity={openEntity} initialTab="code" />}
+
+        {/* Phase 3 authoring modules */}
+        {view==="reports" && <ReportsView openEntity={openEntity} go={go} />}
+        {view==="govern" && <GovernanceView />}
+        {view==="sources" && <DataWorkbench go={go} openEntity={openEntity} initialTab="sources" />}
+
         {view==="admin" && <AdminView />}
-        {view==="entity" && <EntityView id={entityId} openEntity={openEntity} go={go} openDossier={()=>setDossier("blackfrost")} />}
+        {view==="entity" && <EntityView id={entityId} backView={originView} openEntity={openEntity} go={go} openDossier={()=>setDossier("blackfrost")} />}
         {view==="search" && <SearchView query={query} openEntity={openEntity} />}
+
+        {/* Defensive: no NAV destination should ever render a blank canvas */}
+        {!ROUTED.has(view) && <EmptyRoute view={view} go={go} />}
       </div>
 
       <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)} go={go} openEntity={openEntity} runSearch={runSearch} runAction={runAction} />

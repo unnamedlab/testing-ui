@@ -2,14 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { ANALYSTS, COMMENTS, T_END, T_START, dstr } from '../data/data_ext.js';
 import { EDGES, ENTITY_BY_ID, TRANSACTIONS, TYPE_BY_ID, fmtMoney, riskLabel } from '../data/data.js';
 import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx';
-import { Badge, Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
-import { Avatar2 } from './CasesView.jsx';
+import { Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Entity 360° profile
    ============================================================ */
 
-export function EntityView({ id, openEntity, go, openDossier }) {
+// F-09: label for the “Back” affordance, keyed by the view the entity was opened from.
+const BACK_LABEL = {
+  graph: "graph", map: "map", explore: "explorer", search: "search",
+  ontology: "ontology", home: "workspace", cases: "cases",
+  watchlist: "watchlists", dashboard: "operations",
+};
+
+export function EntityView({ id, backView, openEntity, go, openDossier }) {
   const e = ENTITY_BY_ID[id];
   // Hooks must run on every render in the same order — keep them above the
   // early return for the not-found case (Rules of Hooks).
@@ -43,8 +49,8 @@ export function EntityView({ id, openEntity, go, openDossier }) {
       {/* header band */}
       <div style={{ background:"var(--bg-1)", borderBottom:"1px solid var(--line-soft)", padding:"22px 28px 0" }}>
         <div style={{ maxWidth:1180, margin:"0 auto" }}>
-          <button className="btn ghost sm" onClick={()=>go("graph")} style={{ marginBottom:14, paddingLeft:6 }}>
-            <Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>Back to graph
+          <button className="btn ghost sm" onClick={()=>go(backView||"graph")} style={{ marginBottom:14, paddingLeft:6 }}>
+            <Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>Back to {BACK_LABEL[backView]||"graph"}
           </button>
           <div className="row gap-20" style={{ alignItems:"flex-start" }}>
             <div className={"tc "+t.cls} style={{ position:"relative" }}>
@@ -75,18 +81,10 @@ export function EntityView({ id, openEntity, go, openDossier }) {
             </div>
           </div>
           <div className="row gap-2" style={{ marginTop:18 }}>
-            {[["overview","Overview"],["connections","Connections · "+conns.length],["activity","Timeline"],["transactions","Transactions"],["lineage","Lineage & access"]].map(([k,l])=>(
-              <button key={k} onClick={()=>setTab(k)} className="ent-tab" data-on={tab===k}>{l}</button>
-            ))}
+            {(()=>{ const T=[["overview","Overview"],["connections","Connections · "+conns.length],["activity","Timeline"],["transactions","Transactions"],["lineage","Lineage & access"]];
+              return <Tabs items={T.map(([,l])=>({ label:l }))} value={T.findIndex(([k])=>k===tab)} onChange={i=>setTab(T[i][0])} />; })()}
           </div>
         </div>
-        <style>{`
-          .ent-tab { border:none; background:none; color:var(--text-faint); font-family:var(--font-ui); font-size:13.5px; font-weight:600;
-            padding:11px 14px; cursor:pointer; position:relative; transition:color .13s; }
-          .ent-tab:hover { color:var(--text); }
-          .ent-tab[data-on="true"] { color:var(--text); }
-          .ent-tab[data-on="true"]::after { content:""; position:absolute; left:10px; right:10px; bottom:-1px; height:2px; background:var(--accent); border-radius:2px; box-shadow:0 0 8px -1px var(--accent); }
-        `}</style>
       </div>
 
       {/* body */}
@@ -162,7 +160,7 @@ export function EntityView({ id, openEntity, go, openDossier }) {
                 <div className="col gap-12">
                   {comments.map((c,i)=>(
                     <div key={i} className="row gap-10" style={{ alignItems:"flex-start" }}>
-                      <Avatar2 who={c.who} size={28}/>
+                      <Avatar who={c.who} size={28}/>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="row gap-8 center"><span style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[c.who].name}</span><span className="t-faint mono" style={{ fontSize:10.5 }}>{c.at} · on {c.on}</span></div>
                         <p style={{ fontSize:13, lineHeight:1.5, margin:"3px 0 0" }} className="t-dim" dangerouslySetInnerHTML={{ __html: c.text.replace(/@(\w+)/g,"<b style='color:var(--accent)'>@$1</b>") }} />

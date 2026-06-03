@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EDGES, ENTITIES, LINK_TYPES, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
-import { Badge, Icon, RiskPill, SectionHead, Stat, TypeGlyph } from '../components/ui.jsx';
+import { Badge, Icon, ListSkeleton, RiskPill, SectionHead, Stat, TypeGlyph, useLoad } from '../components/ui.jsx';
+import { OBJECT_SCHEMA } from '../data/ontology_schema.js';
 
 /* ============================================================
    AXIOM — Ontology Explorer + Entity 360 + Search
@@ -13,16 +14,7 @@ export function OntologyView({ openEntity, go }) {
   const samples = ENTITIES.filter(e => e.type===sel);
 
   // properties per type (illustrative schema)
-  const SCHEMA = {
-    person: [["full_name","string","Indexed"],["dob","date",""],["nationality","string[]",""],["risk_score","number","Derived"],["aliases","string[]",""]],
-    org: [["legal_name","string","Indexed"],["incorporated","date",""],["jurisdiction","string",""],["beneficial_owner","→ Person","Link"],["status","enum",""]],
-    vessel: [["imo","string","Primary key"],["name","string","Indexed"],["flag","string",""],["dwt","number",""],["ais_gaps","number","Derived"],["operator","→ Organization","Link"]],
-    port: [["locode","string","Primary key"],["name","string",""],["country","string",""],["sanctions_exposure","enum","Derived"]],
-    account: [["iban","string","Primary key"],["currency","enum",""],["holder","→ Organization","Link"],["volume_90d","number","Derived"]],
-    txn: [["txn_id","string","Primary key"],["amount","number",""],["currency","enum",""],["from_account","→ Account","Link"],["to_account","→ Account","Link"],["pattern","enum","ML"]],
-    shipment: [["bl_number","string","Primary key"],["commodity","string",""],["origin","→ Facility","Link"],["destination","→ Facility","Link"]],
-    device: [["imei","string","Primary key"],["owner","→ Person","Link"],["last_seen","geo",""]],
-  };
+  const SCHEMA = OBJECT_SCHEMA; // fuente única de esquema (cluster ③)
   const props = SCHEMA[sel] || [];
 
   return (
@@ -142,6 +134,7 @@ export function SearchView({ query, openEntity }) {
   const term = (query||"").trim().toLowerCase();
   const res = ENTITIES.filter(e => !term || e.name.toLowerCase().includes(term) || e.sub.toLowerCase().includes(term) || TYPE_BY_ID[e.type].name.toLowerCase().includes(term));
   const [typeFilter, setTypeFilter] = useState("all");
+  const loading = useLoad(450);
   const shown = typeFilter==="all" ? res : res.filter(e=>e.type===typeFilter);
   const counts = {};
   res.forEach(e=>counts[e.type]=(counts[e.type]||0)+1);
@@ -164,6 +157,7 @@ export function SearchView({ query, openEntity }) {
           ))}
         </div>
 
+        {loading ? <ListSkeleton rows={6} /> : (
         <div className="col gap-8">
           {shown.map(e=>(
             <button key={e.id} className="card hover" onClick={()=>openEntity(e.id)} style={{ padding:14, textAlign:"left", cursor:"pointer" }}>
@@ -188,6 +182,7 @@ export function SearchView({ query, openEntity }) {
             </button>
           ))}
         </div>
+        )}
       </div>
     </div>
   );

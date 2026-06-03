@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { T_END } from '../data/data_ext.js';
 import { ENTITY_BY_ID, MAP_PLACES, MAP_ROUTES, MAP_VESSELS, riskLabel } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
-import { Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
+import { Icon, RiskPill, Switch, TypeGlyph } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Geospatial / tactical map
@@ -109,8 +109,8 @@ export function MapView({ openEntity }) {
             const d = pts.map((p,i)=>(i?"L":"M")+px(p.x)+" "+py(p.y)).join(" ");
             return (
               <g key={r.id}>
-                <path d={d} fill="none" stroke={r.alert?"var(--alert)":"var(--accent)"} strokeWidth="2"
-                  strokeDasharray="2 7" strokeLinecap="round" opacity="0.8">
+                <path d={d} fill="none" stroke={r.alert?"var(--alert)":"var(--accent)"} strokeWidth={r.alert?3:2}
+                  strokeDasharray={r.alert?"9 5":"2 7"} strokeLinecap="round" opacity="0.85">
                   <animate attributeName="stroke-dashoffset" values="18;0" dur="1.2s" repeatCount="indefinite"/>
                 </path>
               </g>
@@ -126,6 +126,8 @@ export function MapView({ openEntity }) {
           {layers.ports && MAP_PLACES.map(p=>(
             <g key={p.id} transform={`translate(${px(p.x)},${py(p.y)})`} style={{ cursor:"pointer" }} onClick={()=>setSel(p.id)}>
               {sel===p.id && <circle r="16" fill="none" stroke="var(--accent)" strokeWidth="2"/>}
+              {/* F-03: static shape cue for alert ports (colour-independent) */}
+              {p.alert && <circle r="11" fill="none" stroke="var(--alert)" strokeWidth="1.4" strokeDasharray="2.5 2.5"/>}
               <rect x="-5" y="-5" width="10" height="10" rx="2" transform="rotate(45)"
                 fill={p.alert?"var(--alert)":"var(--warn)"} stroke="var(--bg)" strokeWidth="1.5"/>
               <text x="11" y="4" fontSize="11.5" fontFamily="var(--font-mono)" fill="var(--text-dim)">{p.name}</text>
@@ -143,6 +145,8 @@ export function MapView({ openEntity }) {
                   <animate attributeName="r" values="14;24;14" dur="2.6s" repeatCount="indefinite"/>
                   <animate attributeName="opacity" values="0.6;0;0.6" dur="2.6s" repeatCount="indefinite"/>
                 </circle>}
+                {/* F-03: static dashed ring so alert reads without colour or motion */}
+                {v.alert && <circle r="13" fill="none" stroke="var(--alert)" strokeWidth="1.6" strokeDasharray="2.5 2.5"/>}
                 {sel===v.id && <circle r="15" fill="none" stroke="var(--accent)" strokeWidth="2"/>}
                 <g transform={`rotate(${a.hd})`}>
                   <path d="M0,-9 L6,8 L0,4 L-6,8 Z" fill={v.alert?"var(--alert)":"var(--accent)"} stroke="var(--bg)" strokeWidth="1.2"/>
@@ -165,12 +169,10 @@ export function MapView({ openEntity }) {
         <div className="panel" style={{ position:"absolute", top:14, right:14, padding:"10px 12px", width:150 }}>
           <div className="eyebrow" style={{ marginBottom:8 }}>Layers</div>
           {[["routes","Routes"],["vessels","Vessels"],["ports","Ports"],["risk","Risk zones"]].map(([k,l])=>(
-            <button key={k} onClick={()=>toggle(k)} className="row between center" style={{ width:"100%", border:"none", background:"none", padding:"5px 2px", cursor:"pointer" }}>
+            <div key={k} onClick={()=>toggle(k)} className="row between center" style={{ width:"100%", padding:"5px 2px", cursor:"pointer" }}>
               <span style={{ fontSize:12.5, color: layers[k]?"var(--text)":"var(--text-faint)" }}>{l}</span>
-              <span style={{ width:30, height:17, borderRadius:10, background: layers[k]?"var(--accent)":"var(--bg-3)", position:"relative", transition:"background .15s" }}>
-                <span style={{ position:"absolute", top:2, left: layers[k]?15:2, width:13, height:13, borderRadius:"50%", background:"var(--bg-1)", transition:"left .15s" }}/>
-              </span>
-            </button>
+              <Switch on={layers[k]} onChange={()=>toggle(k)} size="sm" label={l} />
+            </div>
           ))}
         </div>
 

@@ -2,8 +2,9 @@ import { useRef, useState } from 'react';
 import { ALERTS, ALERT_STATUSES, ANALYSTS, CASES, CASE_BY_ID } from '../data/data_ext.js';
 import { ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { AccessControl, MarkingChip } from '../components/Security.jsx';
-import { Badge, Icon, RiskPill, Stat, TypeGlyph } from '../components/ui.jsx';
+import { Avatar, Badge, Icon, RiskPill, Stat, TypeGlyph } from '../components/ui.jsx';
 import { RulesView } from './RulesView.jsx';
+import { EvidenceView } from './EvidenceView.jsx';
 
 /* ============================================================
    AXIOM — Alerts triage + Case management
@@ -16,12 +17,7 @@ export const SEV_META = {
   low:     { c:"var(--text-faint)", label:"Low" },
 };
 
-export function Avatar2({ who, size }){
-  const s=size||24; const a=ANALYSTS[who];
-  if(!who) return <span style={{ width:s,height:s,borderRadius:7,border:"1.5px dashed var(--line-strong)",display:"grid",placeItems:"center",color:"var(--text-faint)",flex:"none" }}><Icon name="user" size={s*0.5}/></span>;
-  return <span title={a?.name||who} style={{ width:s,height:s,borderRadius:7,display:"grid",placeItems:"center",fontSize:s*0.4,fontWeight:600,
-    color:"var(--accent-text)",background:"linear-gradient(150deg,var(--accent),var(--accent-2))",flex:"none" }}>{who}</span>;
-}
+
 
 export function AlertCard({ a, onClick, dragStart }){
   const sev = SEV_META[a.sev]; const ent = ENTITY_BY_ID[a.entity];
@@ -34,7 +30,7 @@ export function AlertCard({ a, onClick, dragStart }){
       <div style={{ fontSize:13, fontWeight:600, lineHeight:1.35, marginBottom:10 }}>{a.title}</div>
       <div className="row between center">
         <span className="row gap-6 center">{ent && <TypeGlyph type={ent.type} size={22}/>}<span className="t-faint" style={{ fontSize:11 }}>{a.conf}</span></span>
-        <Avatar2 who={a.assignee} size={22}/>
+        <Avatar who={a.assignee} size={22}/>
       </div>
     </div>
   );
@@ -69,7 +65,7 @@ export function AlertDrawer({ id, alerts, setAlerts, onClose, openEntity }){
   const sev = SEV_META[a.sev]; const ent = ENTITY_BY_ID[a.entity];
   function set(patch){ setAlerts(as=>as.map(x=>x.id===id?{...x,...patch}:x)); }
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:120, background:"oklch(0 0 0/0.4)" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:120, background:"var(--scrim-soft)", backdropFilter:"var(--scrim-blur)" }}>
       <div onClick={e=>e.stopPropagation()} className="panel" style={{ position:"absolute", top:0, right:0, bottom:0, width:380, background:"var(--bg-1)",
         borderRadius:0, borderLeft:"1px solid var(--line)", boxShadow:"var(--shadow-3)", overflow:"auto", animation:"slideIn .25s both" }}>
         <div style={{ padding:18, borderBottom:"1px solid var(--line-soft)" }}>
@@ -99,7 +95,7 @@ export function AlertDrawer({ id, alerts, setAlerts, onClose, openEntity }){
           <div className="eyebrow" style={{ marginBottom:8 }}>Assignee</div>
           <div className="row gap-6 wrap" style={{ marginBottom:18 }}>
             {Object.keys(ANALYSTS).filter(k=>k!=="null").map(k=>(
-              <button key={k} onClick={()=>set({assignee:k})} className={"chip"+(a.assignee===k?" on":"")}><Avatar2 who={k} size={18}/>{ANALYSTS[k].name.split(" ")[0]}</button>
+              <button key={k} onClick={()=>set({assignee:k})} className={"chip"+(a.assignee===k?" on":"")}><Avatar who={k} size={18}/>{ANALYSTS[k].name.split(" ")[0]}</button>
             ))}
           </div>
 
@@ -167,7 +163,7 @@ export function CaseDetail({ c, onBack, openDossier, go }){
             <div className="eyebrow" style={{ marginBottom:12 }}>Team</div>
             <div className="col gap-10">
               {c.members.map(m=>(
-                <div key={m} className="row gap-10 center"><Avatar2 who={m} size={30}/><div><div style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[m].name}</div><div className="t-faint" style={{ fontSize:11.5 }}>{ANALYSTS[m].role}{m===c.lead?" · Lead":""}</div></div></div>
+                <div key={m} className="row gap-10 center"><Avatar who={m} size={30}/><div><div style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[m].name}</div><div className="t-faint" style={{ fontSize:11.5 }}>{ANALYSTS[m].role}{m===c.lead?" · Lead":""}</div></div></div>
               ))}
             </div>
           </div>
@@ -178,17 +174,14 @@ export function CaseDetail({ c, onBack, openDossier, go }){
   );
 }
 
-export function CasesView({ openEntity, go, openDossier }){
-  const [mode, setMode] = useState("alerts"); // alerts | cases
+export function CasesView({ openEntity, go, openDossier, initialMode }){
+  const [mode, setMode] = useState(initialMode || "alerts"); // alerts | rules | evidence
   const [alerts, setAlerts] = useState(()=>ALERTS.map(a=>({...a})));
   const [drawer, setDrawer] = useState(null);
-  const [caseId, setCaseId] = useState(null);
   const [sevFilter, setSevFilter] = useState(null);
 
   const shown = sevFilter ? alerts.filter(a=>a.sev===sevFilter) : alerts;
   const openCount = alerts.filter(a=>a.status!=="closed").length;
-
-  if(caseId) return <div className="content"><CaseDetail c={CASE_BY_ID[caseId]} onBack={()=>setCaseId(null)} openEntity={openEntity} openDossier={openDossier} go={go} /></div>;
 
   return (
     <div className="content" style={{ display:"flex", flexDirection:"column", overflow:"hidden", height:"100%" }}>
@@ -196,8 +189,8 @@ export function CasesView({ openEntity, go, openDossier }){
         <div className="row gap-14 center">
           <div className="seg">
             <button className={mode==="alerts"?"on":""} onClick={()=>setMode("alerts")}>Alerts <span className="mono" style={{opacity:.7}}>{openCount}</span></button>
-            <button className={mode==="cases"?"on":""} onClick={()=>setMode("cases")}>Cases <span className="mono" style={{opacity:.7}}>{CASES.length}</span></button>
             <button className={mode==="rules"?"on":""} onClick={()=>setMode("rules")}>Rules</button>
+            <button className={mode==="evidence"?"on":""} onClick={()=>setMode("evidence")}>Evidence</button>
           </div>
           {mode==="alerts" && <div className="row gap-6 center">
             {Object.entries(SEV_META).map(([k,v])=>(
@@ -205,34 +198,12 @@ export function CasesView({ openEntity, go, openDossier }){
             ))}
           </div>}
         </div>
-        <button className="btn primary"><Icon name="plus"/>New {mode==="alerts"?"rule":mode==="rules"?"rule":"case"}</button>
+        {mode!=="evidence" && <button className="btn primary"><Icon name="plus"/>New {mode==="rules"?"rule":"alert"}</button>}
       </div>
 
-      {mode==="rules" ? <RulesView />
-        : mode==="alerts"
-        ? <div style={{ flex:1, overflow:"hidden" }}><AlertsBoard alerts={shown} setAlerts={setAlerts} openAlert={setDrawer} /></div>
-        : <div style={{ flex:1, overflow:"auto", padding:"22px 20px" }}>
-            <div style={{ maxWidth:1000, margin:"0 auto", display:"grid", gap:14 }}>
-              {CASES.map(c=>(
-                <button key={c.id} className="card hover" onClick={()=>setCaseId(c.id)} style={{ padding:18, textAlign:"left", cursor:"pointer" }}>
-                  <div className="row between center">
-                    <div className="row gap-14 center">
-                      <div style={{ width:46,height:46,borderRadius:12,display:"grid",placeItems:"center",background:"var(--bg-2)",color:"var(--accent)" }}><Icon name="bookmark" size={22}/></div>
-                      <div>
-                        <div className="row gap-8 center"><span style={{ fontSize:16, fontWeight:600 }}>{c.name}</span><MarkingChip level={c.classification} size="sm"/></div>
-                        <div className="t-faint" style={{ fontSize:12.5, marginTop:3 }}>{c.summary.slice(0,72)}…</div>
-                      </div>
-                    </div>
-                    <div className="row gap-20 center">
-                      <div className="col" style={{ alignItems:"flex-end" }}><span className="eyebrow">Alerts</span><span className="mono" style={{ fontSize:15, color: c.alerts?"var(--alert)":"var(--text)" }}>{c.alerts}</span></div>
-                      <div className="row" style={{ marginRight:4 }}>{c.members.map((m,i)=><span key={m} style={{ marginLeft:i?-7:0 }}><Avatar2 who={m} size={28}/></span>)}</div>
-                      <Badge kind={c.status==="Active"?"accent":""} dot>{c.status}</Badge>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+      {mode==="evidence" ? <EvidenceView openEntity={openEntity} go={go} />
+        : mode==="rules" ? <RulesView />
+        : <div style={{ flex:1, overflow:"hidden" }}><AlertsBoard alerts={shown} setAlerts={setAlerts} openAlert={setDrawer} /></div>
       }
 
       {drawer && <AlertDrawer id={drawer} alerts={alerts} setAlerts={setAlerts} onClose={()=>setDrawer(null)} openEntity={openEntity} />}

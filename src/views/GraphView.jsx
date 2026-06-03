@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { T_END } from '../data/data_ext.js';
 import { EDGES, ENTITIES, ENTITY_BY_ID, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
-import { Badge, ICONS, Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
+import { Badge, Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
+import { GraphEdge, GraphNode } from '../components/GraphCanvas.jsx';
 
 /* ============================================================
    AXIOM — Interactive connection graph
@@ -31,7 +32,7 @@ export function Minimap({ pos, view, size, sel, visible }) {
   );
 }
 
-export function GraphView({ openEntity, focusId }) {
+export function GraphView({ openEntity, focusId, onSelect }) {
   // node positions in graph space
   const [pos, setPos] = useState(() => {
     const m = {};
@@ -54,6 +55,8 @@ export function GraphView({ openEntity, focusId }) {
   const hiddenByTime = useCallback((eid)=> temporal && ENTITY_BY_ID[eid].since > t, [temporal, t]);
 
   useEffect(()=>{ if(focusId){ setSel(focusId); setRevealed(new Set([focusId])); } }, [focusId]);
+  // Cluster ②: reporta la selección al workbench para compartirla entre lentes.
+  useEffect(()=>{ if(onSelect) onSelect(sel); }, [sel]);
 
   // track svg size for minimap viewport
   useEffect(()=>{
@@ -218,21 +221,16 @@ export function GraphView({ openEntity, focusId }) {
               const onActive = active && (ed.s===active||ed.t===active);
               const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
               return (
-                <g key={i} opacity={dim?0.12:1} style={{ transition:"opacity .2s" }}>
-                  <line x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                    stroke={ed.alert?"var(--alert)":onActive?"var(--accent)":"var(--line-strong)"}
-                    strokeWidth={ed.alert?2.2:onActive?2:1.3}
-                    strokeDasharray={ed.alert?"6 4":"none"}
-                    markerEnd={ed.alert?"url(#arrowA)":"url(#arrow)"} />
-                  {(onActive||ed.alert) && showLabels && (
+                <GraphEdge key={i} a={a} b={b} alert={ed.alert} highlighted={onActive} dim={dim}
+                  marker={ed.alert?"url(#arrowA)":"url(#arrow)"}
+                  label={(onActive||ed.alert) && showLabels && (
                     <g transform={`translate(${mx},${my})`}>
                       <rect x={-(ed.rel.length*3.3+8)} y="-9" width={ed.rel.length*6.6+16} height="18" rx="9"
                         fill="var(--bg-1)" stroke={ed.alert?"var(--alert)":"var(--line)"} strokeWidth="1"/>
                       <text textAnchor="middle" y="4" fontSize="10.5" fontFamily="var(--font-mono)"
                         fill={ed.alert?"var(--alert)":"var(--text-dim)"}>{ed.rel}</text>
                     </g>
-                  )}
-                </g>
+                  )} />
               );
             })}
             {/* nodes */}
@@ -244,26 +242,15 @@ export function GraphView({ openEntity, focusId }) {
               const isSel = sel===e.id;
               const tcls = TYPE_BY_ID[e.type].cls;
               return (
-                <g key={e.id} transform={`translate(${p.x},${p.y})`} opacity={dim?0.22:1}
-                   style={{ transition:"opacity .2s", cursor:"pointer" }}
-                   onPointerDown={(ev)=>onPointerDown(ev,e.id)}
-                   onMouseEnter={()=>setHover(e.id)} onMouseLeave={()=>setHover(null)}
-                   onDoubleClick={()=> focusMode ? expand(e.id) : openEntity(e.id)}>
-                  {isSel && <circle r={r+9} fill="none" stroke="var(--accent)" strokeWidth="2" opacity="0.6">
-                    <animate attributeName="r" values={`${r+6};${r+11};${r+6}`} dur="2.4s" repeatCount="indefinite"/>
-                  </circle>}
-                  <circle className={"tc "+tcls} r={r} fill="color-mix(in oklab, var(--c) 22%, var(--bg-1))"
-                    stroke="var(--c)" strokeWidth={isSel?3:2}
-                    style={{ filter: e.watch?"drop-shadow(0 0 8px color-mix(in oklab,var(--c) 60%,transparent))":"none" }}/>
-                  <g className={"tc "+tcls} style={{ color:"var(--c)" }} transform={`translate(-${r*0.45},-${r*0.45}) scale(${r*0.038})`}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" dangerouslySetInnerHTML={{__html: ICONS[TYPE_BY_ID[e.type].glyph]}}/>
-                  </g>
-                  {e.watch && <circle cx={r*0.72} cy={-r*0.72} r="5" fill="var(--alert)" stroke="var(--bg)" strokeWidth="2"/>}
-                  {showLabels && (
-                    <text textAnchor="middle" y={r+15} fontSize="12.5" fontFamily="var(--font-ui)" fontWeight="600"
-                      fill="var(--text)" style={{ pointerEvents:"none" }}>{e.name}</text>
-                  )}
-                </g>
+                <GraphNode key={e.id} className={"tc "+tcls} x={p.x} y={p.y} r={r} dim={dim}
+                  glyph={TYPE_BY_ID[e.type].glyph} glyphScale={0.038}
+                  selected={isSel} selectedRingAnimated strokeWidth={isSel?3:2}
+                  circleStyle={{ filter: e.watch?"drop-shadow(0 0 8px color-mix(in oklab,var(--c) 60%,transparent))":"none" }}
+                  watched={e.watch} watchRing={e.watch} badgeR={5} badgeStroke={2}
+                  label={e.name} showLabel={showLabels} fontSize={12.5} labelDy={r+15}
+                  onPointerDown={(ev)=>onPointerDown(ev,e.id)}
+                  onMouseEnter={()=>setHover(e.id)} onMouseLeave={()=>setHover(null)}
+                  onDoubleClick={()=> focusMode ? expand(e.id) : openEntity(e.id)} />
               );
             })}
           </g>
@@ -277,7 +264,7 @@ export function GraphView({ openEntity, focusId }) {
             <button className="icon-btn" onClick={fit} title="Fit"><Icon name="target"/></button>
             <button className={"icon-btn"} onClick={()=>setShowLabels(s=>!s)} title="Labels" style={{ color: showLabels?"var(--accent)":"var(--text-dim)" }}><Icon name="doc"/></button>
             <button className={"icon-btn"} onClick={()=>setTemporal(s=>!s)} title="Temporal analysis" style={{ color: temporal?"var(--accent)":"var(--text-dim)" }}><Icon name="clock"/></button>
-            <button className={"icon-btn"} onClick={toggleFocus} title="Focus / expand mode" style={{ color: focusMode?"var(--accent)":"var(--text-dim)" }}><Icon name="target"/></button>
+            <button className={"icon-btn"} onClick={toggleFocus} title="Focus / expand mode" style={{ color: focusMode?"var(--accent)":"var(--text-dim)" }}><Icon name="focus"/></button>
             <div style={{ width:1, height:20, background:"var(--line)", margin:"0 2px" }}/>
             <button className={"icon-btn"} onClick={relax} title="Auto-arrange (force layout)"><Icon name="sparkles"/></button>
             <button className={"icon-btn"} onClick={saveLayout} title="Save layout" style={{ color: saved?"var(--ok)":"var(--text-dim)" }}><Icon name={saved?"check":"bookmark"}/></button>
