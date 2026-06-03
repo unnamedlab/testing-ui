@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ENTITIES, TYPE_BY_ID } from '../data/data.js';
-import { Icon, TypeGlyph, RiskPill } from '../components/ui.jsx';
+import { Icon, PageHeader, TypeGlyph, RiskPill } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — ResolveView (regenerado)
@@ -24,9 +24,7 @@ export function ResolveView() {
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom: 6 }}>Ontología · resolución de entidades</div>
-        <h1 className="serif" style={{ fontSize: 27, fontWeight: 500, margin: "0 0 4px", letterSpacing: "-0.02em" }}>Cola de resolución</h1>
-        <div className="t-dim" style={{ fontSize: 14, marginBottom: 22 }}>Pares de objetos que el motor cree que son la misma entidad. Confírmalos o sepáralos.</div>
+        <PageHeader eyebrow="Ontología · resolución de entidades" title="Cola de resolución" sub="Pares de objetos que el motor cree que son la misma entidad. Confírmalos o sepáralos." />
 
         <div className="col" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {pairs.map((p) => (

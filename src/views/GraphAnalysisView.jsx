@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { G2_EDGES, G2_NODES } from '../data/data_graph2.js';
 import { Icon } from '../components/ui.jsx';
 import { GraphEdge, GraphNode, GRAPH_TYPE_GLYPH as TG, typeColor } from '../components/GraphCanvas.jsx';
@@ -30,12 +30,10 @@ function centrality(){
 }
 const MODES = [["path","Shortest path","route"],["common","Common neighbors","merge"],["central","Centrality","target"]];
 
-export function GraphAnalysisView({ selId, onSelect }){
+export function GraphAnalysisView(){
   const [mode,setMode] = useState("path");
-  const [picks,setPicks] = useState(selId && NBY[selId] ? [selId] : []); // cluster ②: siembra desde la selección compartida
+  const [picks,setPicks] = useState([]);
   const cen = useMemo(()=>centrality(),[]);
-  // Cluster ②: reporta la última selección al workbench.
-  useEffect(()=>{ if(onSelect && picks.length) onSelect(picks[picks.length-1]); }, [picks]);
   const cenById = Object.fromEntries(cen.map(c=>[c.id,c]));
   function clickNode(id){ if(mode==="central"){ setPicks([id]); return; } setPicks(p=> p.includes(id) ? p.filter(x=>x!==id) : p.length>=2 ? [id] : [...p,id]); }
   function setMode2(m){ setMode(m); setPicks([]); }

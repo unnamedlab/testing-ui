@@ -1,4 +1,5 @@
 import { EDGES, ENTITIES, MAP_VESSELS } from './data.js';
+import { pickWorkspaces } from './data_workspaces.js';
 
 /* ============================================================
    AXIOM — Extended dataset for advanced modules
@@ -12,6 +13,7 @@ export const CLASS_LEVELS = {
   "UNCLASS":      { color: "var(--ok)",     short: "U" },
   "CONFIDENTIAL": { color: "var(--warn)",   short: "C" },
   "SECRET":       { color: "var(--alert)",  short: "S" },
+  "TOP SECRET":   { color: "var(--violet)", short: "TS" },
 };
 // per-entity markings
 export const ENTITY_MARKINGS = {
@@ -77,18 +79,22 @@ export const ANALYSTS = {
 };
 
 // ---------- Cases ----------
-export const CASES = [
-  { id:"blackfrost", name:"Case BLACKFROST", status:"Active", classification:"SECRET", lead:"AR",
-    opened:"2026-04-30", members:["AR","MC","JD"], alerts:7, objects:142, sla:"On track",
-    summary:"Suspected sanctions-evasion network moving petroleum via flag-hopping vessels and layered trade-finance flows through UAE and Cyprus shell entities.",
-    tasks:[["Confirm UBO of Helios Maritime","done"],["Subpoena ENBD account records","doing"],["Map Blackfrost AIS gaps to port calls","doing"],["Brief liaison partner","todo"]] },
-  { id:"tradewind", name:"Operation TRADEWIND", status:"Active", classification:"CONFIDENTIAL", lead:"MC",
-    opened:"2026-05-12", members:["MC","JD"], alerts:3, objects:88, sla:"At risk",
-    summary:"Trade-based money laundering via over/under-invoicing across electronics importers.", tasks:[] },
-  { id:"supply", name:"Supply Chain Integrity", status:"Monitoring", classification:"CONFIDENTIAL", lead:"JD",
-    opened:"2026-03-20", members:["JD","AR","MC"], alerts:0, objects:301, sla:"On track",
-    summary:"Tier-2 supplier risk monitoring for critical components.", tasks:[] },
-];
+// Proyección de WORKSPACES (fuente única en data_workspaces.js). Antes esta lista
+// definía sus propias cifras (objects 142 · alerts 7) que contradecían a Projects/Home.
+export const CASES = pickWorkspaces(["blackfrost", "tradewind", "supply"]).map((w) => ({
+  id: w.id,
+  name: w.nameEn,
+  status: w.status,
+  classification: w.classification,
+  lead: w.lead,
+  opened: w.openedIso,
+  members: w.members,
+  alerts: w.counts.alerts,
+  objects: w.counts.objects,
+  sla: w.sla,
+  summary: w.summaryEn,
+  tasks: w.tasksEn,
+}));
 export const CASE_BY_ID = Object.fromEntries(CASES.map(c=>[c.id,c]));
 
 // ---------- Data sources ----------
@@ -106,10 +112,9 @@ export const CONNECTORS = [
   ["Kafka topic","swap"],["Google BigQuery","grid"],["MongoDB","doc"],["Webhook","bell"],
 ];
 
-// ---------- Audit log ----------
-// Cluster ⑥: el registro de auditoría vive ahora en data_audit.js (fuente única).
-// Admin consume la LENTE de seguridad; se re-exporta como AUDIT por compatibilidad.
-export { ADMIN_AUDIT as AUDIT } from './data_audit.js';
+// ---------- Audit log → movido a data_audit.js (store único de eventos) ----------
+// El registro de auditoría vive ahora en data/data_audit.js (AUDIT_EVENTS), leído por
+// Governance (ledger con filtro por kind) y Admin (vista forense con Source IP).
 
 // ---------- Lineage (per entity provenance chain) ----------
 export function lineageFor(id){

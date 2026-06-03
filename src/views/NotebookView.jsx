@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Icon } from '../components/ui.jsx';
+import { Icon, PageHeader } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — NotebookView (regenerado)
@@ -16,10 +16,10 @@ export function NotebookView() {
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 860, margin: "0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom: 20 }}>
-          <div><div className="eyebrow" style={{ marginBottom: 6 }}>Análisis · Notebook</div><h1 className="serif" style={{ fontSize: 27, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>BLACKFROST · layering.ipynb</h1></div>
-          <div className="row gap-8"><button className="btn"><Icon name="plus" size={14} />Celda</button><button className="btn primary" onClick={() => setRan(Object.fromEntries(CELLS.map((_, i) => [i, true])))}><Icon name="play" size={14} />Ejecutar todo</button></div>
-        </div>
+        <PageHeader eyebrow="Análisis · Notebook" title="BLACKFROST · layering.ipynb">
+          <button className="btn"><Icon name="plus" size={14} />Celda</button>
+          <button className="btn primary" onClick={() => setRan(Object.fromEntries(CELLS.map((_, i) => [i, true])))}><Icon name="play" size={14} />Ejecutar todo</button>
+        </PageHeader>
         <div className="col" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {CELLS.map((c, i) => c.type === "md" ? (
             <div key={i} style={{ padding: "4px 2px" }}>

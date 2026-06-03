@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { ACTION_TYPES, AUTO_RULES, EFFECT, SEED_ACTIONS, nextId } from '../data/data_actions.js';
 import { ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { Avatar, Badge, Icon, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
-import { RuleCard } from '../components/Rules.jsx';
+import { Avatar, Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
+import { RulesEngine } from '../components/RulesEngine.jsx';
+
+const ACT_TABS = [["center","Action center"],["catalog","Action types"],["auto","Automations"],["log","Log"]];
 
 /* ============================================================
    AXIOM — Actions / write-back
@@ -140,7 +142,7 @@ function ReviewModal({ act, onClose, onDecide }){
             <div className="row gap-10 center"><TypeGlyph type={o.type} size={32}/><div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13.5, fontWeight:600 }}>{o.name}</div><div className="t-faint" style={{ fontSize:11.5 }}>{o.sub}</div></div><Badge kind="alert" dot>risk {o.risk}</Badge></div>
           </div>
           <div className="row gap-16" style={{ marginBottom:14 }}>
-            <div><div className="t-faint" style={{ fontSize:11 }}>Requested by</div><div className="row gap-7 center" style={{ marginTop:4 }}><Avatar who={act.by} size={22}/><span style={{ fontSize:13 }}>{ANALYSTS[act.by].name}</span></div></div>
+            <div><div className="t-faint" style={{ fontSize:11 }}>Requested by</div><div className="row gap-7 center" style={{ marginTop:4 }}><Avatar who={act.by} name={ANALYSTS[act.by]?.name} size={22}/><span style={{ fontSize:13 }}>{ANALYSTS[act.by].name}</span></div></div>
             <div><div className="t-faint" style={{ fontSize:11 }}>Parameters</div><div className="mono" style={{ fontSize:12, marginTop:5, color:"var(--text-dim)" }}>{Object.entries(act.params||{}).map(([k,v])=>k+": "+v).join(" · ")}</div></div>
           </div>
           {act.just && <div style={{ marginBottom:14 }}><div className="t-faint" style={{ fontSize:11, marginBottom:4 }}>Justification</div><div style={{ fontSize:13, color:"var(--text-dim)", lineHeight:1.5 }}>{act.just}</div></div>}
@@ -165,7 +167,7 @@ function PendingCard({ act, onReview }){
       </div>
       <div className="row gap-10 center" style={{ padding:"9px 11px", background:"var(--bg-2)", borderRadius:9, marginBottom:12 }}>
         <TypeGlyph type={o.type} size={28}/><div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600 }}>{o.name}</div><div className="t-faint" style={{ fontSize:11 }}>{TYPE_BY_ID[o.type].name} · {o.sub}</div></div>
-        <span className="row gap-7 center"><Avatar who={act.by} size={22}/><span className="t-faint" style={{ fontSize:11.5 }}>{ANALYSTS[act.by].name.split(" ")[0]}</span></span>
+        <span className="row gap-7 center"><Avatar who={act.by} name={ANALYSTS[act.by]?.name} size={22}/><span className="t-faint" style={{ fontSize:11.5 }}>{ANALYSTS[act.by].name.split(" ")[0]}</span></span>
       </div>
       {act.just && <div className="t-dim" style={{ fontSize:12.5, lineHeight:1.5, marginBottom:12 }}>“{act.just}”</div>}
       <div className="row between center">
@@ -198,10 +200,9 @@ function ActionCenter({ actions, onNew, onReview, rules, toggleRule }){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom:20 }}>
-          <div><div className="eyebrow" style={{ marginBottom:6 }}>Operations · Action center</div><h1 className="serif" style={{ fontSize:30, fontWeight:500, margin:0, letterSpacing:"-0.02em" }}>Actions</h1></div>
+        <PageHeader eyebrow="Operations · Action center" title="Actions">
           <button className="btn primary" onClick={onNew}><Icon name="bolt"/>New action</button>
-        </div>
+        </PageHeader>
         <div style={{ display:"grid", gridTemplateColumns:"1.6fr 1fr", gap:24 }}>
           <div>
             <div className="eyebrow" style={{ marginBottom:12 }}>Pending approval · {pending.length}</div>
@@ -247,9 +248,7 @@ function Catalog({ onRun }){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Operations · Action types</div>
-        <h1 className="serif" style={{ fontSize:30, fontWeight:500, margin:"0 0 4px", letterSpacing:"-0.02em" }}>Action catalog</h1>
-        <div className="t-dim" style={{ fontSize:14, marginBottom:22 }}>Defined, governed actions that operate on ontology objects. Each declares its targets, effects and approval chain.</div>
+        <PageHeader eyebrow="Operations · Action types" title="Action catalog" sub="Defined, governed actions that operate on ontology objects. Each declares its targets, effects and approval chain." />
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))", gap:16 }}>
           {Object.keys(ACTION_TYPES).map(k=>{ const a=ACTION_TYPES[k]; return (
             <div key={k} className="card" style={{ padding:18, display:"flex", flexDirection:"column", gap:12 }}>
@@ -265,12 +264,13 @@ function Catalog({ onRun }){
     </div>
   );
 }
-function Log({ actions }){
+function Log({ actions, go }){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Operations · Audit</div>
-        <h1 className="serif" style={{ fontSize:30, fontWeight:500, margin:"0 0 18px", letterSpacing:"-0.02em" }}>Action log</h1>
+        <PageHeader eyebrow="Operations · Audit · kind=action" title="Action log">
+          <button className="btn ghost sm" onClick={()=>go && go("govern")}>Full audit log <Icon name="arrowRight" size={14}/></button>
+        </PageHeader>
         <div className="card" style={{ overflow:"hidden" }}>
           <table className="tbl">
             <thead><tr><th>ID</th><th>Action</th><th>Target</th><th>Actor</th><th>Approver</th><th>Status</th><th>Class</th><th>When</th></tr></thead>
@@ -280,7 +280,7 @@ function Log({ actions }){
                   <td className="mono" style={{ color:"var(--text)" }}>{a.id}</td>
                   <td><span className="row gap-8 center"><span style={{ color:at.color }}><Icon name={at.icon} size={15}/></span>{at.name}</span></td>
                   <td>{o.name}</td>
-                  <td><span className="row gap-7 center"><Avatar who={a.by} size={20}/>{ANALYSTS[a.by]?.name||a.by}</span></td>
+                  <td><span className="row gap-7 center"><Avatar who={a.by} name={ANALYSTS[a.by]?.name} size={20}/>{ANALYSTS[a.by]?.name||a.by}</span></td>
                   <td className="t-dim">{a.approver==="auto"?"auto":a.approver?(ANALYSTS[a.approver]?.name||a.approver):"—"}</td>
                   <td><StatusBadge s={a.status}/></td>
                   <td><MarkingChip level={at.cls} size="sm"/></td>
@@ -300,20 +300,17 @@ function Automations({ rules, toggleRule }){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom:20 }}>
-          <div><div className="eyebrow" style={{ marginBottom:6 }}>Operations · Automations</div><h1 className="serif" style={{ fontSize:30, fontWeight:500, margin:0, letterSpacing:"-0.02em" }}>Event-driven actions</h1></div>
-          <div className="row gap-8 center"><span className="live-dot"/><span className="t-faint mono" style={{ fontSize:11.5 }}>{on} of {rules.length} active</span></div>
-        </div>
+        <PageHeader eyebrow="Operations · Automations" title="Event-driven actions">
+          <span className="live-dot"/><span className="t-faint mono" style={{ fontSize:11.5 }}>{on} of {rules.length} active</span>
+        </PageHeader>
         <div className="t-dim" style={{ fontSize:14, marginBottom:22, maxWidth:"68ch" }}>Rules fire actions automatically when conditions are met — the standing counterpart to manual actions and agent reasoning. Each still writes to the same audit log and honors the same approval chains.</div>
-        <div className="col gap-12">
-          {rules.map(r=><RuleCard key={r.id} rule={r} onToggle={toggleRule}/>)}
-        </div>
+        <RulesEngine rules={rules} onToggle={toggleRule} />
       </div>
     </div>
   );
 }
 
-export function ActionsView(){
+export function ActionsView({ go }){
   const [tab,setTab] = useState("center");
   const [actions,setActions] = useState(SEED_ACTIONS);
   const [rules,setRules] = useState(AUTO_RULES);
@@ -334,15 +331,16 @@ export function ActionsView(){
   const reviewAct = review ? actions.find(a=>a.id===review) : null;
   return (
     <>
-      {(()=>{ const T=[["center","Action center"],["catalog","Action types"],["auto","Automations"],["log","Log"]];
-        return <div style={{ padding:"0 28px", background:"var(--bg-1)", flex:"none" }}>
-          <Tabs items={T.map(([k,l])=>({ label:l, badge: k==="center" ? actions.filter(a=>a.status==="pending").length : undefined }))}
-            value={T.findIndex(([k])=>k===tab)} onChange={i=>setTab(T[i][0])} />
-        </div>; })()}
+      <div style={{ padding:"0 28px", borderBottom:"1px solid var(--line-soft)", background:"var(--bg-1)", flex:"none" }}>
+        <Tabs variant="flush"
+          items={ACT_TABS.map(([k,l])=>({ label:l, badge:k==="center"?actions.filter(a=>a.status==="pending").length:undefined }))}
+          value={ACT_TABS.findIndex(([k])=>k===tab)}
+          onChange={i=>setTab(ACT_TABS[i][0])} />
+      </div>
       {tab==="center" && <ActionCenter actions={actions} onNew={()=>setInvoke({})} onReview={setReview} rules={rules} toggleRule={id=>setRules(rs=>rs.map(r=>r.id===id?{...r,on:!r.on}:r))}/>}
       {tab==="catalog" && <Catalog onRun={k=>setInvoke({ preAction:k })}/>}
       {tab==="auto" && <Automations rules={rules} toggleRule={id=>setRules(rs=>rs.map(r=>r.id===id?{...r,on:!r.on}:r))}/>}
-      {tab==="log" && <Log actions={actions}/>}
+      {tab==="log" && <Log actions={actions} go={go}/>}
       {invoke && <InvokeModal preAction={invoke.preAction} onClose={()=>setInvoke(null)} onSubmit={submit}/>}
       {reviewAct && <ReviewModal act={reviewAct} onClose={()=>setReview(null)} onDecide={decide}/>}
     </>

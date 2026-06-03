@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { EDGES, ENTITIES, LINK_TYPES, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
-import { Badge, Icon, ListSkeleton, RiskPill, SectionHead, Stat, TypeGlyph, useLoad } from '../components/ui.jsx';
+import { Badge, Icon, ListSkeleton, ObjectList, PageHeader, RiskPill, SectionHead, Stat, TypeGlyph, useLoad } from '../components/ui.jsx';
 import { OBJECT_SCHEMA } from '../data/ontology_schema.js';
 
 /* ============================================================
@@ -142,10 +142,7 @@ export function SearchView({ query, openEntity }) {
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Search</div>
-        <h1 className="serif" style={{ fontSize:26, fontWeight:500, margin:"0 0 4px" }}>
-          {query ? <>Results for “{query}”</> : "All objects"}
-        </h1>
+        <PageHeader eyebrow="Search" title={query ? <>Results for “{query}”</> : "All objects"} />
         <div className="t-faint" style={{ fontSize:13, marginBottom:18 }}>{res.length} objects across the ontology</div>
 
         <div className="row gap-8 wrap" style={{ marginBottom:18 }}>
@@ -158,30 +155,7 @@ export function SearchView({ query, openEntity }) {
         </div>
 
         {loading ? <ListSkeleton rows={6} /> : (
-        <div className="col gap-8">
-          {shown.map(e=>(
-            <button key={e.id} className="card hover" onClick={()=>openEntity(e.id)} style={{ padding:14, textAlign:"left", cursor:"pointer" }}>
-              <div className="row gap-14 center">
-                <TypeGlyph type={e.type} size={40}/>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div className="row gap-8 center">
-                    <span style={{ fontSize:15, fontWeight:600 }}>{e.name}</span>
-                    {e.watch && <Badge kind="alert" dot>watchlist</Badge>}
-                  </div>
-                  <div className="t-dim" style={{ fontSize:13, marginTop:2 }}>{TYPE_BY_ID[e.type].name} · {e.sub}</div>
-                </div>
-                <div className="row gap-16 center">
-                  <div className="col" style={{ alignItems:"flex-end" }}>
-                    <span className="eyebrow">Connections</span>
-                    <span className="mono" style={{ fontSize:15 }}>{EDGES.filter(ed=>ed.s===e.id||ed.t===e.id).length}</span>
-                  </div>
-                  <RiskPill r={e.risk}/>
-                  <span className="t-faint"><Icon name="arrowRight" size={16}/></span>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
+          <ObjectList variant="cards" items={shown} openEntity={openEntity} emptyText={`No objects match “${query}”.`} />
         )}
       </div>
     </div>

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { BUILDS, DRIVE, FILES, KW, REPO } from '../data/data_code.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { Avatar, Badge, Icon, Tabs } from '../components/ui.jsx';
-import { ArtifactList, ArtifactRow, artifactIcon, artifactColor } from '../components/ArtifactExplorer.jsx';
+import { ArtifactExplorer, Avatar, Badge, Icon, Lineage, PageHeader, Tabs } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
+
+const CR_TABS = [["code","Code"],["history","History"],["builds","Builds"],["drive","Drive"]];
 
 /* ============================================================
    AXIOM — Code repository + Drive
@@ -62,13 +63,16 @@ function Inspector({ file }){
   return (
     <aside style={{ width:300, flex:"none", borderLeft:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
       <div style={{ padding:16 }}>
-        {file.builds ? <>
-          <div className="eyebrow" style={{ marginBottom:8 }}>Builds dataset</div>
-          <div className="card" style={{ padding:"10px 12px", marginBottom:14, background:"var(--bg-2)" }}><div className="row gap-8 center"><span style={{ color:"var(--ok)" }}><Icon name="layers" size={16}/></span><span className="mono" style={{ fontSize:12, color:"var(--text)" }}>{file.builds}</span></div></div>
-          <div className="eyebrow" style={{ marginBottom:8 }}>Inputs</div>
-          <div className="col gap-6" style={{ marginBottom:14 }}>{file.inputs.map(i=><div key={i} className="row gap-8 center"><span className="t-faint"><Icon name="layers" size={14}/></span><span className="mono" style={{ fontSize:11.5, color:"var(--text-dim)" }}>{i}</span></div>)}</div>
-          <div className="card" style={{ padding:"10px 12px", marginBottom:16, background:"var(--accent-ghost)", border:"1px solid var(--accent-dim)" }}><div className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="pipeline" size={15}/></span><div><div className="t-faint" style={{ fontSize:10 }}>Powers pipeline node</div><div style={{ fontSize:12.5, fontWeight:600, color:"var(--accent)" }}>{file.node}</div></div></div></div>
-        </> : <div className="t-faint" style={{ fontSize:12.5, marginBottom:14 }}>Registry / docs file — not a build target.</div>}
+        {file.builds ? (
+          <div style={{ marginBottom:16 }}>
+            <div className="eyebrow" style={{ marginBottom:10 }}>Lineage</div>
+            <Lineage chain={[
+              ...file.inputs.map(i=>({ stage:"Entrada", label:i, glyph:"layers" })),
+              { stage:"Construye", label:file.builds, glyph:"database" },
+              { stage:"Alimenta nodo", label:file.node, meta:"pipeline", glyph:"pipeline" },
+            ]} />
+          </div>
+        ) : <div className="t-faint" style={{ fontSize:12.5, marginBottom:14 }}>Registry / docs file — not a build target.</div>}
         <div className="eyebrow" style={{ marginBottom:10 }}>Version history</div>
         <div style={{ position:"relative", paddingLeft:16 }}>
           <div style={{ position:"absolute", left:4, top:6, bottom:8, width:2, background:"var(--line)" }}/>
@@ -76,7 +80,7 @@ function Inspector({ file }){
             <div key={i} style={{ position:"relative", paddingBottom:16 }}>
               <span style={{ position:"absolute", left:-16, top:3, width:10, height:10, borderRadius:"50%", background: i===0?"var(--accent)":"var(--bg-3)", border:"2px solid var(--bg-1)", boxShadow: i===0?"0 0 8px -1px var(--accent)":"none" }}/>
               <div style={{ fontSize:12.5, color:"var(--text)", lineHeight:1.4 }}>{c.msg}</div>
-              <div className="row gap-8 center" style={{ marginTop:4 }}><span className="mono" style={{ fontSize:10.5, color:"var(--accent-2)" }}>{c.hash}</span><Avatar who={c.by} size={16}/><span className="t-faint" style={{ fontSize:10.5 }}>{c.when}</span></div>
+              <div className="row gap-8 center" style={{ marginTop:4 }}><span className="mono" style={{ fontSize:10.5, color:"var(--accent-2)" }}>{c.hash}</span><Avatar who={c.by} name={ANALYSTS[c.by]?.name} size={16}/><span className="t-faint" style={{ fontSize:10.5 }}>{c.when}</span></div>
             </div>
           ))}
         </div>
@@ -100,7 +104,7 @@ function CodeTab(){
         </div>
         <div style={{ flex:1, overflow:"auto", padding:"16px 14px", background:"var(--bg-inset)" }}><Code file={file}/></div>
         <div className="row between center" style={{ padding:"8px 16px", borderTop:"1px solid var(--line-soft)", flex:"none", background:"var(--bg-1)" }}>
-          <span className="row gap-8 center"><Avatar who={file.last.by} size={18}/><span className="t-faint" style={{ fontSize:11.5 }}>last edit {file.last.when} · <span className="mono">{file.last.hash}</span></span></span>
+          <span className="row gap-8 center"><Avatar who={file.last.by} name={ANALYSTS[file.last.by]?.name} size={18}/><span className="t-faint" style={{ fontSize:11.5 }}>last edit {file.last.when} · <span className="mono">{file.last.hash}</span></span></span>
           <span className="t-faint mono" style={{ fontSize:11 }}>{file.code.split("\n").length} lines</span>
         </div>
       </div>
@@ -114,8 +118,7 @@ function HistoryTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:900, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Repository · history</div>
-        <h1 className="serif" style={{ fontSize:26, fontWeight:500, margin:"0 0 18px", letterSpacing:"-0.02em" }}>Commits on <span className="mono" style={{ fontSize:18 }}>main</span></h1>
+        <PageHeader eyebrow="Repository · history" title={<>Commits on <span className="mono" style={{ fontSize:18 }}>main</span></>} />
         <div className="card" style={{ overflow:"hidden" }}>
           {log.map((c,i)=>(
             <div key={i} className="row gap-12 center" style={{ padding:"13px 16px", borderBottom: i<log.length-1?"1px solid var(--line-soft)":"none" }}>
@@ -134,8 +137,7 @@ function BuildsTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:980, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Repository · CI</div>
-        <h1 className="serif" style={{ fontSize:26, fontWeight:500, margin:"0 0 18px", letterSpacing:"-0.02em" }}>Builds &amp; checks</h1>
+        <PageHeader eyebrow="Repository · CI" title="Builds & checks" />
         <div className="card" style={{ overflow:"hidden" }}>
           <table className="tbl">
             <thead><tr><th>Build</th><th>Status</th><th>Branch</th><th>Commit</th><th>By</th><th>Datasets</th><th>Duration</th><th>When</th></tr></thead>
@@ -146,7 +148,7 @@ function BuildsTab(){
                   <td><Badge kind={m.kind} dot>{m.label}</Badge></td>
                   <td><span className="row gap-6 center"><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b.branch}</span></td>
                   <td className="mono" style={{ color:"var(--accent-2)" }}>{b.commit}</td>
-                  <td><span className="row gap-7 center"><Avatar who={b.by} size={20}/>{nm(b.by)}</span></td>
+                  <td><span className="row gap-7 center"><Avatar who={b.by} name={ANALYSTS[b.by]?.name} size={20}/>{nm(b.by)}</span></td>
                   <td className="mono">{b.datasets}</td><td className="mono">{b.dur}</td><td className="mono t-faint">{b.when}</td>
                 </tr>
               );})}
@@ -157,6 +159,8 @@ function BuildsTab(){
     </div>
   );
 }
+function kindIcon(e){ return e.kind==="folder"?"folder":e.kind==="dataset"?"layers":/\.(png|jpe?g)$/.test(e.name)?"image":e.type==="Model"?"hdd":"doc"; }
+function kindColor(e){ return e.kind==="folder"?"var(--accent)":e.kind==="dataset"?"var(--ok)":e.type==="Model"?"var(--violet)":"var(--text-dim)"; }
 function DriveTab(){
   const [path,setPath] = useState("/blackfrost");
   const entries = DRIVE[path] || [];
@@ -176,17 +180,14 @@ function DriveTab(){
           </div>
           <div className="row gap-8"><button className="btn"><Icon name="download"/>Upload</button><button className="btn primary"><Icon name="plus"/>New dataset</button></div>
         </div>
-        <ArtifactList count={entries.length} empty="Empty folder.">
-          {entries.map((e,i)=>{
-            const meta = [ e.kind==="folder"?`${e.items} items`:e.type, e.rows||e.size, e.mod ].filter(Boolean).join(" · ");
-            return (
-              <ArtifactRow key={i} icon={artifactIcon(e)} color={artifactColor(e)} name={e.name} meta={meta}
-                onClick={()=>open(e)}
-                badge={e.built && <span className="t-faint row gap-4 center" style={{ fontSize:10.5 }}><Icon name="code" size={11}/>{e.built}</span>}
-                trailing={<>{e.owner && <span className="row gap-7 center t-dim" style={{ fontSize:12 }}><Avatar who={e.owner} size={20}/>{nm(e.owner)}</span>}{e.cls && <MarkingChip level={e.cls} size="sm"/>}{e.kind==="folder" && <span className="t-faint"><Icon name="chevron" size={15}/></span>}</>} />
-            );
-          })}
-        </ArtifactList>
+        <ArtifactExplorer items={entries} onOpen={open} columns={[
+          { header:"Name", render:e=><span className="row gap-10 center" style={{ minWidth:0, color:"var(--text)" }}><span style={{ color:kindColor(e) }}><Icon name={kindIcon(e)} size={17}/></span><span style={{ fontWeight: e.kind==="folder"?600:500 }}>{e.name}</span>{e.built && <span className="t-faint row gap-4 center" style={{ fontSize:10.5 }}><Icon name="code" size={11}/>{e.built}</span>}</span> },
+          { header:"Type", dim:true, render:e=>e.kind==="folder"?`${e.items} items`:e.type },
+          { header:"Rows / size", align:"right", render:e=><span className="mono">{e.rows||e.size||"—"}</span> },
+          { header:"Modified", render:e=><span className="mono t-faint">{e.mod}</span> },
+          { header:"Owner", render:e=>e.owner?<span className="row gap-7 center"><Avatar who={e.owner} name={ANALYSTS[e.owner]?.name} size={20}/>{nm(e.owner)}</span>:"—" },
+          { header:"Class", render:e=>e.cls?<MarkingChip level={e.cls} size="sm"/>:"—" },
+        ]} />
       </div>
     </div>
   );
@@ -214,9 +215,11 @@ export function CodeRepoView(){
           </div>
           <div className="row gap-8"><button className="btn sm"><Icon name="commit" size={14}/>Commit</button><button className="btn sm"><Icon name="branch" size={14}/>Open PR</button><button className="btn primary sm"><Icon name="play" size={14}/>Build</button></div>
         </div>
-        <div className="row gap-2" style={{ padding:"10px 28px 0" }}>
-          {(()=>{ const T=[["code","Code"],["history","History"],["builds","Builds"],["drive","Drive"]];
-            return <Tabs items={T.map(([,l])=>({ label:l }))} value={T.findIndex(([k])=>k===tab)} onChange={i=>setTab(T[i][0])} />; })()}
+        <div style={{ padding:"10px 28px 0" }}>
+          <Tabs variant="flush"
+            items={CR_TABS.map(([k,l])=>({ label:l }))}
+            value={CR_TABS.findIndex(([k])=>k===tab)}
+            onChange={i=>setTab(CR_TABS[i][0])} />
         </div>
       </div>
       {tab==="code" && <CodeTab/>}

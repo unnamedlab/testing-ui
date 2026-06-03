@@ -22,7 +22,7 @@ export const NAV_GROUPS = [
     { view: "notebook", icon: "note", label: "Notebook" },
   ]},
   { id: "act", label: "Decide & Act", items: [
-    { view: "cases", icon: "bell", label: "Alerts & triage" },
+    { view: "projects", icon: "folder", label: "Workspaces" },
     { view: "actions", icon: "bolt", label: "Actions" },
     { view: "reason", icon: "cpu", label: "Reason" },
     { view: "reports", icon: "doc", label: "Reports" },
@@ -45,14 +45,14 @@ export const NAV_GROUPS = [
 // they no longer sit in the rail, but stay searchable and open their parent in the right mode.
 export const NAV = [
   { view: "home", icon: "grid", label: "Workspace" },
-  { view: "projects", icon: "folder", label: "Workspaces" },
   ...NAV_GROUPS.flatMap(g => g.items),
+  { view: "cases", icon: "bell", label: "Alerts & Cases" },
   { view: "explore", icon: "table", label: "Explore" },
   { view: "graph2", icon: "route", label: "Graph Analysis" },
   { view: "brushing", icon: "focus", label: "Linked analysis" },
   { view: "evidence", icon: "doc", label: "Evidence" },
   { view: "health", icon: "pulse", label: "Data Health" },
-  { view: "admin", icon: "settings", label: "Admin · Sources" },
+  { view: "admin", icon: "settings", label: "Administración" },
 ];
 
 // The active case shown in the context switcher (single source of truth).
@@ -108,11 +108,11 @@ export function Rail({ view, go }) {
 
       <button type="button"
         className={"rail-btn rail-pinned" + (view==="admin"?" active":"")}
-        aria-label="Admin · Sources" aria-current={view==="admin" ? "page" : undefined}
+        aria-label="Administración" aria-current={view==="admin" ? "page" : undefined}
         onClick={()=>go("admin")}>
         <Icon name="settings" />
-        <span className="rail-text">Admin · Sources</span>
-        <span className="tip" aria-hidden="true">Admin · Sources</span>
+        <span className="rail-text">Administración</span>
+        <span className="tip" aria-hidden="true">Administración</span>
       </button>
 
       <button type="button" className="rail-toggle" onClick={toggle}
@@ -130,28 +130,28 @@ export const CRUMBS = {
   explore: ["Object Explorer"],
   ontology: ["Ontology Explorer"],
   resolve: ["Ontology", "Entity Resolution"],
-  graph: ["Case BLACKFROST", "Graph"],
-  map: ["Case BLACKFROST", "Geospatial"],
+  graph: ["Graph"],
+  map: ["Geospatial"],
   pipeline: ["Data Integration", "Pipeline Builder"],
   sources: ["Data Integration", "Sources"],
   notebook: ["Analysis", "Notebook"],
   watchlist: ["Watchlists"],
-  cases: ["Alerts & triage"],
-  dashboard: ["Case BLACKFROST", "Operations"],
+  cases: ["Alerts & Cases"],
+  dashboard: ["Operations"],
   workshop: ["Workshop"],
   actions: ["Operations", "Actions"],
   health: ["Data Integration", "Data Health"],
   models: ["Machine Learning", "Models"],
-  graph2: ["Case BLACKFROST", "Graph analysis"],
+  graph2: ["Graph analysis"],
   analytics: ["Analysis", "Flagged transactions"],
   reason: ["Reason", "Agent Studio"],
-  brushing: ["Case BLACKFROST", "Linked analysis"],
-  evidence: ["Case BLACKFROST", "Evidence"],
+  brushing: ["Linked analysis"],
+  evidence: ["Evidence"],
   code: ["Data Integration", "Repositories"],
   admin: ["Administration"],
   reports: ["Reports"],
   govern: ["Governance & Audit"],
-  entity: ["Case BLACKFROST", "Graph"],
+  entity: ["Graph"],
   search: ["Search"],
 };
 
@@ -192,7 +192,7 @@ function ContextSwitcher({ go }) {
           </button>
           <div className="ctx-divider" aria-hidden="true"></div>
           <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("cases"); }}>
-            <Icon name="bell" size={15}/><span className="ctx-item-name">All alerts &amp; triage</span>
+            <Icon name="bell" size={15}/><span className="ctx-item-name">All alerts &amp; cases</span>
           </button>
           <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("projects"); }}>
             <Icon name="folder" size={15}/><span className="ctx-item-name">All workspaces…</span>
@@ -204,12 +204,9 @@ function ContextSwitcher({ go }) {
 }
 
 export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, openNotifs, notifCount, openCopilot }) {
-  // F-09: for the entity 360 the trail comes from where it was opened (origin),
-  // not a constant — so opening an object from Search reads "Search › Name".
-  const raw = (view === "entity" ? CRUMBS[origin] : CRUMBS[view]) || ["Workspace"];
-  // The active case is shown in the context switcher, so drop it from the trail.
-  const crumbs = (raw[0] === "Case " + ACTIVE_CASE || raw[0] === "Case BLACKFROST") && raw.length > 1
-    ? raw.slice(1) : raw;
+  // F-09: for the entity 360 the trail comes from where it was opened (origin).
+  // F-04: el caso activo vive SÓLO en el conmutador de contexto — nunca en el breadcrumb.
+  const crumbs = (view === "entity" ? CRUMBS[origin] : CRUMBS[view]) || ["Workspace"];
   return (
     <header className="topbar">
       <ContextSwitcher go={go} />

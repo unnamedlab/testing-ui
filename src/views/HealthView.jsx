@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { CHK, DATASETS, DSTATUS, INCIDENTS, SEV } from '../data/data_health.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { Avatar, Badge, Icon, Lineage, Spark } from '../components/ui.jsx';
+import { Badge, Icon, Lineage, PageHeader, Spark, Stat } from '../components/ui.jsx';
+import { rulesByContext } from '../data/data_rules.js';
+import { RulesEngine } from '../components/RulesEngine.jsx';
 
 /* ============================================================
    AXIOM — Data Health · pipeline & dataset observability
@@ -47,9 +49,9 @@ function Drawer({ ds, onClose }){
           <div className="eyebrow" style={{ marginBottom:8 }}>Lineage</div>
           <div style={{ marginBottom:18 }}>
             <Lineage chain={[
-              { stage:"Origen", label:ds.pipeline, meta:"pipeline", glyph:"pipeline" },
-              { stage:"Dataset", label:ds.name, meta:ds.layer, glyph:"database" },
-              { stage:"Destino", label:"ontology", meta:"objetos enlazados", glyph:"box" },
+              { stage:"Pipeline", label: ds.pipeline, glyph:"pipeline" },
+              { stage:"Dataset", label: ds.name, glyph:"database" },
+              { stage:"Destino", label:"Ontology", meta:"published object", glyph:"share" },
             ]} />
           </div>
           <div className="row gap-8"><button className="btn" style={{ flex:1 }}><Icon name="play" size={14}/>Re-run build</button><button className="btn primary" style={{ flex:1 }}><Icon name="check" size={14}/>Acknowledge</button></div>
@@ -61,6 +63,9 @@ function Drawer({ ds, onClose }){
 
 export function HealthView(){
   const [sel,setSel] = useState(null);
+  const [showRules,setShowRules] = useState(false);
+  const [dataRules,setDataRules] = useState(() => rulesByContext("data"));
+  const toggleRule = (id) => setDataRules(rs => rs.map(r => r.id===id ? { ...r, on:!r.on } : r));
   const ds = sel ? DATASETS.find(d=>d.id===sel) : null;
   const healthy = DATASETS.filter(d=>d.status==="healthy").length;
   const fresh = DATASETS.filter(d=>d.slaOk).length;
@@ -69,20 +74,22 @@ export function HealthView(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom:20 }}>
-          <div><div className="eyebrow" style={{ marginBottom:6 }}>Data Integration · observability</div>
-            <h1 className="serif" style={{ fontSize:29, fontWeight:500, margin:0, letterSpacing:"-0.02em" }}>Data Health</h1></div>
-          <div className="row gap-8"><button className="btn"><Icon name="download"/>Export</button><button className="btn primary"><Icon name="bell"/>Alert rules</button></div>
-        </div>
+        <PageHeader eyebrow="Data Integration · observability" title="Data Health">
+          <button className="btn"><Icon name="download"/>Export</button>
+          <button className={"btn"+(showRules?" primary":"")} onClick={()=>setShowRules(s=>!s)}><Icon name="bell"/>Alert rules</button>
+        </PageHeader>
+        {showRules && (
+          <div className="card" style={{ padding:18, marginBottom:18 }}>
+            <div className="eyebrow" style={{ marginBottom:12 }}>Reglas de datos · contexto data</div>
+            <RulesEngine rules={dataRules} onToggle={toggleRule} />
+          </div>
+        )}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:18 }}>
           {[["Pipelines healthy",`${healthy}/${DATASETS.length}`,"pipeline", healthy===DATASETS.length?"var(--ok)":"var(--warn)"],
             ["Datasets fresh",`${fresh}/${DATASETS.length}`,"clock", fresh===DATASETS.length?"var(--ok)":"var(--warn)"],
             ["Checks passing",passPct+"%","check", passPct>=90?"var(--ok)":passPct>=75?"var(--warn)":"var(--alert)"],
             ["Open incidents",String(INCIDENTS.length),"alertTri", INCIDENTS.length?"var(--alert)":"var(--ok)"]].map(([l,v,ic,c])=>(
-            <div key={l} className="card" style={{ padding:16 }}>
-              <div className="row between center"><div className="eyebrow">{l}</div><span style={{ color:c }}><Icon name={ic} size={16}/></span></div>
-              <div className="mono" style={{ fontSize:25, fontWeight:600, marginTop:8, color:c }}>{v}</div>
-            </div>
+            <Stat key={l} label={l} value={v} icon={ic} valueColor={c} iconColor={c}/>
           ))}
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:20, alignItems:"start" }}>
@@ -97,7 +104,7 @@ export function HealthView(){
                     <td><StatusBadge s={d.status}/></td>
                     <td><span className="mono" style={{ fontSize:11.5, color: d.slaOk?"var(--text-dim)":"var(--alert)" }}>{d.last}</span></td>
                     <td><span className="mono" style={{ fontSize:11.5, color: d.pass===d.total?"var(--ok)":d.status==="building"?"var(--text-faint)":"var(--alert)" }}>{d.status==="building"?"—":d.pass+"/"+d.total}</span></td>
-                    <td><Spark data={d.spark} color={d.status==="failed"?"var(--alert)":d.status==="degraded"?"var(--warn)":"var(--accent)"} w={80} h={24}/></td>
+                    <td><Spark data={d.spark} w={80} h={24} color={d.status==="failed"?"var(--alert)":d.status==="degraded"?"var(--warn)":"var(--accent)"}/></td>
                     <td style={{ textAlign:"right", color:"var(--text-faint)" }}><Icon name="chevron" size={15}/></td>
                   </tr>
                 );})}

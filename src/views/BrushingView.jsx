@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { B_EDGES, B_ENTITIES } from '../data/data_brushing.js';
 import { Icon } from '../components/ui.jsx';
 import { GraphEdge, GraphNode, typeColor } from '../components/GraphCanvas.jsx';
@@ -96,12 +96,10 @@ function TimePanel({ active, isDim, onHover, onPick }){
   );
 }
 
-export function BrushingView({ selId, onSelect }){
-  const [sel,setSel] = useState(selId && EBY[selId] ? selId : null); // cluster ②: siembra desde la selección compartida
+export function BrushingView(){
+  const [sel,setSel] = useState(null);
   const [hover,setHover] = useState(null);
   const active = hover || sel;
-  // Cluster ②: reporta la selección al workbench para compartirla entre lentes.
-  useEffect(()=>{ if(onSelect) onSelect(sel); }, [sel]);
   const isDim = useMemo(()=> (id)=>{ if(!active) return false; if(id===active) return false; return !NEI[active]?.has(id); }, [active]);
   function pick(id){ setSel(s=>s===id?null:id); }
   const a = active ? EBY[active] : null;

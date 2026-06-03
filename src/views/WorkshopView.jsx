@@ -1,4 +1,4 @@
-import { Icon, SectionHead } from '../components/ui.jsx';
+import { Icon, PageHeader, SectionHead } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — WorkshopView (regenerado)
@@ -18,10 +18,9 @@ export function WorkshopView() {
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }} className="fade-in">
-        <div className="row between" style={{ alignItems: "flex-end", marginBottom: 22 }}>
-          <div><div className="eyebrow" style={{ marginBottom: 6 }}>Workshop</div><h1 className="serif" style={{ fontSize: 30, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>Aplicaciones operativas</h1></div>
+        <PageHeader eyebrow="Workshop" title="Aplicaciones operativas">
           <button className="btn primary"><Icon name="plus" />Nueva app</button>
-        </div>
+        </PageHeader>
         <SectionHead eyebrow="Publicadas" title="Tus apps" />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, marginBottom: 36 }}>
           {APPS.map((a) => (

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ENTITIES, ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { CASES, CASE_BY_ID, ANALYSTS } from '../data/data_ext.js';
-import { Badge, Bars, Icon, RiskPill, SectionHead, TypeGlyph } from '../components/ui.jsx';
+import { Badge, Icon, RiskPill, SectionHead, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 import { DossierModal } from '../components/Reports.jsx';
 
@@ -44,14 +44,17 @@ function StatusDot({ s }) {
 }
 
 // ---- editor blocks ----
-// Cluster ⑧: usa la primitiva compartida <Bars> de ui.jsx en vez de un bar-chart
-// reimplementado a mano (era el último holdout de Spark/Bars/Stat).
 function MiniBars() {
   const vals = [38, 62, 30, 81, 54, 72, 44, 90, 60];
   return (
     <div className="card" style={{ padding:"16px 18px" }}>
       <div className="row between center" style={{ marginBottom:14 }}><div className="eyebrow">Layering volume · 30 days</div><Badge kind="accent"><Icon name="sparkles" size={11}/>live</Badge></div>
-      <div style={{ overflow:"hidden" }}><Bars data={vals} w={680} h={96} color="var(--accent)" /></div>
+      <div className="row" style={{ alignItems:"flex-end", gap:7, height:96 }}>
+        {vals.map((v,i)=>(
+          <div key={i} style={{ flex:1, height:`${v}%`, borderRadius:"4px 4px 0 0",
+            background:`linear-gradient(180deg, var(--accent), color-mix(in oklab, var(--accent) 40%, transparent))` }} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -149,7 +152,7 @@ function Editor({ report, openEntity, onExport }) {
         <div className="row gap-8 center">
           <span className="t-faint mono" style={{ fontSize:11 }}>Autosaved</span>
           <button className="btn sm"><Icon name="user" size={14}/>Share</button>
-          <button className="btn primary sm" onClick={()=>onExport(blocks, title)}><Icon name="download" size={14}/>Export PDF</button>
+          <button className="btn primary sm" onClick={onExport}><Icon name="download" size={14}/>Export PDF</button>
         </div>
       </div>
 
@@ -195,7 +198,7 @@ function Editor({ report, openEntity, onExport }) {
 export function ReportsView({ openEntity, go }) {
   const [reports] = useState(SEED_REPORTS);
   const [selId, setSelId] = useState(SEED_REPORTS[0].id);
-  const [exp, setExp] = useState(null); // { blocks, title } cuando se exporta
+  const [dossier, setDossier] = useState(false);
   const sel = useMemo(()=>reports.find(r=>r.id===selId), [reports, selId]);
 
   return (
@@ -221,9 +224,9 @@ export function ReportsView({ openEntity, go }) {
         </div>
       </aside>
 
-      {sel && <Editor report={sel} openEntity={openEntity} onExport={(blocks,title)=>setExp({ blocks, title })} />}
+      {sel && <Editor report={sel} openEntity={openEntity} onExport={()=>setDossier(true)} />}
 
-      <DossierModal open={!!exp} caseId={sel?.caseId} blocks={exp?.blocks} title={exp?.title} onClose={()=>setExp(null)} />
+      <DossierModal open={dossier} caseId={sel?.caseId} onClose={()=>setDossier(false)} />
 
       <style>{`
         .rep-card { text-align:left; border:1px solid var(--line-soft); background:var(--bg-inset); border-radius:11px; padding:13px 14px; cursor:pointer; transition:border-color .14s, background .14s; }

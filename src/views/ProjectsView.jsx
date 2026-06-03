@@ -1,26 +1,14 @@
 import { useState } from 'react';
 import { ARTIFACTS, ACCESS_MATRIX, PROJ_ACTIVITY, PROJ_ROLES, PROJECTS } from '../data/data_projects.js';
 import { ALERTS, ANALYSTS } from '../data/data_ext.js';
-import { ENTITY_BY_ID } from '../data/data.js';
-import { Avatar, Badge, Icon, Stat, Tabs, TypeGlyph } from '../components/ui.jsx';
-import { ArtifactList, ArtifactRow, fileIcon as artFileIcon } from '../components/ArtifactExplorer.jsx';
+import { ArtifactExplorer, Avatar, Badge, Icon, Stat, Tabs } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
+import { AlertCard } from './CasesView.jsx';
 
 /* ============================================================
-   AXIOM — Workspaces (contenedor único · cluster ④)
-   El workspace ES el contenedor: permisos + hogar de artefactos
-   Y la investigación (alertas) del caso. Sustituye al antiguo
-   contenedor duplicado "Case" (CaseDetail) — BLACKFROST ya solo
-   existe una vez, como workspace.
+   AXIOM — Workspaces / Projects
+   The project is the container: permissions + home of artifacts.
    ============================================================ */
-
-// severidad de alerta (local, para la pestaña Alerts del workspace)
-const WS_SEV = {
-  critical:{ c:"var(--alert)", label:"Critical", badge:"alert" },
-  high:    { c:"var(--warn)",  label:"High",     badge:"warn" },
-  medium:  { c:"var(--info)",  label:"Medium",   badge:"info" },
-  low:     { c:"var(--text-faint)", label:"Low",  badge:"" },
-};
 
 const KIND = {
   chart:    { ic:"graph",    c:"var(--violet)", label:"Link chart" },
@@ -53,7 +41,7 @@ function KindGlyph({ kind, name, size }){
 function Stack({ members, size }){
   const s=size||26;
   return <span className="row" style={{ paddingLeft:6 }}>
-    {members.slice(0,5).map((m,i)=><span key={m} style={{ marginLeft:-6, position:"relative", zIndex:10-i, boxShadow:"0 0 0 2px var(--bg-1)", borderRadius:Math.round(s*0.28) }}><Avatar who={m} size={s}/></span>)}
+    {members.slice(0,5).map((m,i)=><span key={m} style={{ marginLeft:-6, position:"relative", zIndex:10-i, boxShadow:"0 0 0 2px var(--bg-1)", borderRadius:Math.round(s*0.28) }}><Avatar who={m} name={ANALYSTS[m]?.name} size={s}/></span>)}
     {members.length>5 && <span style={{ marginLeft:-6, width:s,height:s,borderRadius:Math.round(s*0.28),display:"grid",placeItems:"center",
       fontSize:s*0.36,fontWeight:600,background:"var(--bg-3)",color:"var(--text-dim)",boxShadow:"0 0 0 2px var(--bg-1)" }}>+{members.length-5}</span>}
   </span>;
@@ -132,39 +120,7 @@ function List({ onOpen }){
 }
 
 /* ---------------- detail ---------------- */
-const TABS = [["overview","Overview"],["alerts","Alerts"],["artifacts","Artifacts"],["files","Files"],["members","Members & roles"],["access","Access"],["activity","Activity"]];
-
-// Cluster ④: la investigación del caso vive ahora dentro del workspace. Las alertas
-// se filtran por su campo `case`, que coincide con el id del workspace.
-function AlertsTab({ p, openEntity, go }){
-  const list = ALERTS.filter(a=>a.case===p.id);
-  if(!list.length) return <div className="t-faint" style={{ fontSize:13, padding:"22px 2px" }}>No alerts on this workspace.</div>;
-  return (
-    <div className="col gap-14" style={{ maxWidth:1000 }}>
-      <div className="row between center">
-        <div className="eyebrow">Investigation alerts · {list.length}</div>
-        <button className="btn ghost sm" onClick={()=>go && go("cases")}>Open triage board <Icon name="arrowRight" size={13}/></button>
-      </div>
-      <div className="card" style={{ overflow:"hidden" }}>
-        <table className="tbl">
-          <thead><tr><th>Alert</th><th>Type</th><th>Severity</th><th>Subject</th><th>Status</th><th>SLA</th></tr></thead>
-          <tbody>
-            {list.map(a=>{ const ent=ENTITY_BY_ID[a.entity]; const sev=WS_SEV[a.sev]||WS_SEV.low; return (
-              <tr key={a.id} onClick={()=>ent&&openEntity&&openEntity(a.entity)} style={{ cursor: ent?"pointer":"default" }}>
-                <td><span className="row gap-8 center"><span style={{ width:7,height:7,borderRadius:"50%",background:sev.c,flex:"none" }}/><span className="mono" style={{ color:"var(--text)" }}>{a.id}</span></span><div className="t-dim" style={{ fontSize:12, marginTop:3 }}>{a.title}</div></td>
-                <td className="t-dim">{a.type}</td>
-                <td><Badge kind={sev.badge}>{sev.label}</Badge></td>
-                <td>{ent ? <span className="row gap-8 center"><TypeGlyph type={ent.type} size={22}/><span style={{ fontSize:12.5 }}>{ent.name}</span></span> : "—"}</td>
-                <td className="t-dim" style={{ textTransform:"capitalize" }}>{a.status}</td>
-                <td className="mono t-faint">{a.sla!=null?(a.sla===0?"breached":a.sla+"h"):"—"}</td>
-              </tr>
-            );})}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+const TABS = [["overview","Resumen"],["alerts","Alertas"],["artifacts","Artefactos"],["team","Equipo & acceso"],["activity","Actividad"]];
 
 function ArtifactCard({ a }){
   return (
@@ -178,7 +134,7 @@ function ArtifactCard({ a }){
         <span className="t-faint"><Icon name="dots" size={15}/></span>
       </div>
       <div className="t-dim" style={{ fontSize:12, marginBottom:12 }}>{a.meta}</div>
-      <div className="row between center"><Avatar who={a.owner} size={22}/><span className="t-faint mono" style={{ fontSize:11 }}>{a.updated}</span></div>
+      <div className="row between center"><Avatar who={a.owner} name={ANALYSTS[a.owner]?.name} size={22}/><span className="t-faint mono" style={{ fontSize:11 }}>{a.updated}</span></div>
     </div>
   );
 }
@@ -212,7 +168,7 @@ function Overview({ p }){
           <div className="row between center" style={{ marginBottom:12 }}><div className="eyebrow">Team · {p.members.length}</div><button className="btn ghost sm">Manage</button></div>
           <div className="col gap-10">
             {p.members.map(m=>(
-              <div key={m} className="row gap-10 center"><Avatar who={m} size={30}/>
+              <div key={m} className="row gap-10 center"><Avatar who={m} name={ANALYSTS[m]?.name} size={30}/>
                 <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[m].name}</div>
                   <div className="t-faint" style={{ fontSize:11.5 }}>{ANALYSTS[m].role}{m===p.lead?" · Lead":""}</div></div>
               </div>
@@ -275,12 +231,13 @@ function Files({ p }){
         <div style={{ fontSize:14, fontWeight:600 }}>Drop evidence to ingest</div>
         <div className="t-faint" style={{ fontSize:12.5, marginTop:4 }}>PDF, image, CSV or transcript — entities are extracted and linked into the ontology.</div>
       </div>
-      <ArtifactList count={files.length} empty="No evidence files yet.">
-        {files.map((f,i)=>(
-          <ArtifactRow key={i} icon={artFileIcon(f.name)} color="var(--text-dim)" name={f.name} meta={f.meta}
-            trailing={<>{f.cls && <MarkingChip level={f.cls} size="sm"/>}<Avatar who={f.owner} size={22}/><span className="t-faint mono" style={{ fontSize:11, width:30, textAlign:"right" }}>{f.updated}</span></>} />
-        ))}
-      </ArtifactList>
+      <ArtifactExplorer items={files} empty="No evidence files yet." columns={[
+        { header:"File", render:f=><span className="row gap-12 center"><KindGlyph kind="file" name={f.name} size={28}/><span style={{ fontWeight:600 }}>{f.name}</span></span> },
+        { header:"Detail", dim:true, render:f=><span className="mono" style={{ fontSize:12 }}>{f.meta}</span> },
+        { header:"Class", render:f=>f.cls?<MarkingChip level={f.cls} size="sm"/>:"—" },
+        { header:"Owner", render:f=><Avatar who={f.owner} name={ANALYSTS[f.owner]?.name} size={20}/> },
+        { header:"Updated", align:"right", render:f=><span className="mono t-faint">{f.updated}</span> },
+      ]} />
     </div>
   );
 }
@@ -295,7 +252,7 @@ function Members({ p }){
             <tbody>
               {p.members.map(m=>(
                 <tr key={m}>
-                  <td><span className="row gap-10 center"><Avatar who={m} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{ANALYSTS[m].name}</span></span></td>
+                  <td><span className="row gap-10 center"><Avatar who={m} name={ANALYSTS[m]?.name} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{ANALYSTS[m].name}</span></span></td>
                   <td>{ANALYSTS[m].role}{m===p.lead && <span className="t-accent" style={{ marginLeft:6, fontSize:11 }}>· Lead</span>}</td>
                   <td><Badge kind="ok" dot>active</Badge></td>
                 </tr>
@@ -379,7 +336,7 @@ function Activity({ p }){
         <div key={i} className="row gap-12 center" style={{ padding:"12px 18px", borderBottom: i<feed.length-1?"1px solid var(--line-soft)":"none" }}>
           {a[3]==="system" ? <span style={{ color:"var(--accent)" }}><Icon name="sparkles" size={16}/></span>
             : a[3]==="alert" ? <span style={{ color:"var(--alert)" }}><Icon name="alertTri" size={16}/></span>
-            : <Avatar who={a[0]} size={26}/>}
+            : <Avatar who={a[0]} name={ANALYSTS[a[0]]?.name} size={26}/>}
           <div style={{ flex:1, minWidth:0, fontSize:13 }}>
             <b style={{ fontWeight:600 }}>{a[0]==="SYS"?"System":(ANALYSTS[a[0]]?.name||a[0])}</b> <span className="t-dim">{a[1]}</span>
           </div>
@@ -389,7 +346,24 @@ function Activity({ p }){
     </div>
   );
 }
-function Detail({ p, onBack, openEntity, go }){
+function WorkspaceAlerts({ p }){
+  const alerts = ALERTS.filter(a=>a.case===p.id);
+  return (
+    <div>
+      <div className="row between center" style={{ marginBottom:14 }}>
+        <div className="eyebrow">Alertas del workspace · {alerts.length}</div>
+        <button className="btn sm"><Icon name="bell" size={14}/>Reglas de alerta</button>
+      </div>
+      {alerts.length===0
+        ? <div className="t-faint" style={{ padding:"28px", textAlign:"center", fontSize:13 }}>Sin alertas abiertas en este workspace.</div>
+        : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12 }}>
+            {alerts.map(a=><AlertCard key={a.id} a={a}/>)}
+          </div>}
+    </div>
+  );
+}
+
+function Detail({ p, onBack }){
   const [tab,setTab] = useState("overview");
   const arts = (ARTIFACTS[p.id]||[]).length;
   return (
@@ -421,31 +395,31 @@ function Detail({ p, onBack, openEntity, go }){
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, margin:"20px 0 4px" }}>
             <Stat label="Linked objects" value={p.counts.objects.toLocaleString()} icon="share"/>
-            <Stat label="Open alerts" value={p.counts.alerts} icon="alertTri" valueColor={p.counts.alerts?"var(--alert)":"var(--text)"}/>
+            <Stat label="Open alerts" value={p.counts.alerts} icon="alertTri" valueColor={p.counts.alerts?"var(--alert)":undefined}/>
             <Stat label="Team" value={p.members.length} icon="user"/>
             <Stat label="Artifacts" value={arts} icon="layers"/>
           </div>
-          <div className="row gap-2" style={{ marginTop:14 }}>
-            <Tabs items={TABS.map(([k,l])=>({ label:l, badge: k==="artifacts"?arts : k==="alerts"?(p.counts.alerts||undefined) : undefined }))}
-              value={TABS.findIndex(([k])=>k===tab)} onChange={i=>setTab(TABS[i][0])} />
+          <div style={{ marginTop:14 }}>
+            <Tabs variant="flush"
+              items={TABS.map(([k,l])=>({ label:l, badge:k==="artifacts"?arts:undefined }))}
+              value={TABS.findIndex(([k])=>k===tab)}
+              onChange={i=>setTab(TABS[i][0])} />
           </div>
         </div>
       </div>
       <div style={{ maxWidth:1180, margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in" key={tab}>
         {tab==="overview" && <Overview p={p}/>}
-        {tab==="alerts" && <AlertsTab p={p} openEntity={openEntity} go={go}/>}
+        {tab==="alerts" && <WorkspaceAlerts p={p}/>}
         {tab==="artifacts" && <Artifacts p={p}/>}
-        {tab==="files" && <Files p={p}/>}
-        {tab==="members" && <Members p={p}/>}
-        {tab==="access" && <Access p={p}/>}
+        {tab==="team" && <div className="col gap-24"><Members p={p}/><Access p={p}/></div>}
         {tab==="activity" && <Activity p={p}/>}
       </div>
     </div>
   );
 }
 
-export function ProjectsView({ openEntity, go }){
+export function ProjectsView(){
   const [selId,setSelId] = useState(null);
   const p = selId ? PROJECTS.find(x=>x.id===selId) : null;
-  return p ? <Detail p={p} onBack={()=>setSelId(null)} openEntity={openEntity} go={go}/> : <List onOpen={setSelId}/>;
+  return p ? <Detail p={p} onBack={()=>setSelId(null)}/> : <List onOpen={setSelId}/>;
 }

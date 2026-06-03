@@ -4,6 +4,8 @@ import { EDGES, ENTITY_BY_ID, TRANSACTIONS, TYPE_BY_ID, fmtMoney, riskLabel } fr
 import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx';
 import { Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph } from '../components/ui.jsx';
 
+const ENT_TABS = [["overview","Overview"],["connections","Connections"],["activity","Timeline"],["transactions","Transactions"],["lineage","Lineage & access"]];
+
 /* ============================================================
    AXIOM — Entity 360° profile
    ============================================================ */
@@ -80,9 +82,11 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
               </div>
             </div>
           </div>
-          <div className="row gap-2" style={{ marginTop:18 }}>
-            {(()=>{ const T=[["overview","Overview"],["connections","Connections · "+conns.length],["activity","Timeline"],["transactions","Transactions"],["lineage","Lineage & access"]];
-              return <Tabs items={T.map(([,l])=>({ label:l }))} value={T.findIndex(([k])=>k===tab)} onChange={i=>setTab(T[i][0])} />; })()}
+          <div style={{ marginTop:18 }}>
+            <Tabs variant="flush"
+              items={ENT_TABS.map(([k,l])=>({ label:l, badge:k==="connections"?conns.length:undefined }))}
+              value={ENT_TABS.findIndex(([k])=>k===tab)}
+              onChange={i=>setTab(ENT_TABS[i][0])} />
           </div>
         </div>
       </div>
@@ -160,7 +164,7 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
                 <div className="col gap-12">
                   {comments.map((c,i)=>(
                     <div key={i} className="row gap-10" style={{ alignItems:"flex-start" }}>
-                      <Avatar who={c.who} size={28}/>
+                      <Avatar who={c.who} name={ANALYSTS[c.who]?.name} size={28}/>
                       <div style={{ flex:1, minWidth:0 }}>
                         <div className="row gap-8 center"><span style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[c.who].name}</span><span className="t-faint mono" style={{ fontSize:10.5 }}>{c.at} · on {c.on}</span></div>
                         <p style={{ fontSize:13, lineHeight:1.5, margin:"3px 0 0" }} className="t-dim" dangerouslySetInnerHTML={{ __html: c.text.replace(/@(\w+)/g,"<b style='color:var(--accent)'>@$1</b>") }} />

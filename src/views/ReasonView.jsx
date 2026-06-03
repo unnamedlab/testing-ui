@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { AGENTS, EVALS, FUNCTIONS, TOOLS } from '../data/data_agents.js';
+
+const RSN_TABS = [["agents","Agent Studio"],["logic","Logic functions"],["evals","Evals"]];
 import { ENTITY_BY_ID } from '../data/data.js';
-import { Badge, Icon, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Reason · Agent / Logic builder
@@ -153,9 +155,7 @@ function LogicTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1000, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Reason · Logic</div>
-        <h1 className="serif" style={{ fontSize:27, fontWeight:500, margin:"0 0 4px", letterSpacing:"-0.02em" }}>Functions</h1>
-        <div className="t-dim" style={{ fontSize:14, marginBottom:20 }}>Reusable, typed building blocks — deterministic logic the agents and the ontology call.</div>
+        <PageHeader eyebrow="Reason · Logic" title="Functions" sub="Reusable, typed building blocks — deterministic logic the agents and the ontology call." />
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:16 }}>
           {FUNCTIONS.map(f=>(
             <div key={f.name} className="card" style={{ padding:18 }}>
@@ -173,8 +173,7 @@ function EvalsTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:920, margin:"0 auto" }} className="fade-in">
-        <div className="eyebrow" style={{ marginBottom:6 }}>Reason · Evaluation</div>
-        <h1 className="serif" style={{ fontSize:27, fontWeight:500, margin:"0 0 18px", letterSpacing:"-0.02em" }}>Evals</h1>
+        <PageHeader eyebrow="Reason · Evaluation" title="Evals" />
         <div className="card" style={{ overflow:"hidden" }}>
           <table className="tbl">
             <thead><tr><th>Agent</th><th>Test cases</th><th>Passing</th><th>Score</th><th>Last run</th><th></th></tr></thead>
@@ -201,8 +200,10 @@ export function ReasonView(){
   return (
     <>
       <div className="row between center" style={{ padding:"0 28px", borderBottom:"1px solid var(--line-soft)", background:"var(--bg-1)", flex:"none" }}>
-        {(()=>{ const T=[["agents","Agent Studio"],["logic","Logic functions"],["evals","Evals"]];
-          return <Tabs items={T.map(([,l])=>({ label:l }))} value={T.findIndex(([k])=>k===tab)} onChange={i=>setTab(T[i][0])} />; })()}
+        <Tabs variant="flush"
+          items={RSN_TABS.map(([k,l])=>({ label:l }))}
+          value={RSN_TABS.findIndex(([k])=>k===tab)}
+          onChange={i=>setTab(RSN_TABS[i][0])} />
         {tab==="agents" && <button className="btn primary sm"><Icon name="check" size={14}/>Publish agent</button>}
       </div>
       {tab==="agents" && <AgentsTab/>}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ENTITIES, ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { ANALYSTS, CASES, CLASS_LEVELS } from '../data/data_ext.js';
-import { AUDIT_KINDS, AUDIT_LOG, auditByKind } from '../data/data_audit.js';
+import { AUDIT_EVENTS, AUDIT_KIND_META } from '../data/data_audit.js';
 import { Badge, Icon, Tabs, TypeGlyph } from '../components/ui.jsx';
 import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx';
 
@@ -12,13 +12,7 @@ import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx'
    review queue, classification markings and data lineage.
    ============================================================ */
 
-const ACTORS = Object.keys(ANALYSTS || {}).slice(0, 5);
 const A = (k) => ANALYSTS?.[k]?.name || k;
-const pick = (arr, i) => arr[i % arr.length];
-
-// Cluster ⑥: el feed de gobernanza es ahora una LENTE sobre el registro único
-// (data_audit.AUDIT_LOG) — ya no un AUDIT propio reconstruido aquí.
-const KIND_META = AUDIT_KINDS;
 
 const REQUESTS = [
   { who: "J. Okafor",  role: "Read only", scope: "Case BLACKFROST", reason: "Cross-team liaison review", cls: "SECRET" },
@@ -40,12 +34,12 @@ function ClsChip({ c }) {
 
 function AuditLog() {
   const [f, setF] = useState("all");
-  const rows = auditByKind(f);
-  const filters = [["all", "All"], ...Object.entries(AUDIT_KINDS).map(([k, m]) => [k, m.label])];
+  const rows = f === "all" ? AUDIT_EVENTS : AUDIT_EVENTS.filter(r => r.kind === f);
+  const filters = [["all","All"],["action","Actions"],["access","Access"],["export","Exports"],["view","Views"],["system","System"],["auth","Sessions"]];
   return (
     <div style={{ maxWidth:1040, margin:"0 auto" }} className="fade-in">
       <div className="row between center" style={{ marginBottom:16 }}>
-        <div className="row gap-6 wrap">{filters.map(([k,l])=>(
+        <div className="row gap-6">{filters.map(([k,l])=>(
           <button key={k} className={"chip"+(f===k?" on":"")} onClick={()=>setF(k)}>{l}</button>
         ))}</div>
         <button className="btn ghost sm"><Icon name="download" size={13}/>Export log</button>
@@ -54,11 +48,11 @@ function AuditLog() {
         <table className="tbl">
           <thead><tr><th>Event</th><th>Actor</th><th>Object</th><th>Class</th><th>When</th></tr></thead>
           <tbody>
-            {rows.map((r,i)=>{ const m=KIND_META[r.kind]||KIND_META.view; return (
-              <tr key={r.id||i}>
-                <td><span className="row gap-9 center"><span style={{ width:26,height:26,borderRadius:7,flex:"none",display:"grid",placeItems:"center",color:m.c,background:`color-mix(in oklab, ${m.c} 14%, transparent)` }}><Icon name={m.icon} size={14}/></span><span style={{ fontWeight:500 }}>{r.action}</span></span></td>
+            {rows.map((r,i)=>{ const m=AUDIT_KIND_META[r.kind]||{c:"var(--text-dim)",icon:"dots"}; const o=ENTITY_BY_ID[r.object]; return (
+              <tr key={i}>
+                <td><span className="row gap-9 center"><span style={{ width:26,height:26,borderRadius:7,flex:"none",display:"grid",placeItems:"center",color:m.c,background:`color-mix(in oklab, ${m.c} 14%, transparent)` }}><Icon name={m.icon} size={14}/></span><span style={{ fontWeight:500 }}>{r.event}</span></span></td>
                 <td className="t-dim">{A(r.actor)}</td>
-                <td>{r.target || "—"}</td>
+                <td>{o ? o.name : (r.target || "—")}</td>
                 <td><ClsChip c={r.cls} /></td>
                 <td className="mono t-faint" style={{ whiteSpace:"nowrap" }}>{r.ts}</td>
               </tr>
@@ -166,8 +160,11 @@ export function GovernanceView() {
   const [tab, setTab] = useState("audit");
   return (
     <div style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
-      <div className="row gap-2" style={{ padding:"0 28px", borderBottom:"1px solid var(--line-soft)", background:"var(--bg-1)", flex:"none" }}>
-        <Tabs items={TABS.map(([,l])=>({ label:l }))} value={TABS.findIndex(([k])=>k===tab)} onChange={i=>setTab(TABS[i][0])} />
+      <div style={{ padding:"0 28px", background:"var(--bg-1)", flex:"none", borderBottom:"1px solid var(--line-soft)" }}>
+        <Tabs variant="flush"
+          items={TABS.map(([k,l])=>({ label:l }))}
+          value={TABS.findIndex(([k])=>k===tab)}
+          onChange={i=>setTab(TABS[i][0])} />
       </div>
       <div className="content" style={{ padding:"22px 28px 60px" }}>
         {tab==="audit" && <AuditLog />}

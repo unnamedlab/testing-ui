@@ -3,6 +3,8 @@
    Sanctions-evasion / maritime smuggling investigation
    ============================================================ */
 
+import { pickWorkspaces } from './data_workspaces.js';
+
 // ---- Object type ontology ----
 export const OBJECT_TYPES = [
   { id: "person",  name: "Person",       cls: "tc-person",   glyph: "user",     count: 1284,  desc: "Natural persons: directors, beneficial owners, crew, contacts." },
@@ -168,12 +170,18 @@ export const APPS = [
   { id: "workshop", name: "Workshop", desc: "Build analytic apps", icon: "blocks", view: "dashboard", color: "oklch(0.74 0.13 330)" },
 ];
 
-export const PROJECTS = [
-  { id: "blackfrost", name: "Case BLACKFROST", sub: "Sanctions evasion · maritime", updated: "3m ago", members: 7, alerts: 12, pinned: true, progress: 64 },
-  { id: "tradewind", name: "Operation TRADEWIND", sub: "Trade-based laundering", updated: "1h ago", members: 4, alerts: 3, progress: 38 },
-  { id: "supply", name: "Supply Chain Integrity", sub: "Tier-2 supplier risk", updated: "Yesterday", members: 11, alerts: 0, progress: 81 },
-  { id: "fraud", name: "Card Fraud Ring NE-7", sub: "Financial crime", updated: "2d ago", members: 5, alerts: 6, progress: 52 },
-];
+// Tarjetas ligeras de la Home. Proyección de WORKSPACES (fuente única). `members`
+// aquí es el TAMAÑO de equipo (w.team), no la lista nombrada (w.members).
+export const PROJECTS = pickWorkspaces(["blackfrost", "tradewind", "supply", "fraud"]).map((w) => ({
+  id: w.id,
+  name: w.nameEn,
+  sub: w.subEn,
+  updated: w.updated,
+  members: w.team,
+  alerts: w.counts.alerts,
+  pinned: w.pinned,
+  progress: w.progress,
+}));
 
 export const ACTIVITY = [
   { who: "Entity Resolution", what: "merged 14 duplicate Person objects", when: "2m", kind: "system" },

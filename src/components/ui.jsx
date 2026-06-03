@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
+import { EDGES, TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
 
 /* ============================================================
    AXIOM — Icons + shared UI primitives
@@ -205,17 +205,33 @@ export function SectionHead({ eyebrow, title, children }) {
   );
 }
 
+// PageHeader — cabecera de VISTA (eyebrow + título + acciones) con UN tamaño canónico.
+// Resuelve F-05: antes cada vista declaraba su propio fontSize de H1 (26/27/28/29/30…) inline.
+// Los títulos hero/detalle (entidad, caso, workspace, welcome) conservan su escala mayor aparte.
+export function PageHeader({ eyebrow, title, sub, children }) {
+  return (
+    <div className="row between center" style={{ marginBottom: 18, gap: 16 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {eyebrow && <div className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</div>}
+        <h1 className="serif" style={{ fontSize: 28, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>{title}</h1>
+        {sub && <div className="t-dim" style={{ fontSize: 14, marginTop: 6, maxWidth: "72ch" }}>{sub}</div>}
+      </div>
+      {children && <div className="row gap-8 center" style={{ flex: "none" }}>{children}</div>}
+    </div>
+  );
+}
+
 // stat card
-export function Stat({ label, value, sub, trend, series, color, icon, valueColor }) {
+export function Stat({ label, value, sub, trend, series, color, icon, valueColor, iconColor }) {
   return (
     <div className="card" style={{ padding: 16, display:"flex", flexDirection:"column", gap:10, minWidth:0 }}>
       <div className="row between center">
         <div className="eyebrow">{label}</div>
-        {icon && <span className="t-faint"><Icon name={icon} size={16}/></span>}
+        {icon && <span className={iconColor?undefined:"t-faint"} style={iconColor?{ color: iconColor }:undefined}><Icon name={icon} size={16}/></span>}
       </div>
       <div className="row between center" style={{ gap:10 }}>
         <div>
-          <div className="mono" style={{ fontSize: 26, fontWeight: 600, lineHeight:1, letterSpacing:"-0.02em", color: valueColor||"var(--text)" }}>{value}</div>
+          <div className="mono" style={{ fontSize: 26, fontWeight: 600, lineHeight:1, letterSpacing:"-0.02em", color: valueColor }}>{value}</div>
           {sub && <div style={{ fontSize:12, marginTop:6 }} className={trend==="up"?"t-accent":trend==="down"?"":"t-dim"}>
             <span style={{ color: trend==="up"?"var(--ok)":trend==="down"?"var(--alert)":"var(--text-faint)" }}>{sub}</span>
           </div>}
@@ -322,6 +338,81 @@ export function Lineage({ chain }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ---- ObjectList: lista de objetos de la ontología compartida (Explore + Search) ----
+// items: entidades ya filtradas. variant "table" (Explore) | "cards" (Search).
+export function ObjectList({ items, variant = "cards", openEntity, emptyText }) {
+  if (!items || items.length === 0)
+    return <div className="t-faint" style={{ textAlign: "center", padding: "26px 0", fontSize: 13 }}>{emptyText || "Sin objetos que coincidan."}</div>;
+
+  if (variant === "table") {
+    return (
+      <div className="card" style={{ overflow: "hidden" }}>
+        <table className="tbl">
+          <thead><tr><th>Objeto</th><th>Tipo</th><th>Detalle</th><th style={{ textAlign: "right" }}>Riesgo</th><th></th></tr></thead>
+          <tbody>
+            {items.map((e) => (
+              <tr key={e.id} onClick={() => openEntity && openEntity(e.id)}>
+                <td><span className="row gap-10 center"><TypeGlyph type={e.type} size={28} /><span style={{ color: "var(--text)", fontWeight: 600 }}>{e.name}</span>{e.watch && <span style={{ color: "var(--alert)" }}><Icon name="bookmark" size={13} /></span>}</span></td>
+                <td>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type}</td>
+                <td className="t-dim">{e.sub}</td>
+                <td style={{ textAlign: "right" }}><RiskPill r={e.risk} /></td>
+                <td style={{ textAlign: "right", color: "var(--text-faint)" }}><Icon name="chevron" size={15} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="col gap-8">
+      {items.map((e) => (
+        <button key={e.id} className="card hover" onClick={() => openEntity && openEntity(e.id)} style={{ padding: 14, textAlign: "left", cursor: "pointer" }}>
+          <div className="row gap-14 center">
+            <TypeGlyph type={e.type} size={40} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="row gap-8 center"><span style={{ fontSize: 15, fontWeight: 600 }}>{e.name}</span>{e.watch && <Badge kind="alert" dot>watchlist</Badge>}</div>
+              <div className="t-dim" style={{ fontSize: 13, marginTop: 2 }}>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type} · {e.sub}</div>
+            </div>
+            <div className="row gap-16 center">
+              <div className="col" style={{ alignItems: "flex-end" }}>
+                <span className="eyebrow">Connections</span>
+                <span className="mono" style={{ fontSize: 15 }}>{EDGES.filter((ed) => ed.s === e.id || ed.t === e.id).length}</span>
+              </div>
+              <RiskPill r={e.risk} />
+              <span className="t-faint"><Icon name="arrowRight" size={16} /></span>
+            </div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ---- ArtifactExplorer: tabla de artefactos/ficheros parametrizable (Drive · Files) ----
+// items: filas · columns: [{ header, align?, dim?, key?, render?(item) }] · onOpen?(item)
+export function ArtifactExplorer({ items, columns, onOpen, empty }) {
+  if (!items || items.length === 0)
+    return <div className="t-faint" style={{ padding: "28px", textAlign: "center", fontSize: 13 }}>{empty || "Sin elementos."}</div>;
+  return (
+    <div className="card" style={{ overflow: "hidden" }}>
+      <table className="tbl">
+        <thead><tr>{columns.map((c, i) => <th key={i} style={c.align ? { textAlign: c.align } : undefined}>{c.header}</th>)}</tr></thead>
+        <tbody>
+          {items.map((it, i) => (
+            <tr key={it.id || it.name || i} onClick={onOpen ? () => onOpen(it) : undefined} style={onOpen ? { cursor: "pointer" } : undefined}>
+              {columns.map((c, j) => (
+                <td key={j} className={c.dim ? "t-dim" : undefined} style={c.align ? { textAlign: c.align } : undefined}>{c.render ? c.render(it) : it[c.key]}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

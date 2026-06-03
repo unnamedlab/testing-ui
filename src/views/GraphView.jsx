@@ -32,7 +32,7 @@ export function Minimap({ pos, view, size, sel, visible }) {
   );
 }
 
-export function GraphView({ openEntity, focusId, onSelect }) {
+export function GraphView({ openEntity, focusId }) {
   // node positions in graph space
   const [pos, setPos] = useState(() => {
     const m = {};
@@ -55,8 +55,6 @@ export function GraphView({ openEntity, focusId, onSelect }) {
   const hiddenByTime = useCallback((eid)=> temporal && ENTITY_BY_ID[eid].since > t, [temporal, t]);
 
   useEffect(()=>{ if(focusId){ setSel(focusId); setRevealed(new Set([focusId])); } }, [focusId]);
-  // Cluster ②: reporta la selección al workbench para compartirla entre lentes.
-  useEffect(()=>{ if(onSelect) onSelect(sel); }, [sel]);
 
   // track svg size for minimap viewport
   useEffect(()=>{

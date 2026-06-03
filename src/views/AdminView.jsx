@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ROLES, USERS } from '../data/data_admin.js';
-import { ANALYSTS, AUDIT, CONNECTORS } from '../data/data_ext.js';
+import { ANALYSTS, CONNECTORS } from '../data/data_ext.js';
 import { MarkingChip } from '../components/Security.jsx';
-import { Avatar, Badge, Icon, SectionHead } from '../components/ui.jsx';
+import { Avatar, Badge, Icon, PageHeader, SectionHead } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Admin: data sources, onboarding wizard, audit log
@@ -80,7 +80,6 @@ export function SourceWizard({ open, onClose }){
 }
 
 export function AdminView(){
-  const [tab, setTab] = useState("access");
   const [users, setUsers] = useState(USERS);
   const [inviting, setInviting] = useState(false);
   const [inv, setInv] = useState({ name:"", role:"Analyst" });
@@ -93,22 +92,11 @@ export function AdminView(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
       <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom:20 }}>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div className="eyebrow" style={{ marginBottom:6 }}>Administration</div>
-            <h1 className="serif" style={{ fontSize:28, fontWeight:500, margin:0 }}>{tab==="audit"?"Audit log":"Users & roles"}</h1>
-          </div>
-          <div className="row gap-10 center">
-            <div className="seg">
-              <button className={tab==="access"?"on":""} onClick={()=>setTab("access")}>Access</button>
-              <button className={tab==="audit"?"on":""} onClick={()=>setTab("audit")}>Audit</button>
-            </div>
-            {tab==="access" && <button className="btn primary" onClick={()=>setInviting(true)}><Icon name="plus"/>Invite user</button>}
-          </div>
-        </div>
+        <PageHeader eyebrow="Administration" title="Users & roles" sub="Usuarios, roles y permisos. El registro de auditoría vive ahora en Governance.">
+          <button className="btn primary" onClick={()=>setInviting(true)}><Icon name="plus"/>Invite user</button>
+        </PageHeader>
 
-        {tab==="access" ? (
-          <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:24 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:24 }}>
             <div>
               <SectionHead eyebrow={"Users · "+USERS.length} title="Members" />
               <div className="card" style={{ overflow:"hidden" }}>
@@ -117,7 +105,7 @@ export function AdminView(){
                   <tbody>
                     {users.map(u=>(
                       <tr key={u.id}>
-                        <td><span className="row gap-10 center"><Avatar who={u.id} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{u.name}</span></span></td>
+                        <td><span className="row gap-10 center"><Avatar who={u.id} name={ANALYSTS[u.id]?.name} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{u.name}</span></span></td>
                         <td>{u.role}</td>
                         <td><MarkingChip level={u.clearance==="TS/SCI"?"SECRET":u.clearance} size="sm"/></td>
                         <td><Badge kind={u.status==="active"?"ok":"alert"} dot>{u.status}</Badge></td>
@@ -145,25 +133,6 @@ export function AdminView(){
               </div>
             </div>
           </div>
-        ) : (
-          <div className="card" style={{ overflow:"hidden" }}>
-            <table className="tbl">
-              <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Target</th><th>Classification</th><th>Source IP</th></tr></thead>
-              <tbody>
-                {AUDIT.map((a,i)=>(
-                  <tr key={i}>
-                    <td className="mono">{a.time}</td>
-                    <td><span className="row gap-8 center">{a.actor==="SYS"?<span style={{color:"var(--accent)"}}><Icon name="sparkles" size={15}/></span>:<Avatar who={a.actor} size={22}/>}<span style={{color:"var(--text)"}}>{a.actor==="SYS"?"System":ANALYSTS[a.actor]?.name||a.actor}</span></span></td>
-                    <td><span style={{ color:"var(--text-dim)" }}>{a.action}</span></td>
-                    <td style={{ color:"var(--text)" }}>{a.target}</td>
-                    <td><MarkingChip level={a.cls} size="sm"/></td>
-                    <td className="mono">{a.ip}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
       {inviting && (
         <div onClick={()=>setInviting(false)} style={{ position:"fixed", inset:0, zIndex:140, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>

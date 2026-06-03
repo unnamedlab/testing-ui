@@ -1,20 +1,26 @@
 /* AXIOM — data_projects.js · fixture de demo regenerado
    Consumido por ProjectsView (PROJECTS, ARTIFACTS, ACCESS_MATRIX, PROJ_ROLES, PROJ_ACTIVITY).
-   ids de members alineados con ANALYSTS de data_ext.js → AR · MC · JD. */
-export const PROJECTS = [
-  { id: "blackfrost", name: "Operación Blackfrost", sub: "Blanqueo trade-finance · Aurora–Helios", cls: "SECRET", status: "Active", scheduled: false, lead: "AR", members: ["AR", "MC", "JD"], opened: "28 abr 2026", updated: "12m", progress: 62,
-    summary: "Red coordinada de blanqueo vía trade-finance entre Aurora Trading y Helios Maritime. Riesgo de red 84/100.", counts: { objects: 1284, alerts: 12, sources: 6 },
-    tasks: [["Mapear cadena Aurora→Helios", "done"], ["UBO de Northwind", "doing"], ["Confirmar gaps AIS", "doing"], ["Redactar STR", "todo"]] },
-  { id: "nightjar", name: "Operación Nightjar", sub: "Evasión de sanciones · marítimo", cls: "SECRET", status: "Active", scheduled: false, lead: "MC", members: ["MC", "JD"], opened: "14 may 2026", updated: "1d", progress: 38,
-    summary: "Seguimiento de MV Nightjar y su fletador Meridian por escalas en terminales sancionadas.", counts: { objects: 612, alerts: 5, sources: 4 },
-    tasks: [["Verificar manifiestos", "doing"], ["Cruce OFAC", "todo"]] },
-  { id: "aiswatch", name: "AIS Watch", sub: "Monitor marítimo permanente", cls: "CONFIDENTIAL", status: "Active", scheduled: true, lead: "AR", members: ["AR", "JD"], opened: "02 feb 2026", updated: "30m", progress: 90,
-    summary: "Monitor permanente de gaps AIS y rendezvous en el Mediterráneo oriental.", counts: { objects: 4120, alerts: 0, sources: 2 },
-    tasks: [["Revisar umbral de gap", "todo"]] },
-  { id: "meridian", name: "Revisión Meridian", sub: "Due diligence de forwarder", cls: "CONFIDENTIAL", status: "Review", scheduled: false, lead: "MC", members: ["MC", "AR"], opened: "20 may 2026", updated: "4h", progress: 70,
-    summary: "Diligencia debida sobre Meridian Logistics como contraparte.", counts: { objects: 188, alerts: 1, sources: 3 },
-    tasks: [["Recopilar UBO", "done"], ["Informe de cierre", "doing"]] },
-];
+   ids de members alineados con ANALYSTS de data_ext.js → AR · MC · JD.
+   PROJECTS es ahora una PROYECCIÓN de WORKSPACES (fuente única en data_workspaces.js):
+   blackfrost reporta las mismas cifras que Cases/Home. */
+import { pickWorkspaces } from './data_workspaces.js';
+
+export const PROJECTS = pickWorkspaces(["blackfrost", "nightjar", "aiswatch", "meridian"]).map((w) => ({
+  id: w.id,
+  name: w.name,
+  sub: w.sub,
+  cls: w.classification,
+  status: w.status,
+  scheduled: w.scheduled,
+  lead: w.lead,
+  members: w.members,
+  opened: w.opened,
+  updated: w.updated,
+  progress: w.progress,
+  summary: w.summary,
+  counts: w.counts,
+  tasks: w.tasks,
+}));
 export const ARTIFACTS = {
   blackfrost: [
     { kind: "chart", name: "Link chart Aurora–Helios", owner: "AR", meta: "42 objetos · 58 enlaces", updated: "12m", cls: "SECRET" },

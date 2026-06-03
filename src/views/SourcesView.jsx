@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CONNECTORS, SOURCES } from '../data/data_ext.js';
-import { Badge, Icon } from '../components/ui.jsx';
+import { Badge, Icon, PageHeader, Stat } from '../components/ui.jsx';
 import { SourceWizard } from './AdminView.jsx';
 
 /* ============================================================
@@ -28,11 +28,9 @@ export function SourcesView() {
     <div className="content" style={{ padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }} className="fade-in">
         {/* header */}
-        <div className="row between center" style={{ marginBottom: 6 }}>
-          <div><div className="eyebrow" style={{ marginBottom: 6 }}>Data integration · Sources</div>
-            <h1 className="serif" style={{ fontSize: 28, fontWeight: 500, margin: 0 }}>Sources</h1></div>
+        <PageHeader eyebrow="Data integration · Sources" title="Sources">
           <button className="btn primary" onClick={() => setWizard(true)}><Icon name="plus" />Add source</button>
-        </div>
+        </PageHeader>
         <p className="t-dim" style={{ fontSize: 14, margin: "0 0 22px", maxWidth: "74ch" }}>
           The ingestion layer — connect upstream systems and keep them in sync.
           <span className="t-faint"> Ingest health answers “is the connector live and the source fresh?”. Transform health lives in </span>Pipelines › Data Health.
@@ -42,10 +40,7 @@ export function SourcesView() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 24 }}>
           {[["Connectors", stats.total, "database"], ["Healthy", stats.healthy + "/" + stats.total, "check"],
             ["Streaming", stats.streaming, "bolt"], ["Batch", stats.batch, "clock"]].map(([k, v, ic]) => (
-            <div key={k} className="card" style={{ padding: 16 }}>
-              <div className="row between center"><div className="eyebrow">{k}</div><span className="t-faint"><Icon name={ic} size={15} /></span></div>
-              <div className="mono" style={{ fontSize: 26, fontWeight: 600, marginTop: 8 }}>{v}</div>
-            </div>
+            <Stat key={k} label={k} value={v} icon={ic} />
           ))}
         </div>
 

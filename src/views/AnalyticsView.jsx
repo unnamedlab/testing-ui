@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { DIMS, MEASURES, ROWS, aggBy, applyFilters, dimField, fmtMoney, fmtNum, histo, monthly, pivotData } from '../data/data_analytics.js';
-import { Icon } from '../components/ui.jsx';
+import { Icon, PageHeader, Stat } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Analytics (Quiver / Contour)
@@ -151,16 +151,13 @@ export function AnalyticsView(){
       <Steps dim={dim} measure={measure} agg={agg} type={type} colDim={colDim} filters={filters}/>
       <div style={{ flex:1, overflow:"auto", padding:"22px 26px 50px" }}>
         <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
-          <div className="row between center" style={{ marginBottom:18 }}>
-            <div><div className="eyebrow" style={{ marginBottom:5 }}>Analysis · Quiver</div><h1 className="serif" style={{ fontSize:27, fontWeight:500, margin:0, letterSpacing:"-0.02em" }}>Flagged transactions</h1></div>
-            <div className="row gap-8"><button className="btn"><Icon name="download"/>Export</button><button className="btn primary"><Icon name="plus"/>Add chart</button></div>
-          </div>
+          <PageHeader eyebrow="Analysis · Quiver" title="Flagged transactions">
+            <button className="btn"><Icon name="download"/>Export</button>
+            <button className="btn primary"><Icon name="plus"/>Add chart</button>
+          </PageHeader>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
             {[["Total volume", fmtMoney(totalAmt), "bars"],["Records", fmtNum(rows.length), "table"],["Flagged", rows.length?Math.round(flagged/rows.length*100)+"%":"0%", "filter"],["Avg risk", avgRisk, "bell"]].map(([l,v,ic])=>(
-              <div key={l} className="card" style={{ padding:16 }}>
-                <div className="row between center"><div className="eyebrow">{l}</div><span className="t-faint"><Icon name={ic} size={15}/></span></div>
-                <div className="mono" style={{ fontSize:24, fontWeight:600, marginTop:8, letterSpacing:"-0.02em" }}>{v}</div>
-              </div>
+              <Stat key={l} label={l} value={v} icon={ic}/>
             ))}
           </div>
           {fk.length>0 && (

@@ -1,4 +1,4 @@
-import { Icon } from '../components/ui.jsx';
+import { Icon, PageHeader } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — PipelineView (regenerado)
@@ -17,10 +17,10 @@ export function PipelineView() {
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom: 22 }}>
-          <div><div className="eyebrow" style={{ marginBottom: 6 }}>Data Integration · pipeline</div><h1 className="serif" style={{ fontSize: 28, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>Pipeline · blackfrost</h1></div>
-          <div className="row gap-8"><button className="btn"><Icon name="history" size={15} />Historial</button><button className="btn primary"><Icon name="play" size={15} />Ejecutar</button></div>
-        </div>
+        <PageHeader eyebrow="Data Integration · pipeline" title="Pipeline · blackfrost">
+          <button className="btn"><Icon name="history" size={15} />Historial</button>
+          <button className="btn primary"><Icon name="play" size={15} />Ejecutar</button>
+        </PageHeader>
         <div className="card grid-bg" style={{ padding: "28px 22px", overflowX: "auto" }}>
           <div className="row" style={{ gap: 0, alignItems: "stretch", minWidth: "min-content" }}>
             {STAGES.map((s, i) => (

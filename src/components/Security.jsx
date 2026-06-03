@@ -1,5 +1,5 @@
 import { CLASS_LEVELS, CLASSIFICATION, lineageFor, markingFor } from '../data/data_ext.js';
-import { Badge, Icon, Lineage as LineageRows } from './ui.jsx';
+import { Badge, Icon, Lineage as LineageChain } from './ui.jsx';
 
 /* ============================================================
    AXIOM — Security: classification banner, markings,
@@ -41,17 +41,17 @@ export function MarkingChip({ id, level, size }) {
   );
 }
 
-// Card wrapper around the single ui.Lineage renderer (cluster ⑨: one lineage
-// primitive). lineageFor() yields {stage,label,icon,meta}; map icon→glyph.
 export function Lineage({ id }) {
-  const chain = lineageFor(id).map(s => ({ stage: s.stage, label: s.label, meta: s.meta, glyph: s.icon }));
+  // Cabecera + tarjeta propias; el dibujo de la cadena lo hace la primitiva
+  // única de ui.jsx (antes este componente reimplementaba los pasos a mano).
+  const chain = lineageFor(id).map((s) => ({ stage: s.stage, label: s.label, meta: s.meta, glyph: s.icon }));
   return (
     <div className="card" style={{ padding:16 }}>
       <div className="row between center" style={{ marginBottom:14 }}>
         <div className="eyebrow">Data lineage</div>
         <Badge kind="accent"><Icon name="check" size={12}/>Verified</Badge>
       </div>
-      <LineageRows chain={chain} />
+      <LineageChain chain={chain} />
     </div>
   );
 }
