@@ -58,6 +58,7 @@ export function SourcesView() {
         </div>
 
         {/* source cards */}
+        {shown.length === 0 && <div className="t-faint" style={{ padding: "40px 0", textAlign: "center", fontSize: 13 }}>Sin fuentes que coincidan.</div>}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(330px,1fr))", gap: 14 }}>
           {shown.map(s => (
             <div key={s.id} className="card" style={{ padding: 16 }}>

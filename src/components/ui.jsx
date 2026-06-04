@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { EDGES, TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
+import { EDGES, ENTITY_BY_ID, TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
 
 /* ============================================================
    AXIOM — Icons + shared UI primitives
@@ -143,6 +143,77 @@ export function statusColor(status) { return STATUS_VAR[statusMeta(status).kind]
 export function StatusBadge({ status, label, icon }) {
   const m = statusMeta(status);
   return <Badge kind={m.kind} dot>{icon && <Icon name={icon} size={11} />}{label || m.label}</Badge>;
+}
+
+// ---- ColorGlyph: tile de icono coloreado (color-mix 16% + anillo inset). Reemplaza
+// AgentGlyph (Reason), ActionGlyph (Actions) y KindGlyph (Projects), idénticos a mano. ----
+export function ColorGlyph({ icon, color, size = 38, glyphScale = 0.5 }) {
+  const s = size;
+  return (
+    <div style={{ width: s, height: s, borderRadius: Math.round(s * 0.28), flex: "none", display: "grid", placeItems: "center",
+      background: `color-mix(in oklab, ${color} 16%, var(--bg-2))`, color, boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} 32%, transparent)` }}>
+      <Icon name={icon} size={Math.round(s * glyphScale)} />
+    </div>
+  );
+}
+
+// ---- md inline: **bold** + saltos de línea → JSX (sin dangerouslySetInnerHTML).
+// Reemplaza mdBold (Reason) y mdToHtml (Copilot). ----
+export function mdInline(text) {
+  return String(text).split("\n").map((line, li) => (
+    <span key={li}>{li > 0 && <br />}{line.split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
+      p.startsWith("**") ? <b key={i} style={{ color: "var(--text)", fontWeight: 600 }}>{p.slice(2, -2)}</b> : <span key={i}>{p}</span>)}</span>
+  ));
+}
+
+// ---- AnswerCard: respuesta IA fundamentada (texto + objetos citados + acciones).
+// Núcleo compartido por Reason.Console y Copilot — antes dos parsers markdown y dos
+// renders de entidades citadas distintos. ----
+export function AnswerCard({ text, cites, openEntity, actions, onAction, label = "Grounded answer", citeSize = 18, showRisk = false, style, children }) {
+  return (
+    <div className="card" style={{ padding: 14, background: "var(--bg-1)", ...style }}>
+      {label && <div className="row gap-8 center" style={{ marginBottom: 8 }}><span style={{ color: "var(--accent)" }}><Icon name="sparkles" size={15} /></span><span className="eyebrow">{label}</span></div>}
+      {text != null && <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }} className="t-dim">{mdInline(text)}</p>}
+      {cites && cites.length > 0 && (
+        <div className="row gap-6 wrap" style={{ marginTop: (text != null || label) ? 12 : 0 }}>
+          {cites.map((id) => { const e = ENTITY_BY_ID[id]; if (!e) return null; return (
+            <button key={id} type="button" onClick={openEntity ? () => openEntity(id) : undefined}
+              className="row gap-6 center" style={{ background: "var(--bg-2)", border: "1px solid var(--line-soft)", borderRadius: 7, padding: "3px 8px 3px 4px", cursor: openEntity ? "pointer" : "default", color: "var(--text)" }}>
+              <TypeGlyph type={e.type} size={citeSize} /><span style={{ fontSize: 11.5, fontWeight: 600, whiteSpace: "nowrap" }}>{e.name}</span>{showRisk && <RiskPill r={e.risk} />}
+            </button>
+          ); })}
+        </div>
+      )}
+      {actions && actions.length > 0 && (
+        <div className="row gap-8 wrap" style={{ marginTop: 12 }}>
+          {actions.map(([v, lbl, ic]) => <button key={v} className="btn sm" onClick={() => onAction && onAction(v)}><Icon name={ic} size={14} />{lbl}</button>)}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+// ---- MasterList / MasterItem: rail maestro (aside + lista seleccionable accent-ghost).
+// Reemplaza los asides idénticos de Reason.AgentsTab y Models.Registry. ----
+export function MasterList({ title, count, onAdd, width, children }) {
+  return (
+    <aside style={{ width: width || "var(--sidebar)", flex: "none", borderRight: "1px solid var(--line-soft)", background: "var(--bg-1)", overflow: "auto" }}>
+      <div className="row between center" style={{ padding: "14px 14px 8px" }}>
+        <div className="eyebrow">{title}{count != null ? ` · ${count}` : ""}</div>
+        {onAdd && <button className="btn ghost sm" style={{ width: 26, padding: 0 }} onClick={onAdd}><Icon name="plus" size={15} /></button>}
+      </div>
+      <div style={{ padding: "0 8px 16px" }}>{children}</div>
+    </aside>
+  );
+}
+export function MasterItem({ active, onClick, children }) {
+  return (
+    <button type="button" onClick={onClick} className="row gap-10 center"
+      style={{ width: "100%", textAlign: "left", border: "none", background: active ? "var(--accent-ghost)" : "none", borderRadius: 9, padding: "10px", cursor: "pointer", marginBottom: 2, boxShadow: active ? "inset 0 0 0 1px var(--accent-dim)" : "none" }}>
+      {children}
+    </button>
+  );
 }
 
 // ---- F-06: single source of truth for on/off toggles ----

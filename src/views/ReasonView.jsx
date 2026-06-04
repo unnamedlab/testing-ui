@@ -3,7 +3,7 @@ import { AGENTS, EVALS, FUNCTIONS, TOOLS } from '../data/data_agents.js';
 
 const RSN_TABS = [["agents","Agent Studio"],["logic","Logic functions"],["evals","Evals"]];
 import { ENTITY_BY_ID } from '../data/data.js';
-import { ArtifactExplorer, Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { AnswerCard, ArtifactExplorer, Badge, ColorGlyph, Icon, MasterItem, MasterList, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Reason · Agent / Logic builder
@@ -11,13 +11,7 @@ import { ArtifactExplorer, Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } fr
    grounded answer (cited objects) and may propose an Action.
    ============================================================ */
 function ent(id){ return ENTITY_BY_ID[id] || { name:id, type:"txn", sub:"" }; }
-function AgentGlyph({ a, size }){
-  const s=size||38;
-  return <div style={{ width:s,height:s,borderRadius:Math.round(s*0.28),flex:"none",display:"grid",placeItems:"center",
-    background:`color-mix(in oklab, ${a.color} 16%, var(--bg-2))`, color:a.color, boxShadow:`inset 0 0 0 1px color-mix(in oklab, ${a.color} 32%, transparent)` }}>
-    <Icon name={a.icon} size={Math.round(s*0.5)}/></div>;
-}
-function mdBold(t){ return t.split(/(\*\*[^*]+\*\*)/g).map((p,i)=> p.startsWith("**") ? <b key={i} style={{ color:"var(--text)", fontWeight:600 }}>{p.slice(2,-2)}</b> : <span key={i}>{p}</span>); }
+function AgentGlyph({ a, size }){ return <ColorGlyph icon={a.icon} color={a.color} size={size||38} />; }
 
 function Console({ agent }){
   const [phase,setPhase] = useState("idle");
@@ -59,17 +53,7 @@ function Console({ agent }){
             {phase==="running" && <div className="row gap-6 center t-faint" style={{ fontSize:12 }}><span className="live-dot" style={{ background:"var(--accent)" }}/>thinking…</div>}
           </div>
           {phase==="done" && <>
-            <div className="card" style={{ padding:14, marginBottom:12, background:"var(--bg-1)" }}>
-              <div className="row gap-8 center" style={{ marginBottom:8 }}><span style={{ color:"var(--accent)" }}><Icon name="sparkles" size={15}/></span><span className="eyebrow">Grounded answer</span></div>
-              <p style={{ fontSize:13, lineHeight:1.6, margin:0 }} className="t-dim">{mdBold(r.answer)}</p>
-              <div className="row gap-6 wrap" style={{ marginTop:12 }}>
-                {r.cites.map(id=>{ const e=ent(id); return (
-                  <span key={id} className="row gap-6 center" style={{ background:"var(--bg-2)", border:"1px solid var(--line-soft)", borderRadius:7, padding:"3px 8px 3px 4px" }}>
-                    <TypeGlyph type={e.type} size={18}/><span style={{ fontSize:11.5, fontWeight:600 }}>{e.name}</span>
-                  </span>
-                );})}
-              </div>
-            </div>
+            <AnswerCard text={r.answer} cites={r.cites} style={{ marginBottom:12 }} />
             {r.action && (
               <div className="card" style={{ padding:14, borderLeft:"3px solid var(--accent)", background:"var(--bg-1)" }}>
                 <div className="row gap-8 center" style={{ marginBottom:10 }}><span style={{ color:"var(--accent)" }}><Icon name="bolt" size={15}/></span><span className="eyebrow">Proposed action</span></div>
@@ -135,17 +119,14 @@ function AgentsTab(){
   const agent = AGENTS.find(a=>a.id===selId);
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
-        <div className="row between center" style={{ padding:"14px 14px 8px" }}><div className="eyebrow">Agents · {AGENTS.length}</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
-        <div style={{ padding:"0 8px 16px" }}>
+      <MasterList title="Agents" count={AGENTS.length} onAdd={()=>{}}>
           {AGENTS.map(a=>(
-            <button key={a.id} onClick={()=>setSelId(a.id)} className="row gap-10 center" style={{ width:"100%", textAlign:"left", border:"none", background:selId===a.id?"var(--accent-ghost)":"none", borderRadius:9, padding:"10px", cursor:"pointer", marginBottom:2, boxShadow:selId===a.id?"inset 0 0 0 1px var(--accent-dim)":"none" }}>
+            <MasterItem key={a.id} active={selId===a.id} onClick={()=>setSelId(a.id)}>
               <AgentGlyph a={a} size={32}/>
               <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:12.5, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color:selId===a.id?"var(--text)":"var(--text-dim)" }}>{a.name}</div><div className="t-faint" style={{ fontSize:10.5, marginTop:1 }}>{a.tools.length} tools{a.approval?" · gated":""}</div></div>
-            </button>
+            </MasterItem>
           ))}
-        </div>
-      </aside>
+      </MasterList>
       <Builder agent={agent}/>
       <Console agent={agent}/>
     </div>

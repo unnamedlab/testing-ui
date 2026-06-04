@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { CHK, DATASETS, INCIDENTS, SEV } from '../data/data_health.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { ArtifactExplorer, Badge, Drawer, Icon, Lineage, PageHeader, Spark, Stat, StatusBadge, statusMeta } from '../components/ui.jsx';
+import { ArtifactExplorer, Badge, Drawer, Icon, Lineage, ListSkeleton, PageHeader, Spark, Stat, StatusBadge, statusMeta, useLoad } from '../components/ui.jsx';
 import { rulesByContext } from '../data/data_rules.js';
 import { RulesEngine } from '../components/RulesEngine.jsx';
 
@@ -58,6 +58,7 @@ function DatasetDrawer({ ds, onClose }){
 }
 
 export function HealthView(){
+  const loading = useLoad(600);
   const [sel,setSel] = useState(null);
   const [showRules,setShowRules] = useState(false);
   const [dataRules,setDataRules] = useState(() => rulesByContext("data"));
@@ -89,14 +90,14 @@ export function HealthView(){
           ))}
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:20, alignItems:"start" }}>
-          <ArtifactExplorer items={DATASETS} onOpen={d=>setSel(d.id)} title="Pipelines & datasets" meta={`${DATASETS.length} monitored`} columns={[
+          {loading ? <ListSkeleton rows={4}/> : <ArtifactExplorer items={DATASETS} onOpen={d=>setSel(d.id)} title="Pipelines & datasets" meta={`${DATASETS.length} monitored`} columns={[
             { header:"Dataset", render:d=>{ const dm=statusMeta(d.status); return <><span className="row gap-8 center"><Dot kind={dm.kind==="accent"?"info":dm.kind}/><span className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{d.name}</span>{d.drift && <span style={{ color:"var(--warn)" }}><Icon name="drift" size={13}/></span>}</span><div className="t-faint" style={{ fontSize:10.5, marginLeft:16 }}>{d.layer}</div></>; } },
             { header:"Status", render:d=><StatusBadge status={d.status}/> },
             { header:"Freshness", render:d=><span className="mono" style={{ fontSize:11.5, color: d.slaOk?"var(--text-dim)":"var(--alert)" }}>{d.last}</span> },
             { header:"Checks", render:d=><span className="mono" style={{ fontSize:11.5, color: d.pass===d.total?"var(--ok)":d.status==="building"?"var(--text-faint)":"var(--alert)" }}>{d.status==="building"?"—":d.pass+"/"+d.total}</span> },
             { header:"Trend", render:d=><Spark data={d.spark} w={80} h={24} color={d.status==="failed"?"var(--alert)":d.status==="degraded"?"var(--warn)":"var(--accent)"}/> },
             { header:"", align:"right", render:()=><span style={{ color:"var(--text-faint)" }}><Icon name="chevron" size={15}/></span> },
-          ]} />
+          ]} />}
           <div className="col gap-16">
             <div className="card" style={{ padding:18 }}>
               <div className="row between center" style={{ marginBottom:8 }}><div className="eyebrow">Checks pass rate</div><span className="mono" style={{ fontSize:13, fontWeight:600, color:passPct>=90?"var(--ok)":"var(--warn)" }}>{passPct}%</span></div>

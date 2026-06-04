@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MODELS, OBJECTIVES } from '../data/data_models.js';
-import { ArtifactExplorer, Badge, Icon, Lineage, PageHeader, Spark, Stat, StatusBadge, statusColor, Switch, Tabs } from '../components/ui.jsx';
+import { ArtifactExplorer, Badge, Icon, Lineage, MasterItem, MasterList, PageHeader, Spark, Stat, StatusBadge, statusColor, Switch, Tabs } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Model / ML management
@@ -12,17 +12,14 @@ function Registry(){
   const champ = m.versions.find(v=>v.st==="champion");
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
-        <div className="row between center" style={{ padding:"14px 14px 8px" }}><div className="eyebrow">Models · {MODELS.length}</div></div>
-        <div style={{ padding:"0 8px 16px" }}>
+      <MasterList title="Models" count={MODELS.length}>
           {MODELS.map(x=>(
-            <button key={x.id} onClick={()=>setSel(x.id)} className="row gap-10 center" style={{ width:"100%", textAlign:"left", border:"none", background:sel===x.id?"var(--accent-ghost)":"none", borderRadius:9, padding:"10px", cursor:"pointer", marginBottom:2, boxShadow:sel===x.id?"inset 0 0 0 1px var(--accent-dim)":"none" }}>
+            <MasterItem key={x.id} active={sel===x.id} onClick={()=>setSel(x.id)}>
               <span style={{ width:30,height:30,borderRadius:8,flex:"none",display:"grid",placeItems:"center",background:"var(--bg-2)",color:statusColor(x.status) }}><Icon name="model" size={16}/></span>
               <div style={{ flex:1, minWidth:0 }}><div className="mono" style={{ fontSize:12, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color:sel===x.id?"var(--text)":"var(--text-dim)" }}>{x.name}</div><div className="t-faint" style={{ fontSize:10.5, marginTop:1 }}>{x.type} · {x.status}</div></div>
-            </button>
+            </MasterItem>
           ))}
-        </div>
-      </aside>
+      </MasterList>
       <div style={{ flex:1, overflow:"auto", padding:"22px 26px 50px", minWidth:0 }}>
         <div style={{ maxWidth:760 }}>
           <div className="row between" style={{ alignItems:"flex-start", marginBottom:18 }}>

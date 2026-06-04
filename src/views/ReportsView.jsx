@@ -152,7 +152,7 @@ function Editor({ report, openEntity, onExport }) {
         <div className="row gap-8 center">
           <span className="t-faint mono" style={{ fontSize:11 }}>Autosaved</span>
           <button className="btn sm"><Icon name="user" size={14}/>Share</button>
-          <button className="btn primary sm" onClick={onExport}><Icon name="download" size={14}/>Export PDF</button>
+          <button className="btn primary sm" onClick={()=>onExport(blocks, title)}><Icon name="download" size={14}/>Export PDF</button>
         </div>
       </div>
 
@@ -198,7 +198,7 @@ function Editor({ report, openEntity, onExport }) {
 export function ReportsView({ openEntity, go }) {
   const [reports] = useState(SEED_REPORTS);
   const [selId, setSelId] = useState(SEED_REPORTS[0].id);
-  const [dossier, setDossier] = useState(false);
+  const [dossier, setDossier] = useState(null);
   const sel = useMemo(()=>reports.find(r=>r.id===selId), [reports, selId]);
 
   return (
@@ -224,9 +224,9 @@ export function ReportsView({ openEntity, go }) {
         </div>
       </aside>
 
-      {sel && <Editor report={sel} openEntity={openEntity} onExport={()=>setDossier(true)} />}
+      {sel && <Editor report={sel} openEntity={openEntity} onExport={(blocks,title)=>setDossier({ blocks, title, caseId: sel.caseId })} />}
 
-      <DossierModal open={dossier} caseId={sel?.caseId} onClose={()=>setDossier(false)} />
+      <DossierModal open={!!dossier} caseId={dossier?.caseId} blocks={dossier?.blocks} title={dossier?.title} onClose={()=>setDossier(null)} />
 
       <style>{`
         .rep-card { text-align:left; border:1px solid var(--line-soft); background:var(--bg-inset); border-radius:11px; padding:13px 14px; cursor:pointer; transition:border-color .14s, background .14s; }

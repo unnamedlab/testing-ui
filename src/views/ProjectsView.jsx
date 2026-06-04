@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ARTIFACTS, ACCESS_MATRIX, PROJ_ACTIVITY, PROJ_ROLES, PROJECTS } from '../data/data_projects.js';
 import { ALERTS, ANALYSTS } from '../data/data_ext.js';
-import { ArtifactExplorer, Avatar, Badge, Icon, Stat, Tabs } from '../components/ui.jsx';
+import { ArtifactExplorer, Avatar, Badge, ColorGlyph, Icon, Stat, Tabs } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 import { AlertCard } from './CasesView.jsx';
 
@@ -29,15 +29,7 @@ function fileIcon(name){
   if(/\.(jpg|jpeg|png|gif|webp)$/.test(n)) return "image";
   return "file";
 }
-function KindGlyph({ kind, name, size }){
-  const k = KIND[kind]||KIND.file; const s=size||38;
-  const ic = kind==="file" ? fileIcon(name) : k.ic;
-  return <div style={{ width:s,height:s,borderRadius:Math.round(s*0.28),flex:"none",display:"grid",placeItems:"center",
-    background:`color-mix(in oklab, ${k.c} 16%, var(--bg-2))`, color:k.c,
-    boxShadow:`inset 0 0 0 1px color-mix(in oklab, ${k.c} 32%, transparent)` }}>
-    <Icon name={ic} size={Math.round(s*0.5)}/>
-  </div>;
-}
+function KindGlyph({ kind, name, size }){ const k = KIND[kind]||KIND.file; const ic = kind==="file" ? fileIcon(name) : k.ic; return <ColorGlyph icon={ic} color={k.c} size={size||38} />; }
 function Stack({ members, size }){
   const s=size||26;
   return <span className="row" style={{ paddingLeft:6 }}>

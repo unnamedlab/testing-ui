@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ACTION_TYPES, AUTO_RULES, EFFECT, SEED_ACTIONS, nextId } from '../data/data_actions.js';
 import { ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { ArtifactExplorer, Avatar, Badge, Icon, Modal, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { ArtifactExplorer, Avatar, Badge, ColorGlyph, Icon, Modal, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 import { RulesEngine } from '../components/RulesEngine.jsx';
 
@@ -23,12 +23,7 @@ const STATUS = {
   rejected: { kind:"alert",  label:"rejected" },
 };
 function StatusBadge({ s }){ const m=STATUS[s]; return <Badge kind={m.kind} dot>{m.label}</Badge>; }
-function ActionGlyph({ type, size }){
-  const a=ACTION_TYPES[type]; const s=size||38;
-  return <div style={{ width:s,height:s,borderRadius:Math.round(s*0.28),flex:"none",display:"grid",placeItems:"center",
-    background:`color-mix(in oklab, ${a.color} 16%, var(--bg-2))`, color:a.color, boxShadow:`inset 0 0 0 1px color-mix(in oklab, ${a.color} 32%, transparent)` }}>
-    <Icon name={a.icon} size={Math.round(s*0.5)}/></div>;
-}
+function ActionGlyph({ type, size }){ const a=ACTION_TYPES[type]; return <ColorGlyph icon={a.icon} color={a.color} size={size||38} />; }
 function EffectRow({ e }){
   const m=EFFECT[e.kind];
   return <div className="row gap-10" style={{ padding:"8px 0", alignItems:"flex-start" }}>

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ENTITY_BY_ID } from '../data/data.js';
-import { Drawer, Icon, RiskPill, TypeGlyph } from './ui.jsx';
+import { AnswerCard, Drawer, Icon, mdInline } from './ui.jsx';
 import { complete, isModelAvailable } from '../services/claude.js';
 
 /* ============================================================
@@ -51,39 +50,6 @@ export function matchIntent(q){
   return null;
 }
 
-export function ResultCard({ res, openEntity, go }){
-  return (
-    <div className="card" style={{ padding:14, marginTop:10, background:"var(--bg-2)" }}>
-      {res.entities && (
-        <>
-          <div className="eyebrow" style={{ marginBottom:8 }}>Matched objects · {res.entities.length}</div>
-          <div className="col gap-2" style={{ marginBottom:12 }}>
-            {res.entities.map(id=>{ const e=ENTITY_BY_ID[id]; if(!e) return null; return (
-              <button key={id} onClick={()=>openEntity(id)} className="row gap-10 center" style={{ padding:"6px", border:"none", background:"none", borderRadius:8, cursor:"pointer", textAlign:"left" }}
-                onMouseEnter={ev=>ev.currentTarget.style.background="var(--bg-3)"} onMouseLeave={ev=>ev.currentTarget.style.background="none"}>
-                <TypeGlyph type={e.type} size={26}/>
-                <span style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</span>
-                <RiskPill r={e.risk}/>
-              </button>
-            );})}
-          </div>
-        </>
-      )}
-      <div className="row gap-8 wrap">
-        {res.actions?.map(([v,label,ic])=>(
-          <button key={v} className="btn sm" onClick={()=>go(v)}><Icon name={ic} size={14}/>{label}</button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function mdToHtml(t){
-  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;")
-    .replace(/\*\*(.+?)\*\*/g,"<b style='color:var(--text)'>$1</b>")
-    .replace(/\n/g,"<br/>");
-}
-
 export function Copilot({ open, onClose, go, openEntity }){
   const [msgs, setMsgs] = useState([
     { role:"ai", text:"I'm your AXIOM analyst copilot. Ask about entities, money flows, vessels or the network — I'll query the ontology and link results back to the graph." },
@@ -129,12 +95,13 @@ export function Copilot({ open, onClose, go, openEntity }){
         <div ref={scrollRef} style={{ flex:1, overflow:"auto", padding:18 }}>
           {msgs.map((m,i)=>(
             <div key={i} style={{ marginBottom:16, display:"flex", justifyContent: m.role==="user"?"flex-end":"flex-start" }}>
-              <div style={{ maxWidth: m.role==="user"?"82%":"100%" }}>
-                <div style={{ padding: m.role==="user"?"9px 13px":"0", borderRadius:12,
-                  background: m.role==="user"?"var(--accent)":"transparent", color: m.role==="user"?"var(--accent-text)":"var(--text)",
-                  fontSize:13.5, lineHeight:1.55 }}
-                  dangerouslySetInnerHTML={{ __html: m.role==="user"? m.text : mdToHtml(m.text) }} />
-                {m.result && <ResultCard res={m.result} openEntity={(id)=>{onClose();openEntity(id);}} go={(v)=>{onClose();go(v);}} />}
+              <div style={{ maxWidth: m.role==="user"?"82%":"100%", width: m.result?"100%":undefined }}>
+                {m.result
+                  ? <AnswerCard text={m.text} cites={m.result.entities} actions={m.result.actions} showRisk style={{ background:"var(--bg-2)" }}
+                      openEntity={(id)=>{onClose();openEntity(id);}} onAction={(v)=>{onClose();go(v);}} />
+                  : <div style={{ padding: m.role==="user"?"9px 13px":"0", borderRadius:12,
+                      background: m.role==="user"?"var(--accent)":"transparent", color: m.role==="user"?"var(--accent-text)":"var(--text)",
+                      fontSize:13.5, lineHeight:1.55 }}>{m.role==="user"? m.text : mdInline(m.text)}</div>}
               </div>
             </div>
           ))}
