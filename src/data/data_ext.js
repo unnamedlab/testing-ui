@@ -1,5 +1,4 @@
 import { EDGES, ENTITIES, MAP_VESSELS } from './data.js';
-import { pickWorkspaces } from './data_workspaces.js';
 
 /* ============================================================
    AXIOM — Extended dataset for advanced modules
@@ -13,7 +12,6 @@ export const CLASS_LEVELS = {
   "UNCLASS":      { color: "var(--ok)",     short: "U" },
   "CONFIDENTIAL": { color: "var(--warn)",   short: "C" },
   "SECRET":       { color: "var(--alert)",  short: "S" },
-  "TOP SECRET":   { color: "var(--violet)", short: "TS" },
 };
 // per-entity markings
 export const ENTITY_MARKINGS = {
@@ -77,25 +75,12 @@ export const ANALYSTS = {
   AR:{name:"Ana Reyes", role:"Lead Analyst"}, MC:{name:"Marcus Cho", role:"Financial Analyst"},
   JD:{name:"Jamal Diallo", role:"Maritime Analyst"}, null:{name:"Unassigned", role:""},
 };
+// I8: the signed-in analyst — single source for avatar, greeting and clearance line.
+export const CURRENT_USER = "AR";
 
 // ---------- Cases ----------
-// Proyección de WORKSPACES (fuente única en data_workspaces.js). Antes esta lista
-// definía sus propias cifras (objects 142 · alerts 7) que contradecían a Projects/Home.
-export const CASES = pickWorkspaces(["blackfrost", "tradewind", "supply"]).map((w) => ({
-  id: w.id,
-  name: w.nameEn,
-  status: w.status,
-  classification: w.classification,
-  lead: w.lead,
-  opened: w.openedIso,
-  members: w.members,
-  alerts: w.counts.alerts,
-  objects: w.counts.objects,
-  sla: w.sla,
-  summary: w.summaryEn,
-  tasks: w.tasksEn,
-}));
-export const CASE_BY_ID = Object.fromEntries(CASES.map(c=>[c.id,c]));
+// MOVED (R-4): the "case" model was unified into the single `project` domain
+// object. Import { PROJECTS, PROJECT_BY_ID } from './data_projects.js' instead.
 
 // ---------- Data sources ----------
 export const SOURCES = [
@@ -112,9 +97,18 @@ export const CONNECTORS = [
   ["Kafka topic","swap"],["Google BigQuery","grid"],["MongoDB","doc"],["Webhook","bell"],
 ];
 
-// ---------- Audit log → movido a data_audit.js (store único de eventos) ----------
-// El registro de auditoría vive ahora en data/data_audit.js (AUDIT_EVENTS), leído por
-// Governance (ledger con filtro por kind) y Admin (vista forense con Source IP).
+// ---------- Audit log ----------
+export const AUDIT = [
+  { actor:"AR", action:"viewed", target:"MV Blackfrost · 360°", time:"09:12:44", cls:"SECRET", ip:"10.4.2.18" },
+  { actor:"MC", action:"exported", target:"Dossier · Case BLACKFROST", time:"09:08:10", cls:"SECRET", ip:"10.4.2.31" },
+  { actor:"SYS",action:"resolved", target:"14 Person objects (ER merge)", time:"09:02:55", cls:"CONFIDENTIAL", ip:"—" },
+  { actor:"JD", action:"assigned", target:"AL-3371 → self", time:"08:54:02", cls:"CONFIDENTIAL", ip:"10.4.7.9" },
+  { actor:"AR", action:"created link", target:"Helios → Northwind", time:"08:41:19", cls:"SECRET", ip:"10.4.2.18" },
+  { actor:"MC", action:"queried", target:"vessels @ Novorossiysk, >$1M", time:"08:33:47", cls:"SECRET", ip:"10.4.2.31" },
+  { actor:"SYS",action:"ingested", target:"Customs Manifests · 12,402 rows", time:"08:20:00", cls:"CONFIDENTIAL", ip:"—" },
+  { actor:"JD", action:"flagged", target:"a-aurora-usd as high-risk", time:"08:11:30", cls:"CONFIDENTIAL", ip:"10.4.7.9" },
+  { actor:"AR", action:"login", target:"AXIOM session start", time:"08:02:14", cls:"UNCLASS", ip:"10.4.2.18" },
+];
 
 // ---------- Lineage (per entity provenance chain) ----------
 export function lineageFor(id){
@@ -127,6 +121,15 @@ export function lineageFor(id){
   ];
 }
 
+// ---------- Notebook ----------
+export const NOTEBOOK = [
+  { type:"md", text:"# BLACKFROST — Network exposure\nWorking analysis of layered flows between **Aurora Trading** and **Helios Maritime**." },
+  { type:"query", lang:"AQL", text:"FROM Transaction\nWHERE to_account.holder = 'Helios Maritime'\n  AND amount > 1000000\nGROUP BY from_account\nORDER BY sum(amount) DESC", rows:4, ms:212 },
+  { type:"result" },
+  { type:"md", text:"Three counterparties account for **87%** of inbound volume. Aurora USD ····9920 dominates — consistent with a pass-through layering hub." },
+  { type:"chart" },
+];
+
 // ---------- Collaboration ----------
 export const BOARDS = [
   { id:"b1", name:"BLACKFROST · Link chart", kind:"graph", owner:"AR", collab:3, updated:"12m" },
@@ -138,3 +141,37 @@ export const COMMENTS = [
   { who:"JD", at:"1h",  on:"Helios Maritime", text:"Registry agent Castor formed 1,940+ shells — flag the whole cluster?", reacts:1 },
   { who:"AR", at:"2h",  on:"Aurora USD ····9920", text:"@Marcus can you pull the correspondent leg on TXN-88241?", reacts:0, mention:true },
 ];
+
+// ---------- Object Explorer: synthetic population ----------
+export const JURIS = ["Cyprus","UAE","BVI","Panama","Russia","Liberia","Singapore","Malta","Lebanon","UK"];
+export const FLAGS = ["Panama","Liberia","Cook Is.","Marshall Is.","Malta","Cyprus"];
+export const STATUSES = ["Active","Dormant","Flagged","Dissolved"];
+export const FIRST = ["Viktor","Elena","Daniel","Yusuf","Anatoly","Mei","Omar","Sofia","Lars","Priya","Hassan","Nadia","Kwame","Ingrid","Tariq"];
+export const LAST  = ["Sørensen","Marchetti","Okonkwo","Haddad","Volkov","Tan","Saleh","Rossi","Eriksen","Nair","Aziz","Kovač","Mensah","Lindqvist","Rahman"];
+export const ORGW  = ["Helios","Aurora","Northwind","Castor","Meridian","Polaris","Orion","Vega","Tethys","Caspian","Black Sea","Levant"];
+export const ORGS2 = ["Maritime","Trading","Holdings","Shipping","Logistics","Capital","Ventures","Petroleum","Freight","Marine"];
+export function rng(seed){ let s=seed; return ()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
+export function buildExplorerRows(){
+  const r = rng(7); const rows = [];
+  // seed with the real entities first
+  ENTITIES.forEach(e=>rows.push({ id:e.id, name:e.name, type:e.type, risk:e.risk,
+    juris: e.attrs?.Nationality?.split(",")[0]?.trim() || e.attrs?.["Jurisdiction"] || JURIS[Math.floor(r()*JURIS.length)],
+    flag: e.attrs?.Flag?.split(" ")[0] || FLAGS[Math.floor(r()*FLAGS.length)],
+    status: e.watch?"Flagged":"Active", conns: EDGES.filter(ed=>ed.s===e.id||ed.t===e.id).length, real:true }));
+  for(let i=0;i<74;i++){
+    const types = ["person","org","vessel","account","txn","shipment"];
+    const ty = types[Math.floor(r()*types.length)];
+    let name;
+    if(ty==="person") name = FIRST[Math.floor(r()*FIRST.length)]+" "+LAST[Math.floor(r()*LAST.length)];
+    else if(ty==="org") name = ORGW[Math.floor(r()*ORGW.length)]+" "+ORGS2[Math.floor(r()*ORGS2.length)]+" "+["Ltd","FZE","LLC","Inc","SA"][Math.floor(r()*5)];
+    else if(ty==="vessel") name = "MV "+["Aurora","Pioneer","Crest","Horizon","Nordic","Valiant","Sable","Tempest"][Math.floor(r()*8)]+" "+["Wave","Star","Trader","Spirit"][Math.floor(r()*4)];
+    else if(ty==="account") name = ["EUR","USD","AED","CHF"][Math.floor(r()*4)]+" ····"+(1000+Math.floor(r()*8999));
+    else if(ty==="txn") name = "TXN-"+(80000+Math.floor(r()*9999));
+    else name = "BL-"+(200000+Math.floor(r()*9999));
+    rows.push({ id:"syn-"+i, name, type:ty, risk: Math.floor(r()*100),
+      juris: JURIS[Math.floor(r()*JURIS.length)], flag: FLAGS[Math.floor(r()*FLAGS.length)],
+      status: STATUSES[Math.floor(r()*STATUSES.length)], conns: Math.floor(r()*40) });
+  }
+  return rows;
+}
+export const EXPLORER_ROWS = buildExplorerRows();

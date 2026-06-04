@@ -1,19 +1,24 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { T_END } from '../data/data_ext.js';
 import { ENTITY_BY_ID, MAP_PLACES, MAP_ROUTES, MAP_VESSELS, riskLabel } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
-import { Icon, RiskPill, Switch, TypeGlyph, useViewport } from '../components/ui.jsx';
+import { Icon, RiskPill, Switch, TypeGlyph } from '../components/ui.jsx';
+import { MapDefs, MapLand, PortMarker, VesselMarker } from '../components/MapCanvas.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
-   AXIOM — Geospatial / tactical map
+   AXIOM — Geospatial / tactical map (UX-01 i18n)
    ============================================================ */
 
 export function MapView({ openEntity }) {
+  const { t: tr } = useI18n();
   const [sel, setSel] = useState("v-blackfrost");
   const [layers, setLayers] = useState({ routes:true, vessels:true, ports:true, risk:true });
+  const wrapRef = useRef(null);
+  const [dims, setDims] = useState({ w:1200, h:800 });
   const [temporal, setTemporal] = useState(false);
   const [tm, setTm, playing, setPlaying] = useTimeline(T_END);
-  const { ref: wrapRef, view: mv, setView: setMv, size: dims, onWheel: mWheel, zoomBy: mZoom, reset: mReset } = useViewport({ minK: 1, maxK: 4, initial: { x: 0, y: 0, k: 1 } });
+  const [mv, setMv] = useState({ x:0, y:0, k:1 });
   const mdrag = useRef(null);
 
   function mDown(e){
@@ -23,6 +28,25 @@ export function MapView({ openEntity }) {
     const up=()=>{ mdrag.current=null; window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
+  function mWheel(e){
+    e.preventDefault();
+    const r=wrapRef.current.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    setMv(v=>{ const k2=Math.min(4,Math.max(1,v.k*(e.deltaY<0?1.12:0.89)));
+      const gx=(mx-v.x)/v.k, gy=(my-v.y)/v.k; return {k:k2, x:mx-gx*k2, y:my-gy*k2}; });
+  }
+  function mZoom(f){
+    const cx=dims.w/2, cy=dims.h/2;
+    setMv(v=>{ const k2=Math.min(4,Math.max(1,v.k*f)); const gx=(cx-v.x)/v.k, gy=(cy-v.y)/v.k; return {k:k2,x:cx-gx*k2,y:cy-gy*k2}; });
+  }
+  function mReset(){ setMv({x:0,y:0,k:1}); }
+
+  useEffect(()=>{
+    const el = wrapRef.current; if(!el) return;
+    const ro = new ResizeObserver(()=>{ const r=el.getBoundingClientRect(); setDims({w:r.width,h:r.height}); });
+    ro.observe(el); return ()=>ro.disconnect();
+  }, []);
+
   // interpolate a vessel's position along its track at time tm
   function vesselAt(v){
     if(!temporal || !v.track) return { x:v.x, y:v.y, hd:v.hd };
@@ -60,27 +84,11 @@ export function MapView({ openEntity }) {
         {/* base map */}
         <svg width="100%" height="100%" style={{ position:"absolute", inset:0, cursor: mdrag.current?"grabbing":"grab", touchAction:"none" }}
           onPointerDown={mDown} onWheel={mWheel}>
-          <defs>
-            <radialGradient id="sea" cx="50%" cy="40%" r="75%">
-              <stop offset="0%" stopColor="oklch(0.30 0.05 230)" stopOpacity="0.5"/>
-              <stop offset="100%" stopColor="oklch(0.16 0.02 240)" stopOpacity="0"/>
-            </radialGradient>
-            <filter id="soft"><feGaussianBlur stdDeviation="6"/></filter>
-          </defs>
+          <MapDefs />
           <rect width="100%" height="100%" fill="url(#sea)"/>
           <g transform={`translate(${mv.x},${mv.y}) scale(${mv.k})`}>
-          {/* stylized landmasses (abstract blobs) */}
-          <g fill="var(--bg-2)" stroke="var(--line)" strokeWidth="1" opacity="0.9">
-            <path d={`M0,${py(0)} L${px(55)},${py(0)} Q${px(50)},${py(18)} ${px(40)},${py(22)} Q${px(20)},${py(28)} 0,${py(26)} Z`}/>
-            <path d={`M${px(58)},${py(0)} L${dims.w},${py(0)} L${dims.w},${py(45)} Q${px(80)},${py(40)} ${px(70)},${py(30)} Q${px(62)},${py(22)} ${px(58)},${py(0)} Z`}/>
-            <path d={`M${px(40)},${py(48)} Q${px(55)},${py(46)} ${px(66)},${py(52)} Q${px(72)},${py(64)} ${px(62)},${py(74)} Q${px(48)},${py(80)} ${px(38)},${py(72)} Q${px(34)},${py(58)} ${px(40)},${py(48)} Z`}/>
-            <path d={`M${px(74)},${py(54)} Q${px(86)},${py(52)} ${dims.w},${py(60)} L${dims.w},${dims.h} L${px(70)},${dims.h} Q${px(72)},${py(70)} ${px(74)},${py(54)} Z`}/>
-          </g>
-          {/* graticule */}
-          <g stroke="var(--grid-color)" strokeWidth="1">
-            {Array.from({length:9}).map((_,i)=><line key={"v"+i} x1={px((i+1)*10)} y1="0" x2={px((i+1)*10)} y2={dims.h}/>)}
-            {Array.from({length:7}).map((_,i)=><line key={"h"+i} x1="0" y1={py((i+1)*12.5)} x2={dims.w} y2={py((i+1)*12.5)}/>)}
-          </g>
+          {/* canonical landmasses + graticule (shared MapCanvas) */}
+          <MapLand w={dims.w} h={dims.h} />
 
           {/* routes */}
           {layers.routes && MAP_ROUTES.map(r=>{
@@ -103,14 +111,8 @@ export function MapView({ openEntity }) {
 
           {/* ports */}
           {layers.ports && MAP_PLACES.map(p=>(
-            <g key={p.id} transform={`translate(${px(p.x)},${py(p.y)})`} style={{ cursor:"pointer" }} onClick={()=>setSel(p.id)}>
-              {sel===p.id && <circle r="16" fill="none" stroke="var(--accent)" strokeWidth="2"/>}
-              {/* F-03: static shape cue for alert ports (colour-independent) */}
-              {p.alert && <circle r="11" fill="none" stroke="var(--alert)" strokeWidth="1.4" strokeDasharray="2.5 2.5"/>}
-              <rect x="-5" y="-5" width="10" height="10" rx="2" transform="rotate(45)"
-                fill={p.alert?"var(--alert)":"var(--warn)"} stroke="var(--bg)" strokeWidth="1.5"/>
-              <text x="11" y="4" fontSize="11.5" fontFamily="var(--font-mono)" fill="var(--text-dim)">{p.name}</text>
-            </g>
+            <PortMarker key={p.id} cx={px(p.x)} cy={py(p.y)} name={p.name}
+              alert={p.alert} selected={sel===p.id} onClick={()=>setSel(p.id)} />
           ))}
 
           {/* vessels */}
@@ -119,19 +121,8 @@ export function MapView({ openEntity }) {
             return (
             <g key={v.id}>
               {trail && <path d={trail} fill="none" stroke={v.alert?"var(--alert)":"var(--accent)"} strokeWidth="1.6" opacity="0.5" strokeDasharray="1 5" strokeLinecap="round"/>}
-              <g transform={`translate(${px(a.x)},${py(a.y)})`} style={{ cursor:"pointer" }} onClick={()=>setSel(v.id)}>
-                {v.alert && <circle r="22" fill="none" stroke="var(--alert)" strokeWidth="1.5" opacity="0.5">
-                  <animate attributeName="r" values="14;24;14" dur="2.6s" repeatCount="indefinite"/>
-                  <animate attributeName="opacity" values="0.6;0;0.6" dur="2.6s" repeatCount="indefinite"/>
-                </circle>}
-                {/* F-03: static dashed ring so alert reads without colour or motion */}
-                {v.alert && <circle r="13" fill="none" stroke="var(--alert)" strokeWidth="1.6" strokeDasharray="2.5 2.5"/>}
-                {sel===v.id && <circle r="15" fill="none" stroke="var(--accent)" strokeWidth="2"/>}
-                <g transform={`rotate(${a.hd})`}>
-                  <path d="M0,-9 L6,8 L0,4 L-6,8 Z" fill={v.alert?"var(--alert)":"var(--accent)"} stroke="var(--bg)" strokeWidth="1.2"/>
-                </g>
-                <text x="12" y="4" fontSize="11.5" fontWeight="600" fontFamily="var(--font-ui)" fill="var(--text)">{v.name}</text>
-              </g>
+              <VesselMarker cx={px(a.x)} cy={py(a.y)} name={v.name} hd={a.hd}
+                alert={v.alert} selected={sel===v.id} animatedHalo onClick={()=>setSel(v.id)} />
             </g>
           );})}
           </g>
@@ -139,18 +130,18 @@ export function MapView({ openEntity }) {
 
         {/* HUD: coords */}
         <div className="panel" style={{ position:"absolute", top:14, left:14, padding:"8px 12px", display:"flex", gap:16 }}>
-          <span className="row gap-6 center"><span className="live-dot"/><span className="eyebrow" style={{ color:"var(--text-dim)" }}>Live AIS</span></span>
+          <span className="row gap-6 center"><span className="live-dot"/><span className="eyebrow" style={{ color:"var(--text-dim)" }}>{tr('Live AIS')}</span></span>
           <span className="t-faint mono" style={{ fontSize:11 }}>34.4°N · 33.0°E</span>
-          <span className="t-faint mono" style={{ fontSize:11 }}>{MAP_VESSELS.length} vessels · {MAP_PLACES.length} ports</span>
+          <span className="t-faint mono" style={{ fontSize:11 }}>{tr('{n} vessels · {m} ports', { n: MAP_VESSELS.length, m: MAP_PLACES.length })}</span>
         </div>
 
         {/* layers control */}
         <div className="panel" style={{ position:"absolute", top:14, right:14, padding:"10px 12px", width:150 }}>
-          <div className="eyebrow" style={{ marginBottom:8 }}>Layers</div>
+          <div className="eyebrow" style={{ marginBottom:8 }}>{tr('Layers')}</div>
           {[["routes","Routes"],["vessels","Vessels"],["ports","Ports"],["risk","Risk zones"]].map(([k,l])=>(
             <div key={k} onClick={()=>toggle(k)} className="row between center" style={{ width:"100%", padding:"5px 2px", cursor:"pointer" }}>
-              <span style={{ fontSize:12.5, color: layers[k]?"var(--text)":"var(--text-faint)" }}>{l}</span>
-              <Switch on={layers[k]} onChange={()=>toggle(k)} size="sm" label={l} />
+              <span style={{ fontSize:12.5, color: layers[k]?"var(--text)":"var(--text-faint)" }}>{tr(l)}</span>
+              <Switch on={layers[k]} onChange={()=>toggle(k)} size="sm" label={tr(l)} />
             </div>
           ))}
         </div>
@@ -159,8 +150,8 @@ export function MapView({ openEntity }) {
         <div className="panel row gap-2" style={{ position:"absolute", bottom:14, left:14, padding:4 }}>
           <button className="icon-btn" onClick={()=>mZoom(1.25)}><Icon name="zoomIn"/></button>
           <button className="icon-btn" onClick={()=>mZoom(0.8)}><Icon name="zoomOut"/></button>
-          <button className="icon-btn" onClick={()=>mReset({x:0,y:0,k:1})}><Icon name="target"/></button>
-          <button className="icon-btn" title="Temporal analysis" onClick={()=>setTemporal(s=>!s)} style={{ color: temporal?"var(--accent)":"var(--text-dim)" }}><Icon name="clock"/></button>
+          <button className="icon-btn" onClick={mReset}><Icon name="target"/></button>
+          <button className="icon-btn" title={tr('Temporal analysis')} onClick={()=>setTemporal(s=>!s)} style={{ color: temporal?"var(--accent)":"var(--text-dim)" }}><Icon name="clock"/></button>
         </div>
 
         {/* temporal scrubber */}
@@ -188,7 +179,7 @@ export function MapView({ openEntity }) {
       <aside style={{ width:300, borderLeft:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", flex:"none" }}>
         {selObj && (
           <div style={{ padding:18, borderBottom:"1px solid var(--line-soft)" }}>
-            <div className="eyebrow" style={{ marginBottom:8 }}>{MAP_VESSELS.includes(selObj)?"Vessel":"Facility"}</div>
+            <div className="eyebrow" style={{ marginBottom:8 }}>{MAP_VESSELS.includes(selObj)?tr('Vessel'):tr('Facility')}</div>
             <div className="row gap-12 center">
               <TypeGlyph type={MAP_VESSELS.includes(selObj)?"vessel":"port"} size={42}/>
               <div className="col gap-6" style={{ flex:1, minWidth:0 }}>
@@ -198,25 +189,25 @@ export function MapView({ openEntity }) {
             </div>
             <div className="col gap-2" style={{ marginTop:14 }}>
               {(MAP_VESSELS.includes(selObj)
-                ? [["Speed",selObj.speed],["Heading",selObj.hd+"°"],["Status",selObj.status],["Position","34.4°N 33.0°E"]]
-                : [["LOCODE",ENTITY_BY_ID[selObj.id]?.attrs?.LOCODE||"—"],["Type","Port"],["Risk",riskLabel(selObj.risk)]]
+                ? [["Speed",selObj.speed],["Heading",selObj.hd+"°"],["Status",tr(selObj.status)],["Position","34.4°N 33.0°E"]]
+                : [["LOCODE",ENTITY_BY_ID[selObj.id]?.attrs?.LOCODE||"—"],["Type",tr("Port")],["Risk",tr(riskLabel(selObj.risk))]]
               ).map(([k,v])=>(
                 <div key={k} className="row between" style={{ padding:"7px 0", borderBottom:"1px solid var(--line-soft)" }}>
-                  <span className="t-faint" style={{ fontSize:12.5 }}>{k}</span>
+                  <span className="t-faint" style={{ fontSize:12.5 }}>{tr(k)}</span>
                   <span className="mono" style={{ fontSize:12.5, color:"var(--text)" }}>{v}</span>
                 </div>
               ))}
             </div>
             {ENTITY_BY_ID[selObj.id] && (
               <button className="btn primary" style={{ width:"100%", marginTop:14 }} onClick={()=>openEntity(selObj.id)}>
-                <Icon name="expand"/>Open 360° profile
+                <Icon name="expand"/>{tr('Open 360° profile')}
               </button>
             )}
           </div>
         )}
         <div style={{ padding:18 }}>
           <div className="row between center" style={{ marginBottom:12 }}>
-            <div className="eyebrow">Event feed</div><span className="live-dot"/>
+            <div className="eyebrow">{tr('Event feed')}</div><span className="live-dot"/>
           </div>
           <div className="col gap-2">
             {[
@@ -225,11 +216,11 @@ export function MapView({ openEntity }) {
               ["04:30","Speed change · 11.4 kn","warn"],
               ["02:15","Entered risk zone · RUNVS","alert"],
               ["23:50","Rendezvous detected · 2 vessels","warn"],
-            ].map(([t,txt,sev],i)=>(
+            ].map(([tt,txt,sev],i)=>(
               <div key={i} className="row gap-10" style={{ padding:"9px 0", borderBottom:"1px solid var(--line-soft)" }}>
-                <span className="mono t-faint" style={{ fontSize:11, width:42, flex:"none" }}>{t}</span>
+                <span className="mono t-faint" style={{ fontSize:11, width:42, flex:"none" }}>{tt}</span>
                 <span style={{ marginTop:1, color:`var(--${sev==="ok"?"ok":sev})` }}><Icon name={sev==="alert"?"alertTri":sev==="warn"?"flag":"check"} size={14}/></span>
-                <span style={{ fontSize:12.5 }} className="t-dim">{txt}</span>
+                <span style={{ fontSize:12.5 }} className="t-dim">{tr(txt)}</span>
               </div>
             ))}
           </div>

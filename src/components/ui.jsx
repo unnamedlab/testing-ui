@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { EDGES, ENTITY_BY_ID, TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
+import { useEffect, useState } from 'react';
+import { TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — Icons + shared UI primitives
@@ -114,106 +115,9 @@ export function Badge({ kind, children, dot }) {
 }
 
 export function RiskPill({ r }) {
+  const { t } = useI18n();
   const band = riskBand(r);
-  return <span className={"badge " + band}><span className="dt" />{r} · {riskLabel(r)}</span>;
-}
-
-// ---- Single source of truth for status tokens (replaces the per-view ST / DSTATUS /
-// VST / BUILD maps and the inline `x==="healthy"?"ok":"warn"` ternaries). Maps a
-// status string → Badge kind + display label. Severity (SEV) and check icons (CHK)
-// are a different axis and stay in their data modules. ----
-export const STATUS = {
-  healthy:   { kind: "ok",     label: "healthy" },
-  building:  { kind: "accent", label: "building" },
-  degraded:  { kind: "warn",   label: "degraded" },
-  failed:    { kind: "alert",  label: "failed" },
-  passing:   { kind: "ok",     label: "passing" },
-  running:   { kind: "accent", label: "running" },
-  deployed:  { kind: "ok",     label: "deployed" },
-  serving:   { kind: "ok",     label: "serving" },
-  offline:   { kind: "warn",   label: "offline" },
-  connected: { kind: "ok",     label: "connected" },
-  staging:   { kind: "warn",   label: "staging" },
-  archived:  { kind: "",       label: "archived" },
-  champion:  { kind: "accent", label: "champion" },
-};
-const STATUS_VAR = { ok: "var(--ok)", warn: "var(--warn)", alert: "var(--alert)", info: "var(--info)", accent: "var(--accent)", violet: "var(--violet)", "": "var(--text-dim)" };
-export function statusMeta(status) { return STATUS[status] || { kind: "", label: String(status ?? "—") }; }
-export function statusColor(status) { return STATUS_VAR[statusMeta(status).kind] || "var(--text-dim)"; }
-export function StatusBadge({ status, label, icon }) {
-  const m = statusMeta(status);
-  return <Badge kind={m.kind} dot>{icon && <Icon name={icon} size={11} />}{label || m.label}</Badge>;
-}
-
-// ---- ColorGlyph: tile de icono coloreado (color-mix 16% + anillo inset). Reemplaza
-// AgentGlyph (Reason), ActionGlyph (Actions) y KindGlyph (Projects), idénticos a mano. ----
-export function ColorGlyph({ icon, color, size = 38, glyphScale = 0.5 }) {
-  const s = size;
-  return (
-    <div style={{ width: s, height: s, borderRadius: Math.round(s * 0.28), flex: "none", display: "grid", placeItems: "center",
-      background: `color-mix(in oklab, ${color} 16%, var(--bg-2))`, color, boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${color} 32%, transparent)` }}>
-      <Icon name={icon} size={Math.round(s * glyphScale)} />
-    </div>
-  );
-}
-
-// ---- md inline: **bold** + saltos de línea → JSX (sin dangerouslySetInnerHTML).
-// Reemplaza mdBold (Reason) y mdToHtml (Copilot). ----
-export function mdInline(text) {
-  return String(text).split("\n").map((line, li) => (
-    <span key={li}>{li > 0 && <br />}{line.split(/(\*\*[^*]+\*\*)/g).map((p, i) =>
-      p.startsWith("**") ? <b key={i} style={{ color: "var(--text)", fontWeight: 600 }}>{p.slice(2, -2)}</b> : <span key={i}>{p}</span>)}</span>
-  ));
-}
-
-// ---- AnswerCard: respuesta IA fundamentada (texto + objetos citados + acciones).
-// Núcleo compartido por Reason.Console y Copilot — antes dos parsers markdown y dos
-// renders de entidades citadas distintos. ----
-export function AnswerCard({ text, cites, openEntity, actions, onAction, label = "Grounded answer", citeSize = 18, showRisk = false, style, children }) {
-  return (
-    <div className="card" style={{ padding: 14, background: "var(--bg-1)", ...style }}>
-      {label && <div className="row gap-8 center" style={{ marginBottom: 8 }}><span style={{ color: "var(--accent)" }}><Icon name="sparkles" size={15} /></span><span className="eyebrow">{label}</span></div>}
-      {text != null && <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0 }} className="t-dim">{mdInline(text)}</p>}
-      {cites && cites.length > 0 && (
-        <div className="row gap-6 wrap" style={{ marginTop: (text != null || label) ? 12 : 0 }}>
-          {cites.map((id) => { const e = ENTITY_BY_ID[id]; if (!e) return null; return (
-            <button key={id} type="button" onClick={openEntity ? () => openEntity(id) : undefined}
-              className="row gap-6 center" style={{ background: "var(--bg-2)", border: "1px solid var(--line-soft)", borderRadius: 7, padding: "3px 8px 3px 4px", cursor: openEntity ? "pointer" : "default", color: "var(--text)" }}>
-              <TypeGlyph type={e.type} size={citeSize} /><span style={{ fontSize: 11.5, fontWeight: 600, whiteSpace: "nowrap" }}>{e.name}</span>{showRisk && <RiskPill r={e.risk} />}
-            </button>
-          ); })}
-        </div>
-      )}
-      {actions && actions.length > 0 && (
-        <div className="row gap-8 wrap" style={{ marginTop: 12 }}>
-          {actions.map(([v, lbl, ic]) => <button key={v} className="btn sm" onClick={() => onAction && onAction(v)}><Icon name={ic} size={14} />{lbl}</button>)}
-        </div>
-      )}
-      {children}
-    </div>
-  );
-}
-
-// ---- MasterList / MasterItem: rail maestro (aside + lista seleccionable accent-ghost).
-// Reemplaza los asides idénticos de Reason.AgentsTab y Models.Registry. ----
-export function MasterList({ title, count, onAdd, width, children }) {
-  return (
-    <aside style={{ width: width || "var(--sidebar)", flex: "none", borderRight: "1px solid var(--line-soft)", background: "var(--bg-1)", overflow: "auto" }}>
-      <div className="row between center" style={{ padding: "14px 14px 8px" }}>
-        <div className="eyebrow">{title}{count != null ? ` · ${count}` : ""}</div>
-        {onAdd && <button className="btn ghost sm" style={{ width: 26, padding: 0 }} onClick={onAdd}><Icon name="plus" size={15} /></button>}
-      </div>
-      <div style={{ padding: "0 8px 16px" }}>{children}</div>
-    </aside>
-  );
-}
-export function MasterItem({ active, onClick, children }) {
-  return (
-    <button type="button" onClick={onClick} className="row gap-10 center"
-      style={{ width: "100%", textAlign: "left", border: "none", background: active ? "var(--accent-ghost)" : "none", borderRadius: 9, padding: "10px", cursor: "pointer", marginBottom: 2, boxShadow: active ? "inset 0 0 0 1px var(--accent-dim)" : "none" }}>
-      {children}
-    </button>
-  );
+  return <span className={"badge " + band}><span className="dt" />{r} · {t(riskLabel(r))}</span>;
 }
 
 // ---- F-06: single source of truth for on/off toggles ----
@@ -290,46 +194,56 @@ export function Gauge({ value, size, label, sub, color }) {
   );
 }
 
-// section header
+// section header (in-page section title) — uses the tokenized --title-section
 export function SectionHead({ eyebrow, title, children }) {
   return (
     <div className="row between center" style={{ marginBottom: 14, gap: 16 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         {eyebrow && <div className="eyebrow" style={{ marginBottom: 5 }}>{eyebrow}</div>}
-        <div className="serif" style={{ fontSize: 21, fontWeight: 500, letterSpacing:"-0.01em" }}>{title}</div>
+        <div className="h-section">{title}</div>
       </div>
       <div className="row gap-8 center" style={{ flex: "none" }}>{children}</div>
     </div>
   );
 }
 
-// PageHeader — cabecera de VISTA (eyebrow + título + acciones) con UN tamaño canónico.
-// Resuelve F-05: antes cada vista declaraba su propio fontSize de H1 (26/27/28/29/30…) inline.
-// Los títulos hero/detalle (entidad, caso, workspace, welcome) conservan su escala mayor aparte.
-export function PageHeader({ eyebrow, title, sub, children }) {
+// ---- UX-02 / UX-4: PageHeader — el ÚNICO bloque de título de página ----
+// eyebrow + título + subtítulo + acciones. `variant` ("page" | "hero") elige la
+// escala. `glyph` antepone un icono/insignia (cabeceras de detalle: modelo, agente).
+// `mono` renderiza el título en monoespaciada (ids tipo código: modelos, repos).
+export function PageHeader({ eyebrow, title, sub, variant, glyph, mono, children }) {
+  const titleEl = mono
+    ? <h1 className="mono" style={{ fontSize: "var(--title-page)", fontWeight: 600, letterSpacing: "-0.01em", margin: 0, lineHeight: 1.1 }}>{title}</h1>
+    : <h1 className={variant === "hero" ? "h-hero" : "h-page"}>{title}</h1>;
+  const body = (
+    <div style={{ minWidth: 0 }}>
+      {eyebrow && <div className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</div>}
+      {titleEl}
+      {sub && <div className="ph-sub">{sub}</div>}
+    </div>
+  );
   return (
-    <div className="row between center" style={{ marginBottom: 18, gap: 16 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {eyebrow && <div className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</div>}
-        <h1 className="serif" style={{ fontSize: 28, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>{title}</h1>
-        {sub && <div className="t-dim" style={{ fontSize: 14, marginTop: 6, maxWidth: "72ch" }}>{sub}</div>}
+    <div className="page-head">
+      <div className="ph-l" style={glyph ? { display: "flex", gap: 14, alignItems: "center" } : undefined}>
+        {glyph}
+        {body}
       </div>
-      {children && <div className="row gap-8 center" style={{ flex: "none" }}>{children}</div>}
+      {children && <div className="ph-actions">{children}</div>}
     </div>
   );
 }
 
 // stat card
-export function Stat({ label, value, sub, trend, series, color, icon, valueColor, iconColor }) {
+export function Stat({ label, value, sub, trend, series, color, icon }) {
   return (
     <div className="card" style={{ padding: 16, display:"flex", flexDirection:"column", gap:10, minWidth:0 }}>
       <div className="row between center">
         <div className="eyebrow">{label}</div>
-        {icon && <span className={iconColor?undefined:"t-faint"} style={iconColor?{ color: iconColor }:undefined}><Icon name={icon} size={16}/></span>}
+        {icon && <span className="t-faint"><Icon name={icon} size={16}/></span>}
       </div>
       <div className="row between center" style={{ gap:10 }}>
         <div>
-          <div className="mono" style={{ fontSize: 26, fontWeight: 600, lineHeight:1, letterSpacing:"-0.02em", color: valueColor }}>{value}</div>
+          <div className="mono" style={{ fontSize: 26, fontWeight: 600, lineHeight:1, letterSpacing:"-0.02em" }}>{value}</div>
           {sub && <div style={{ fontSize:12, marginTop:6 }} className={trend==="up"?"t-accent":trend==="down"?"":"t-dim"}>
             <span style={{ color: trend==="up"?"var(--ok)":trend==="down"?"var(--alert)":"var(--text-faint)" }}>{sub}</span>
           </div>}
@@ -384,6 +298,19 @@ export function ListSkeleton({ rows }){
   );
 }
 
+// ---- UX-5: estado vacío unificado --------------------------------------------
+// Reemplaza las copias hand-rolled "card col center + Icon check" que vivían en
+// Resolve / Actions / Governance / NotifDrawer. Un único patrón, una sola fuente.
+export function EmptyState({ icon, title, hint, compact }) {
+  return (
+    <div className="card col center" style={{ padding: compact ? "22px 16px" : "34px 18px", gap: 8, color: "var(--text-faint)", textAlign: "center" }}>
+      <Icon name={icon || "check"} size={compact ? 20 : 22} />
+      <div style={{ fontSize: 13, color: "var(--text-dim)", fontWeight: 500 }}>{title}</div>
+      {hint && <div style={{ fontSize: 11.5, maxWidth: "40ch", lineHeight: 1.5 }}>{hint}</div>}
+    </div>
+  );
+}
+
 /* ============================================================
    Capa de primitivas compartida (integración de la auditoría)
    Mueve aquí componentes que vivían dentro de vistas y unifica
@@ -405,7 +332,9 @@ export function Avatar({ who, name, size }) {
   );
 }
 
-// ---- Tabs (reemplaza las 7 copias .act-tab/.rsn-tab/.mdl-tab/.gov-tab/.proj-tab/.ent-tab/.cr-tab) ----
+// ---- Tabs: sub-navegación DENTRO del detalle de un objeto (entity 360, project
+// detail). Regla de navegación (UX-1): WBBar = conmutador de secciones de MÓDULO
+// (motor + lentes); Tabs (subrayado) = sub-navegación a nivel de detalle/objeto. ----
 // items: [{ label, icon?, badge? }]; value: índice activo; onChange(i).
 export function Tabs({ items, value, onChange, variant }) {
   return (
@@ -421,120 +350,31 @@ export function Tabs({ items, value, onChange, variant }) {
   );
 }
 
-/* ============================================================
-   Cámara compartida + shells de overlay (integración auditoría)
-   ============================================================ */
-
-// ---- useViewport: motor de cámara pan/zoom (GraphView + MapView). Antes cada
-// vista duplicaba wheel-zoom-about-cursor, zoom-about-center, fit/reset y el
-// ResizeObserver; solo cambiaban los límites de k. ----
-export function useViewport({ minK = 0.5, maxK = 4, initial = { x: 0, y: 0, k: 1 } } = {}) {
-  const ref = useRef(null);
-  const [view, setView] = useState(initial);
-  const [size, setSize] = useState({ w: 1000, h: 700 });
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const ro = new ResizeObserver(() => { const r = el.getBoundingClientRect(); setSize({ w: r.width, h: r.height }); });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const clampK = useCallback((k) => Math.min(maxK, Math.max(minK, k)), [minK, maxK]);
-  // zoom about a point in element-pixel space (sx, sy relative to the element)
-  const zoomAt = useCallback((sx, sy, factor) => {
-    setView((v) => { const k2 = clampK(v.k * factor); const gx = (sx - v.x) / v.k, gy = (sy - v.y) / v.k; return { k: k2, x: sx - gx * k2, y: sy - gy * k2 }; });
-  }, [clampK]);
-  const onWheel = useCallback((e) => {
-    e.preventDefault();
-    const el = ref.current; if (!el) return;
-    const r = el.getBoundingClientRect();
-    zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 0.89);
-  }, [zoomAt]);
-  const zoomBy = useCallback((factor) => {
-    const el = ref.current; const r = el ? el.getBoundingClientRect() : { width: size.w, height: size.h };
-    zoomAt(r.width / 2, r.height / 2, factor);
-  }, [zoomAt, size]);
-  const fit = useCallback(({ w, h, pad = 0.9 }) => {
-    const el = ref.current; if (!el) return; const r = el.getBoundingClientRect();
-    const k = Math.min(r.width / w, r.height / h) * pad;
-    setView({ k, x: r.width / 2 - (w / 2) * k, y: r.height / 2 - (h / 2) * k });
-  }, []);
-  const reset = useCallback((v) => setView(v), []);
-  return { ref, view, setView, size, onWheel, zoomBy, fit, reset };
-}
-
-// ---- useOverlay: Esc-to-close + focus-trap + focus-restore for modal/drawer
-// shells. Capture-phase keydown so it wins over global handlers. ----
-function useOverlay(open, onClose) {
-  const ref = useRef(null);
-  // onClose via ref so re-renders (e.g. typing in a modal input that passes an
-  // inline onClose) don't re-run the effect and steal focus. Effect deps = [open]
-  // only → focus is grabbed once on open, restored once on close.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  useEffect(() => {
-    if (!open) return;
-    const prev = typeof document !== "undefined" ? document.activeElement : null;
-    function onKey(e) {
-      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onCloseRef.current && onCloseRef.current(); return; }
-      if (e.key === "Tab" && ref.current) {
-        const f = ref.current.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
-        if (!f.length) return;
-        const first = f[0], last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    }
-    document.addEventListener("keydown", onKey, true);
-    const id = setTimeout(() => {
-      const el = ref.current; if (!el || el.contains(document.activeElement)) return; // respect autoFocus / existing focus
-      el.querySelector('input,textarea,select,button,[tabindex]:not([tabindex="-1"])')?.focus?.();
-    }, 30);
-    return () => { document.removeEventListener("keydown", onKey, true); clearTimeout(id); try { prev?.focus?.(); } catch { /* ignore */ } };
-  }, [open]);
-  return ref;
-}
-
-// ---- Modal: centered dialog shell (scrim + Esc + focus-trap + click-outside).
-// Replaces the hand-rolled scrim/panel chrome in Actions/Admin/Shortcuts. ----
-export function Modal({ open, onClose, children, width = "min(560px,94vw)", zIndex = 200, scrimPad, panelStyle, panelClass }) {
-  const ref = useOverlay(open, onClose);
-  if (!open) return null;
+// ---- Lineage (consolidación · clúster G + colisión de nombres) ----
+// LineageSteps = primitiva (pasos origen→transformación→destino, recibe `chain`).
+// LineageCard  = ÚNICO envoltorio de tarjeta de linaje, con UN solo rótulo
+//                ("Data lineage") en toda la app. La versión ligada a un objeto
+//                vive en Security.ObjectLineage({ id }).
+// chain: [{ stage?, label, meta?, glyph? }].
+export function LineageCard({ chain, title, verified }) {
+  const { t } = useI18n();
   return (
-    <div onClick={onClose} role="presentation" style={{ position: "fixed", inset: 0, zIndex, background: "var(--scrim)", backdropFilter: "var(--scrim-blur)", display: "grid", placeItems: "center", padding: scrimPad }}>
-      <div ref={ref} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}
-        className={"panel rise" + (panelClass ? " " + panelClass : "")}
-        style={{ width, background: "var(--bg-1)", boxShadow: "var(--shadow-3)", overflow: "hidden", ...panelStyle }}>
-        {children}
+    <div className="card" style={{ padding: 16 }}>
+      <div className="row between center" style={{ marginBottom: 14 }}>
+        <div className="eyebrow">{t(title || 'Data lineage')}</div>
+        {verified && <span className="badge accent"><Icon name="check" size={12} />{t('Verified')}</span>}
       </div>
+      <LineageSteps chain={chain} />
     </div>
   );
 }
 
-// ---- Drawer: side panel shell (scrim + Esc + focus-trap + slideIn). Replaces
-// the hand-rolled right-drawer chrome in Copilot/Cases/Health. ----
-export function Drawer({ open, onClose, children, width = "var(--drawer)", zIndex = 120, side = "right", panelStyle, panelClass }) {
-  const ref = useOverlay(open, onClose);
-  if (!open) return null;
-  const edge = side === "left" ? { left: 0, borderRight: "1px solid var(--line)" } : { right: 0, borderLeft: "1px solid var(--line)" };
-  return (
-    <div onClick={onClose} role="presentation" style={{ position: "fixed", inset: 0, zIndex, background: "var(--scrim-soft)", backdropFilter: "var(--scrim-blur)" }}>
-      <div ref={ref} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}
-        className={"panel" + (panelClass ? " " + panelClass : "")}
-        style={{ position: "absolute", top: 0, bottom: 0, ...edge, width, background: "var(--bg-1)", borderRadius: 0, boxShadow: "var(--shadow-3)", display: "flex", flexDirection: "column", overflow: "auto", animation: "slideIn .26s cubic-bezier(.2,.7,.2,1) both", ...panelStyle }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-// ---- Lineage (reemplaza Security.Lineage + las 3 versiones inline de Health/Models/Code) ----
-// chain: [{ stage?, label, meta?, glyph? }] · origen → transformación → destino.
-export function Lineage({ chain }) {
+export function LineageSteps({ chain }) {
   return (
     <div className="lin">
       {chain.map((s, i) => (
         <div key={i} className={"lin-step" + (i === chain.length - 1 ? " dest" : "")}>
-          <span className="lin-ic">{s.glyph && <Icon name={s.glyph} size={17} />}</span>
+          <span className="lin-ic">{(s.glyph || s.icon) && <Icon name={s.glyph || s.icon} size={17} />}</span>
           <div style={{ minWidth: 0 }}>
             {s.stage && <div className="lin-stage">{s.stage}</div>}
             <div className="lin-l">{s.label}</div>
@@ -546,103 +386,90 @@ export function Lineage({ chain }) {
   );
 }
 
-// ---- ObjectList: lista de objetos de la ontología compartida ----
-// items: entidades ya filtradas. variant "table" (Explore) | "cards" (Search)
-// | "grid" (Watchlist + Ontology sample objects — tarjetas en rejilla).
-export function ObjectList({ items, variant = "cards", openEntity, emptyText }) {
-  if (!items || items.length === 0)
-    return <div className="t-faint" style={{ textAlign: "center", padding: "26px 0", fontSize: 13 }}>{emptyText || "Sin objetos que coincidan."}</div>;
-
-  if (variant === "grid") {
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 12 }}>
-        {items.map((e) => (
-          <button key={e.id} className="card hover" onClick={() => openEntity && openEntity(e.id)} style={{ padding: 14, textAlign: "left", cursor: "pointer" }}>
-            <div className="row between center" style={{ marginBottom: 10 }}>
-              <TypeGlyph type={e.type} size={32} />
-              {e.watch && <Badge kind="alert" dot>watch</Badge>}
-            </div>
-            <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.name}</div>
-            <div className="t-faint" style={{ fontSize: 12, marginTop: 2, marginBottom: 10 }}>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type} · {e.sub}</div>
-            <RiskPill r={e.risk} />
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  if (variant === "table") {
-    return (
-      <div className="card" style={{ overflow: "hidden" }}>
-        <table className="tbl">
-          <thead><tr><th>Objeto</th><th>Tipo</th><th>Detalle</th><th style={{ textAlign: "right" }}>Riesgo</th><th></th></tr></thead>
-          <tbody>
-            {items.map((e) => (
-              <tr key={e.id} onClick={() => openEntity && openEntity(e.id)}>
-                <td><span className="row gap-10 center"><TypeGlyph type={e.type} size={28} /><span style={{ color: "var(--text)", fontWeight: 600 }}>{e.name}</span>{e.watch && <span style={{ color: "var(--alert)" }}><Icon name="bookmark" size={13} /></span>}</span></td>
-                <td>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type}</td>
-                <td className="t-dim">{e.sub}</td>
-                <td style={{ textAlign: "right" }}><RiskPill r={e.risk} /></td>
-                <td style={{ textAlign: "right", color: "var(--text-faint)" }}><Icon name="chevron" size={15} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
+// ---- CatalogGrid + CatalogCard (P3) ------------------------------------------
+// One primitive for the "typed catalog" pattern previously hand-rolled in
+// Actions·Action types, Reason·Logic functions and Models·Objectives: a
+// responsive grid of cards, each with a glyph, title, optional badge/desc,
+// free body (chips, steps, metrics…) and an optional footer (meta + action).
+export function CatalogGrid({ min, gap, children }) {
   return (
-    <div className="col gap-8">
-      {items.map((e) => (
-        <button key={e.id} className="card hover" onClick={() => openEntity && openEntity(e.id)} style={{ padding: 14, textAlign: "left", cursor: "pointer" }}>
-          <div className="row gap-14 center">
-            <TypeGlyph type={e.type} size={40} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="row gap-8 center"><span style={{ fontSize: 15, fontWeight: 600 }}>{e.name}</span>{e.watch && <Badge kind="alert" dot>watchlist</Badge>}</div>
-              <div className="t-dim" style={{ fontSize: 13, marginTop: 2 }}>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type} · {e.sub}</div>
-            </div>
-            <div className="row gap-16 center">
-              <div className="col" style={{ alignItems: "flex-end" }}>
-                <span className="eyebrow">Connections</span>
-                <span className="mono" style={{ fontSize: 15 }}>{EDGES.filter((ed) => ed.s === e.id || ed.t === e.id).length}</span>
-              </div>
-              <RiskPill r={e.risk} />
-              <span className="t-faint"><Icon name="arrowRight" size={16} /></span>
-            </div>
-          </div>
-        </button>
-      ))}
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(${min || 300}px, 1fr))`, gap: gap || 16 }}>
+      {children}
     </div>
   );
 }
 
-// ---- ArtifactExplorer: tabla de datos/artefactos parametrizable ----
-// items: filas · columns: [{ header, align?, dim?, key?, render?(item) }] · onOpen?(item)
-// title/meta: barra-cabecera opcional dentro de la card (p.ej. "Datasets · 4 monitored").
-export function ArtifactExplorer({ items, columns, onOpen, empty, title, meta }) {
-  if (!items || items.length === 0)
-    return <div className="t-faint" style={{ padding: "28px", textAlign: "center", fontSize: 13 }}>{empty || "Sin elementos."}</div>;
+export function CatalogCard({ icon, iconColor, title, mono, badge, desc, footer, onClick, children }) {
+  const c = iconColor || "var(--accent)";
   return (
-    <div className="card" style={{ overflow: "hidden" }}>
-      {(title || meta) && (
-        <div className="row between center" style={{ padding: "13px 16px", borderBottom: "1px solid var(--line-soft)" }}>
-          {title && <div className="eyebrow">{title}</div>}
-          {meta && <span className="t-faint mono" style={{ fontSize: 11 }}>{meta}</span>}
-        </div>
-      )}
-      <table className="tbl">
-        <thead><tr>{columns.map((c, i) => <th key={i} style={c.align ? { textAlign: c.align } : undefined}>{c.header}</th>)}</tr></thead>
-        <tbody>
-          {items.map((it, i) => (
-            <tr key={it.id || it.name || i} onClick={onOpen ? () => onOpen(it) : undefined} style={onOpen ? { cursor: "pointer" } : undefined}>
-              {columns.map((c, j) => (
-                <td key={j} className={c.dim ? "t-dim" : undefined} style={c.align ? { textAlign: c.align } : undefined}>{c.render ? c.render(it) : it[c.key]}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className={"card" + (onClick ? " hover" : "")} onClick={onClick}
+      style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12, cursor: onClick ? "pointer" : "default" }}>
+      <div className="row between center">
+        {icon && <span style={{ width: 40, height: 40, borderRadius: 11, flex: "none", display: "grid", placeItems: "center",
+          background: `color-mix(in oklab, ${c} 16%, var(--bg-2))`, color: c, boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${c} 32%, transparent)` }}>
+          <Icon name={icon} size={20} /></span>}
+        {badge}
+      </div>
+      <div>
+        <div className={mono ? "mono" : ""} style={{ fontSize: 15, fontWeight: 600 }}>{title}</div>
+        {desc && <div className="t-dim" style={{ fontSize: 12.5, marginTop: 3, lineHeight: 1.45 }}>{desc}</div>}
+      </div>
+      {children}
+      {footer && <>
+        <div className="divider" />
+        <div className="row between center">{footer}</div>
+      </>}
+    </div>
+  );
+}
+
+// ---- WBBar (R-1 / I-1) -------------------------------------------------------
+// The single, canonical module tab bar. Phase 2 introduced it for the
+// Graph/Ontology/Pipelines workbenches; it now lives here as a shared primitive
+// so every "engine + lenses" module (incl. CasesWorkbench) uses ONE switcher
+// instead of hand-rolling its own .seg. Optional slots:
+//   counts   { tabKey: number }  — a muted count beside a tab label
+//   controls node                — extra controls after the tabs (e.g. filters)
+//   actions  node                — right-aligned actions (e.g. a "New" button)
+//   hint     string              — muted helper text (translated)
+export function WBBar({ tabs, mode, setMode, hint, counts, controls, actions }) {
+  const { t } = useI18n();
+  return (
+    <div className="wb-bar">
+      <div className="seg" role="tablist">
+        {tabs.map(([k, label]) => (
+          <button key={k} role="tab" aria-selected={mode === k}
+            className={mode === k ? "on" : ""} onClick={() => setMode(k)}>
+            {t(label)}
+            {counts && counts[k] != null && <span className="mono" style={{ opacity: .7, marginLeft: 6 }}>{counts[k]}</span>}
+          </button>
+        ))}
+      </div>
+      {controls}
+      {hint && <span className="wb-hint">{t(hint)}</span>}
+      {actions && <div className="wb-actions">{actions}</div>}
+    </div>
+  );
+}
+
+// ---- Seg (consolidación · conmutador inline) -------------------------------
+// Control segmentado para alternar OPCIONES inline (rango temporal, tipo de
+// gráfico, etc.). NO confundir con WBBar (secciones de módulo) ni Tabs (sub-nav
+// de detalle). options: string | { v, l, ic }. (Antes reimplementado en Analytics.)
+export function Seg({ value, options, onChange }) {
+  return (
+    <div className="seg" role="tablist">
+      {options.map((o) => {
+        const v = (o && typeof o === "object") ? o.v : o;
+        const l = (o && typeof o === "object") ? o.l : o;
+        return (
+          <button key={v} type="button" role="tab" aria-selected={value === v}
+            className={value === v ? "on" : ""} onClick={() => onChange && onChange(v)}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {o && o.ic && <Icon name={o.ic} size={14} />}{l}
+          </button>
+        );
+      })}
     </div>
   );
 }

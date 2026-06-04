@@ -8,6 +8,7 @@ import { PipelineView } from './PipelineView.jsx';
 import { HealthView } from './HealthView.jsx';
 import { OntologyAuthor } from './OntologyAuthor.jsx';
 import { ObjectViewsAuthor } from './ObjectViewsAuthor.jsx';
+import { WBBar } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Phase 2 fusions ("one engine per capability")
@@ -15,21 +16,8 @@ import { ObjectViewsAuthor } from './ObjectViewsAuthor.jsx';
    with a mode/tab switcher. The underlying views are untouched;
    we only add a header so redundant top-level destinations
    collapse into lenses of one workbench.
+   WBBar is the shared module tab bar (see components/ui.jsx).
    ============================================================ */
-
-function WBBar({ tabs, mode, setMode, hint }) {
-  return (
-    <div className="wb-bar">
-      <div className="seg" role="tablist">
-        {tabs.map(([k, label]) => (
-          <button key={k} role="tab" aria-selected={mode === k}
-            className={mode === k ? "on" : ""} onClick={() => setMode(k)}>{label}</button>
-        ))}
-      </div>
-      {hint && <span className="wb-hint">{hint}</span>}
-    </div>
-  );
-}
 
 // Graph absorbs Graph Analysis + Linked analysis — one graph engine, three lenses.
 export function GraphWorkbench({ openEntity, go, initialMode }) {

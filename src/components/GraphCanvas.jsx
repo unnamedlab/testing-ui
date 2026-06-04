@@ -5,10 +5,11 @@ import { ICONS } from './ui.jsx';
    ------------------------------------------------------------
    Single source of truth for how a node and an edge are drawn,
    consumed by all three graph surfaces (GraphView, Graph
-   Analysis, Linked brushing). Each surface keeps its own data,
-   coordinate space and interaction shell — only the drawing
-   vocabulary lives here, so the three look identical and there
-   is one place to restyle the graph.
+   Analysis, Linked brushing). The graph DATA, adjacency and
+   algorithms are shared too — see data/graph_model.js. Each
+   surface keeps only its own coordinate space and interaction
+   shell; the drawing vocabulary lives here, so the three look
+   identical and there is one place to restyle the graph.
    ============================================================ */
 
 // One palette for the normalized graphs (analysis + brushing). The main

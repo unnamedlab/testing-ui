@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — TimeScrubber + useTimeline (regenerado)
@@ -29,12 +30,13 @@ export function useTimeline(tEnd) {
 }
 
 export function TimeScrubber({ value, onChange, playing, setPlaying, width }) {
+  const { t } = useI18n();
   const maxRef = useRef(1);
   if (value > maxRef.current) maxRef.current = value;
   const max = maxRef.current || 1;
   return (
     <div className="panel" style={{ display: "flex", alignItems: "center", gap: 11, padding: "8px 12px", width: width || 560, background: "var(--bg-1)" }}>
-      <button className="icon-btn" onClick={() => setPlaying((p) => !p)} title={playing ? "Pausar" : "Reproducir"}
+      <button className="icon-btn" onClick={() => setPlaying((p) => !p)} title={playing ? t('Pause') : t('Play')}
         style={{ color: playing ? "var(--accent)" : "var(--text-dim)" }}><Icon name="play" /></button>
       <span className="live-dot" style={{ opacity: playing ? 1 : 0.25 }} />
       <input type="range" min="0" max={max} step={max / 200} value={Math.min(value, max)}

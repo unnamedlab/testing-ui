@@ -1,7 +1,11 @@
 /* AXIOM — data_health.js · fixture de demo regenerado
-   Consumido por HealthView (CHK, DATASETS, INCIDENTS, SEV).
-   El estado de dataset (healthy/degraded/building/failed) usa ahora el registro
-   STATUS único de components/ui.jsx; aquí solo viven SEV (severidad) y CHK (checks). */
+   Consumido por HealthView (CHK, DATASETS, DSTATUS, INCIDENTS, SEV). */
+export const DSTATUS = {
+  healthy:  { kind: "ok",     label: "healthy" },
+  degraded: { kind: "warn",   label: "degraded" },
+  building: { kind: "accent", label: "building" },
+  failed:   { kind: "alert",  label: "failed" },
+};
 export const CHK = {
   pass: { c: "var(--ok)",    ic: "check" },
   warn: { c: "var(--warn)",  ic: "flag" },
@@ -9,9 +13,9 @@ export const CHK = {
   skip: { c: "var(--text-faint)", ic: "clock" },
 };
 export const SEV = {
-  critical: { kind: "alert", label: "Crítica" },
-  high:     { kind: "warn",  label: "Alta" },
-  medium:   { kind: "info",  label: "Media" },
+  critical: { kind: "alert", label: "Critical" },
+  high:     { kind: "warn",  label: "High" },
+  medium:   { kind: "info",  label: "Medium" },
 };
 const sp = (s) => Array.from({ length: 14 }, (_, i) => 30 + Math.round(40 * Math.abs(Math.sin(s + i * 0.5))));
 export const DATASETS = [
@@ -25,7 +29,7 @@ export const DATASETS = [
     checks: [["gap_detection", "pass"], ["coord_bounds", "warn"], ["freshness < 10m", "fail"]] },
 ];
 export const INCIDENTS = [
-  { id: "INC-204", sev: "critical", title: "Schema drift en entities_resolved", ds: "entities_resolved", detail: "Columna 'beneficial_owner' cambió de tipo; contrato roto.", when: "12m" },
-  { id: "INC-203", sev: "high", title: "vessel_tracks fuera de SLA", ds: "vessel_tracks", detail: "Frescura 18m > SLA 10m. Upstream AIS con retraso.", when: "18m" },
-  { id: "INC-198", sev: "medium", title: "Pico de nulos en txn_raw", ds: "txn_raw", detail: "Auto-resuelto tras reintento del conector.", when: "3h" },
+  { id: "INC-204", sev: "critical", title: "Schema drift in entities_resolved", ds: "entities_resolved", detail: "Column 'beneficial_owner' changed type; contract broken.", when: "12m" },
+  { id: "INC-203", sev: "high", title: "vessel_tracks out of SLA", ds: "vessel_tracks", detail: "Freshness 18m > SLA 10m. Upstream AIS delayed.", when: "18m" },
+  { id: "INC-198", sev: "medium", title: "Null spike in txn_raw", ds: "txn_raw", detail: "Auto-resolved after connector retry.", when: "3h" },
 ];

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { BUILDS, DRIVE, FILES, KW, REPO } from '../data/data_code.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { ArtifactExplorer, Avatar, Icon, Lineage, PageHeader, StatusBadge, statusMeta, Tabs } from '../components/ui.jsx';
+import { Avatar, Badge, Icon, WBBar, PageHeader } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
-
-const CR_TABS = [["code","Code"],["history","History"],["builds","Builds"],["drive","Drive"]];
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — Code repository + Drive
    ============================================================ */
+const BUILD = { passing:{kind:"ok",label:"passing",icon:"check"}, running:{kind:"accent",label:"running",icon:"play"}, failed:{kind:"alert",label:"failed",icon:"x"} };
 function nm(id){ return (ANALYSTS[id]?.name||id).split(" ")[0]; }
 
 function hlLine(line, lang){
@@ -59,27 +59,25 @@ function Tree({ selId, onSel }){
   );
 }
 function Inspector({ file }){
+  const { t } = useI18n();
   return (
     <aside style={{ width:300, flex:"none", borderLeft:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
       <div style={{ padding:16 }}>
-        {file.builds ? (
-          <div style={{ marginBottom:16 }}>
-            <div className="eyebrow" style={{ marginBottom:10 }}>Lineage</div>
-            <Lineage chain={[
-              ...file.inputs.map(i=>({ stage:"Entrada", label:i, glyph:"layers" })),
-              { stage:"Construye", label:file.builds, glyph:"database" },
-              { stage:"Alimenta nodo", label:file.node, meta:"pipeline", glyph:"pipeline" },
-            ]} />
-          </div>
-        ) : <div className="t-faint" style={{ fontSize:12.5, marginBottom:14 }}>Registry / docs file — not a build target.</div>}
-        <div className="eyebrow" style={{ marginBottom:10 }}>Version history</div>
+        {file.builds ? <>
+          <div className="eyebrow" style={{ marginBottom:8 }}>{t('Builds dataset')}</div>
+          <div className="card" style={{ padding:"10px 12px", marginBottom:14, background:"var(--bg-2)" }}><div className="row gap-8 center"><span style={{ color:"var(--ok)" }}><Icon name="layers" size={16}/></span><span className="mono" style={{ fontSize:12, color:"var(--text)" }}>{file.builds}</span></div></div>
+          <div className="eyebrow" style={{ marginBottom:8 }}>{t('Inputs')}</div>
+          <div className="col gap-6" style={{ marginBottom:14 }}>{file.inputs.map(i=><div key={i} className="row gap-8 center"><span className="t-faint"><Icon name="layers" size={14}/></span><span className="mono" style={{ fontSize:11.5, color:"var(--text-dim)" }}>{i}</span></div>)}</div>
+          <div className="card" style={{ padding:"10px 12px", marginBottom:16, background:"var(--accent-ghost)", border:"1px solid var(--accent-dim)" }}><div className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="pipeline" size={15}/></span><div><div className="t-faint" style={{ fontSize:10 }}>{t('Powers pipeline node')}</div><div style={{ fontSize:12.5, fontWeight:600, color:"var(--accent)" }}>{file.node}</div></div></div></div>
+        </> : <div className="t-faint" style={{ fontSize:12.5, marginBottom:14 }}>{t('Registry / docs file — not a build target.')}</div>}
+        <div className="eyebrow" style={{ marginBottom:10 }}>{t('Version history')}</div>
         <div style={{ position:"relative", paddingLeft:16 }}>
           <div style={{ position:"absolute", left:4, top:6, bottom:8, width:2, background:"var(--line)" }}/>
           {file.commits.map((c,i)=>(
             <div key={i} style={{ position:"relative", paddingBottom:16 }}>
               <span style={{ position:"absolute", left:-16, top:3, width:10, height:10, borderRadius:"50%", background: i===0?"var(--accent)":"var(--bg-3)", border:"2px solid var(--bg-1)", boxShadow: i===0?"0 0 8px -1px var(--accent)":"none" }}/>
-              <div style={{ fontSize:12.5, color:"var(--text)", lineHeight:1.4 }}>{c.msg}</div>
-              <div className="row gap-8 center" style={{ marginTop:4 }}><span className="mono" style={{ fontSize:10.5, color:"var(--accent-2)" }}>{c.hash}</span><Avatar who={c.by} name={ANALYSTS[c.by]?.name} size={16}/><span className="t-faint" style={{ fontSize:10.5 }}>{c.when}</span></div>
+              <div style={{ fontSize:12.5, color:"var(--text)", lineHeight:1.4 }}>{t(c.msg)}</div>
+              <div className="row gap-8 center" style={{ marginTop:4 }}><span className="mono" style={{ fontSize:10.5, color:"var(--accent-2)" }}>{c.hash}</span><Avatar who={c.by} size={16}/><span className="t-faint" style={{ fontSize:10.5 }}>{c.when}</span></div>
             </div>
           ))}
         </div>
@@ -88,23 +86,24 @@ function Inspector({ file }){
   );
 }
 function CodeTab(){
+  const { t } = useI18n();
   const [selId,setSelId] = useState("er");
   const file = FILES.find(f=>f.id===selId);
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
-        <div className="row between center" style={{ padding:"12px 14px 8px" }}><div className="eyebrow">Files</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
+      <aside style={{ width:240, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
+        <div className="row between center" style={{ padding:"12px 14px 8px" }}><div className="eyebrow">{t('Files')}</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
         <Tree selId={selId} onSel={setSelId}/>
       </aside>
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
         <div className="row between center" style={{ padding:"0 16px", borderBottom:"1px solid var(--line-soft)", flex:"none", height:40 }}>
           <div className="row gap-8 center" style={{ height:"100%", borderBottom:"2px solid var(--accent)", padding:"0 4px" }}><span style={{ color:fileColor(file) }}><Icon name={fileIcon(file)} size={14}/></span><span style={{ fontSize:12.5, fontWeight:600 }}>{file.path.split("/").pop()}</span></div>
-          <div className="row gap-8 center"><span className="t-faint mono" style={{ fontSize:11 }}>{file.lang}</span><button className="btn sm"><Icon name="download" size={13}/>Raw</button></div>
+          <div className="row gap-8 center"><span className="t-faint mono" style={{ fontSize:11 }}>{file.lang}</span><button className="btn sm"><Icon name="download" size={13}/>{t('Raw')}</button></div>
         </div>
         <div style={{ flex:1, overflow:"auto", padding:"16px 14px", background:"var(--bg-inset)" }}><Code file={file}/></div>
         <div className="row between center" style={{ padding:"8px 16px", borderTop:"1px solid var(--line-soft)", flex:"none", background:"var(--bg-1)" }}>
-          <span className="row gap-8 center"><Avatar who={file.last.by} name={ANALYSTS[file.last.by]?.name} size={18}/><span className="t-faint" style={{ fontSize:11.5 }}>last edit {file.last.when} · <span className="mono">{file.last.hash}</span></span></span>
-          <span className="t-faint mono" style={{ fontSize:11 }}>{file.code.split("\n").length} lines</span>
+          <span className="row gap-8 center"><Avatar who={file.last.by} size={18}/><span className="t-faint" style={{ fontSize:11.5 }}>{t('last edit {when} ·', { when: file.last.when })} <span className="mono">{file.last.hash}</span></span></span>
+          <span className="t-faint mono" style={{ fontSize:11 }}>{t('{n} lines', { n: file.code.split("\n").length })}</span>
         </div>
       </div>
       <Inspector file={file}/>
@@ -112,17 +111,18 @@ function CodeTab(){
   );
 }
 function HistoryTab(){
+  const { t } = useI18n();
   const seen=new Set(); const log=[];
   FILES.forEach(f=>f.commits.forEach(c=>{ if(!seen.has(c.hash)){ seen.add(c.hash); log.push({...c, file:f.path.split("/").pop()}); } }));
   return (
-    <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
-        <PageHeader eyebrow="Repository · history" title={<>Commits on <span className="mono" style={{ fontSize:18 }}>main</span></>} />
+    <div className="content" style={{ padding:"var(--page-py) var(--page-px) 60px" }}>
+      <div style={{ maxWidth:900, margin:"0 auto" }} className="fade-in">
+        <PageHeader eyebrow={t('Integrate')} title={<>{t('Commits on')} <span className="mono" style={{ fontSize:18 }}>main</span></>} />
         <div className="card" style={{ overflow:"hidden" }}>
           {log.map((c,i)=>(
             <div key={i} className="row gap-12 center" style={{ padding:"13px 16px", borderBottom: i<log.length-1?"1px solid var(--line-soft)":"none" }}>
               <span style={{ color:"var(--accent-2)" }}><Icon name="commit" size={17}/></span>
-              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c.msg}</div><div className="t-faint" style={{ fontSize:11, marginTop:2 }}>{ANALYSTS[c.by]?.name||c.by} · {c.file}</div></div>
+              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t(c.msg)}</div><div className="t-faint" style={{ fontSize:11, marginTop:2 }}>{ANALYSTS[c.by]?.name||c.by} · {c.file}</div></div>
               <span className="mono" style={{ fontSize:11, color:"var(--accent-2)" }}>{c.hash}</span>
               <span className="t-faint mono" style={{ fontSize:11, width:54, textAlign:"right" }}>{c.when}</span>
             </div>
@@ -133,20 +133,28 @@ function HistoryTab(){
   );
 }
 function BuildsTab(){
+  const { t } = useI18n();
   return (
-    <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
-        <PageHeader eyebrow="Repository · CI" title="Builds & checks" />
-        <ArtifactExplorer items={BUILDS} columns={[
-          { header:"Build", render:b=><span className="mono" style={{ color:"var(--text)" }}>{b.id}</span> },
-          { header:"Status", render:b=><StatusBadge status={b.status}/> },
-          { header:"Branch", render:b=><span className="row gap-6 center"><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b.branch}</span> },
-          { header:"Commit", render:b=><span className="mono" style={{ color:"var(--accent-2)" }}>{b.commit}</span> },
-          { header:"By", render:b=><span className="row gap-7 center"><Avatar who={b.by} name={ANALYSTS[b.by]?.name} size={20}/>{nm(b.by)}</span> },
-          { header:"Datasets", render:b=><span className="mono">{b.datasets}</span> },
-          { header:"Duration", render:b=><span className="mono">{b.dur}</span> },
-          { header:"When", render:b=><span className="mono t-faint">{b.when}</span> },
-        ]} />
+    <div className="content" style={{ padding:"var(--page-py) var(--page-px) 60px" }}>
+      <div style={{ maxWidth:980, margin:"0 auto" }} className="fade-in">
+        <PageHeader eyebrow={t('Integrate')} title={t('Builds & checks')} />
+        <div className="card" style={{ overflow:"hidden" }}>
+          <table className="tbl">
+            <thead><tr><th>{t('Build')}</th><th>{t('Status')}</th><th>{t('Branch')}</th><th>{t('Commit')}</th><th>{t('By')}</th><th>{t('Datasets')}</th><th>{t('Duration')}</th><th>{t('When')}</th></tr></thead>
+            <tbody>
+              {BUILDS.map(b=>{ const m=BUILD[b.status]; return (
+                <tr key={b.id}>
+                  <td className="mono" style={{ color:"var(--text)" }}>{b.id}</td>
+                  <td><Badge kind={m.kind} dot>{t(m.label)}</Badge></td>
+                  <td><span className="row gap-6 center"><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b.branch}</span></td>
+                  <td className="mono" style={{ color:"var(--accent-2)" }}>{b.commit}</td>
+                  <td><span className="row gap-7 center"><Avatar who={b.by} size={20}/>{nm(b.by)}</span></td>
+                  <td className="mono">{b.datasets}</td><td className="mono">{b.dur}</td><td className="mono t-faint">{b.when}</td>
+                </tr>
+              );})}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -154,45 +162,57 @@ function BuildsTab(){
 function kindIcon(e){ return e.kind==="folder"?"folder":e.kind==="dataset"?"layers":/\.(png|jpe?g)$/.test(e.name)?"image":e.type==="Model"?"hdd":"doc"; }
 function kindColor(e){ return e.kind==="folder"?"var(--accent)":e.kind==="dataset"?"var(--ok)":e.type==="Model"?"var(--violet)":"var(--text-dim)"; }
 function DriveTab(){
+  const { t } = useI18n();
   const [path,setPath] = useState("/blackfrost");
   const entries = DRIVE[path] || [];
   const segs = path.split("/").filter(Boolean);
   function go(idx){ setPath("/"+segs.slice(0,idx+1).join("/")); }
   function open(e){ if(e.kind==="folder") setPath(path+"/"+e.name); }
   return (
-    <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
+    <div className="content" style={{ padding:"var(--page-py) var(--page-px) 60px" }}>
+      <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
         <div className="row between center" style={{ marginBottom:16 }}>
           <div className="row gap-8 center">
             <span style={{ color:"var(--accent)" }}><Icon name="hdd" size={18}/></span>
             <div className="crumbs" style={{ fontSize:15 }}>
-              <span className="c-mod" style={{ cursor:"pointer" }} onClick={()=>setPath("/blackfrost")}>Drive</span>
+              <span className="c-mod" style={{ cursor:"pointer" }} onClick={()=>setPath("/blackfrost")}>{t('Drive')}</span>
               {segs.map((s,i)=>(<React.Fragment key={i}><span className="sep"><Icon name="chevron" size={12}/></span><span className="c-leaf" style={{ cursor:"pointer", color:i===segs.length-1?"var(--text)":"var(--text-dim)" }} onClick={()=>go(i)}>{s}</span></React.Fragment>))}
             </div>
           </div>
-          <div className="row gap-8"><button className="btn"><Icon name="download"/>Upload</button><button className="btn primary"><Icon name="plus"/>New dataset</button></div>
+          <div className="row gap-8"><button className="btn"><Icon name="download"/>{t('Upload')}</button><button className="btn primary"><Icon name="plus"/>{t('New dataset')}</button></div>
         </div>
-        <ArtifactExplorer items={entries} onOpen={open} columns={[
-          { header:"Name", render:e=><span className="row gap-10 center" style={{ minWidth:0, color:"var(--text)" }}><span style={{ color:kindColor(e) }}><Icon name={kindIcon(e)} size={17}/></span><span style={{ fontWeight: e.kind==="folder"?600:500 }}>{e.name}</span>{e.built && <span className="t-faint row gap-4 center" style={{ fontSize:10.5 }}><Icon name="code" size={11}/>{e.built}</span>}</span> },
-          { header:"Type", dim:true, render:e=>e.kind==="folder"?`${e.items} items`:e.type },
-          { header:"Rows / size", align:"right", render:e=><span className="mono">{e.rows||e.size||"—"}</span> },
-          { header:"Modified", render:e=><span className="mono t-faint">{e.mod}</span> },
-          { header:"Owner", render:e=>e.owner?<span className="row gap-7 center"><Avatar who={e.owner} name={ANALYSTS[e.owner]?.name} size={20}/>{nm(e.owner)}</span>:"—" },
-          { header:"Class", render:e=>e.cls?<MarkingChip level={e.cls} size="sm"/>:"—" },
-        ]} />
+        <div className="card" style={{ overflow:"hidden" }}>
+          <table className="tbl">
+            <thead><tr><th>{t('Name')}</th><th>{t('Type')}</th><th style={{textAlign:"right"}}>{t('Rows / size')}</th><th>{t('Modified')}</th><th>{t('Owner')}</th><th>{t('Class')}</th></tr></thead>
+            <tbody>
+              {entries.map((e,i)=>(
+                <tr key={i} onClick={()=>open(e)} style={{ cursor: e.kind==="folder"?"pointer":"default" }}>
+                  <td style={{ color:"var(--text)" }}><span className="row gap-10 center" style={{ minWidth:0 }}><span style={{ color:kindColor(e) }}><Icon name={kindIcon(e)} size={17}/></span><span style={{ fontWeight: e.kind==="folder"?600:500 }}>{e.name}</span>{e.built && <span className="t-faint row gap-4 center" style={{ fontSize:10.5 }}><Icon name="code" size={11}/>{e.built}</span>}</span></td>
+                  <td className="t-dim">{e.kind==="folder"?t('{n} items', { n: e.items }):t(e.type)}</td>
+                  <td className="mono" style={{ textAlign:"right" }}>{e.rows||e.size||"—"}</td>
+                  <td className="mono t-faint">{e.mod}</td>
+                  <td>{e.owner?<span className="row gap-7 center"><Avatar who={e.owner} size={20}/>{nm(e.owner)}</span>:"—"}</td>
+                  <td>{e.cls?<MarkingChip level={e.cls} size="sm"/>:"—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
 
 export function CodeRepoView(){
+  const { t } = useI18n();
   const [tab,setTab] = useState("code");
   const [bopen,setBopen] = useState(false);
   const [branch,setBranch] = useState(REPO.branch);
+  const m=BUILD[REPO.build.status];
   return (
     <>
-      <div style={{ flex:"none", background:"var(--bg-1)", borderBottom:"1px solid var(--line-soft)" }}>
-        <div className="row between center" style={{ padding:"12px 28px 0" }}>
+      <div style={{ flex:"none", background:"var(--bg-1)" }}>
+        <div className="row between center" style={{ padding:"12px 28px" }}>
           <div className="row gap-12 center">
             <div className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="code" size={18}/></span><span className="serif" style={{ fontSize:18 }}>{REPO.name}</span></div>
             <div style={{ position:"relative" }}>
@@ -201,17 +221,13 @@ export function CodeRepoView(){
                 {REPO.branches.map(b=><button key={b} className="row gap-8 center" onClick={()=>{setBranch(b);setBopen(false);}} style={{ width:"100%", border:"none", background: b===branch?"var(--accent-ghost)":"none", borderRadius:7, padding:"8px 10px", cursor:"pointer", textAlign:"left", color:"var(--text)", fontSize:12.5 }}><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b}{b===branch&&<span style={{ marginLeft:"auto", color:"var(--accent)" }}><Icon name="check" size={13}/></span>}</button>)}
               </div>}
             </div>
-            <StatusBadge status={REPO.build.status} label={`build ${statusMeta(REPO.build.status).label}`}/>
-            <span className="t-faint mono" style={{ fontSize:11 }}>{REPO.ahead} ahead · {REPO.build.commit}</span>
+            <Badge kind={m.kind} dot>{t('build {s}', { s: t(m.label) })}</Badge>
+            <span className="t-faint mono" style={{ fontSize:11 }}>{t('{n} ahead · {commit}', { n: REPO.ahead, commit: REPO.build.commit })}</span>
           </div>
-          <div className="row gap-8"><button className="btn sm"><Icon name="commit" size={14}/>Commit</button><button className="btn sm"><Icon name="branch" size={14}/>Open PR</button><button className="btn primary sm"><Icon name="play" size={14}/>Build</button></div>
+          <div className="row gap-8"><button className="btn sm"><Icon name="commit" size={14}/>{t('Commit')}</button><button className="btn sm"><Icon name="branch" size={14}/>{t('Open PR')}</button><button className="btn primary sm"><Icon name="play" size={14}/>{t('Build')}</button></div>
         </div>
-        <div style={{ padding:"10px 28px 0" }}>
-          <Tabs variant="flush"
-            items={CR_TABS.map(([k,l])=>({ label:l }))}
-            value={CR_TABS.findIndex(([k])=>k===tab)}
-            onChange={i=>setTab(CR_TABS[i][0])} />
-        </div>
+        <WBBar mode={tab} setMode={setTab}
+          tabs={[["code","Code"],["history","History"],["builds","Builds"],["drive","Drive"]]} />
       </div>
       {tab==="code" && <CodeTab/>}
       {tab==="history" && <HistoryTab/>}

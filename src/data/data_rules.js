@@ -1,36 +1,39 @@
-/* ============================================================
-   AXIOM — data_rules.js · MOTOR DE REGLAS ÚNICO (Cuando → Entonces)
-   ------------------------------------------------------------
-   Antes el mismo patrón "condición → acción → contador" vivía 3 veces:
-     · RulesView            → reglas de alerta del CASO
-     · Actions › Automations→ AUTO_RULES (operaciones)
-     · Health › Alert rules → (stub sin datos)
-   Ahora hay UNA lista `RULES` etiquetada por `context`:
-     · "case" → alertas de investigación
-     · "ops"  → automatizaciones de operaciones (= AUTO_RULES, re-exportado)
-     · "data" → reglas de calidad / salud de datos
-   Un único componente <RulesEngine rules onToggle/> las pinta en los 3 sitios.
+/* AXIOM — data_rules.js
+   ============================================================
+   SINGLE SOURCE OF TRUTH for "rules" (resolves audit finding R1).
 
-   Forma de la regla: { id, context, name, when, then, on, fired?, runs?, needs? }
+   Before, two parallel rule engines existed and overlapped:
+     • RulesView.SEED        (Alerts › Rules)      → raised ALERTS
+     • data_actions.AUTO_RULES (Actions › Automations) → ran ACTIONS
+   …and AUTO_RULES was ALSO rendered a second time inside the
+   Action center, so the same list appeared twice.
+
+   Now every rule shares ONE mental model — WHEN <condition>
+   THEN <effect> — split into two KINDS:
+     • detection → raises an alert        (kind: "detection")
+     • response  → runs a governed action (kind: "response")
+
+   Alerts › Rules and Actions › Rules both open the one engine
+   (views/RulesView.jsx), pre-filtered to the relevant kind.
    ============================================================ */
+
+export const RULE_KINDS = {
+  detection: { label: "Detection", blurb: "Raises an alert", icon: "bell", c: "var(--warn)" },
+  response:  { label: "Response",  blurb: "Runs a governed action", icon: "bolt", c: "var(--accent)" },
+};
+
 export const RULES = [
-  // ---- contexto: CASO (antes RulesView SEED) ----
-  { id: "c1", context: "case", name: "Layering de alto valor", when: "Cadena > $1M en ≤ 5 saltos", then: "Crear alerta crítica", on: true, fired: 38 },
-  { id: "c2", context: "case", name: "Gap AIS en puerto sancionado", when: "Pérdida de señal a < 50nm de puerto OFAC", then: "Crear alerta + marcar buque", on: true, fired: 12 },
-  { id: "c3", context: "case", name: "Estructuración", when: "≥ 6 transferencias bajo umbral en 24h", then: "Crear alerta media", on: true, fired: 21 },
-  { id: "c4", context: "case", name: "Cambio de bandera", when: "Buque cambia de pabellón en < 90 días", then: "Notificar al analista", on: false, fired: 4 },
-  { id: "c5", context: "case", name: "Coincidencia con sanciones", when: "Objeto coincide con lista OFAC/UE", then: "Crear alerta crítica + bloquear", on: true, fired: 7 },
-
-  // ---- contexto: OPERACIONES (antes AUTO_RULES) ----
-  { id: "o1", context: "ops", name: "Auto-add vessels with AIS gap > 6h to watchlist", when: "AIS gap > 6h", then: "Add vessel to watchlist", on: true, runs: "14 this week", needs: "no approval" },
-  { id: "o2", context: "ops", name: "Freeze on confirmed OFAC match", when: "Confirmed OFAC match", then: "Freeze account", on: false, runs: "held", needs: "Reviewer approval" },
-  { id: "o3", context: "ops", name: "Open case on any Critical alert", when: "Any Critical alert", then: "Open investigation case", on: true, runs: "3 this week", needs: "no approval" },
-
-  // ---- contexto: DATOS (salud / calidad — antes el botón stub de Health) ----
-  { id: "d1", context: "data", name: "Frescura fuera de SLA", when: "Freshness supera el SLA del dataset", then: "Abrir incidencia + avisar a data-eng", on: true, fired: 9 },
-  { id: "d2", context: "data", name: "Caída de checks de calidad", when: "Tasa de checks < 90%", then: "Crear alerta media", on: true, fired: 3 },
-  { id: "d3", context: "data", name: "Drift de esquema", when: "El esquema diverge del contrato", then: "Bloquear pipeline + revisar", on: false, fired: 1 },
+  // ---- detection · raise alerts (was RulesView.SEED) ----
+  { id: "d1", kind: "detection", name: "High-value layering",          when: "Chain > $1M in ≤ 5 hops",            then: "Create critical alert",        on: true,  count: 38 },
+  { id: "d2", kind: "detection", name: "AIS gap near sanctioned port", when: "Signal loss < 50nm from OFAC port",  then: "Create alert + flag vessel",   on: true,  count: 12 },
+  { id: "d3", kind: "detection", name: "Structuring",                  when: "≥ 6 sub-threshold transfers in 24h", then: "Create medium alert",          on: true,  count: 21 },
+  { id: "d4", kind: "detection", name: "Flag change",                  when: "Vessel re-flags in < 90 days",       then: "Notify analyst",               on: false, count: 4 },
+  { id: "d5", kind: "detection", name: "Sanctions match",              when: "Object matches OFAC/EU list",        then: "Create critical alert + block", on: true,  count: 7 },
+  // ---- response · run actions (was data_actions.AUTO_RULES) ----
+  { id: "r1", kind: "response", name: "Auto-add vessels with AIS gap > 6h to watchlist", when: "Vessel AIS gap > 6h",  then: "Add to watchlist",     on: true,  count: 14, approval: "no approval" },
+  { id: "r2", kind: "response", name: "Freeze on confirmed OFAC match",                  when: "Confirmed OFAC match", then: "Freeze account",       on: false, count: 0,  approval: "Reviewer approval" },
+  { id: "r3", kind: "response", name: "Open project on any Critical alert",        when: "Any Critical alert",   then: "Open project",   on: true,  count: 3,  approval: "no approval" },
 ];
 
-export const rulesByContext = (ctx) =>
-  !ctx ? RULES : RULES.filter((r) => r.context === ctx);
+// Convenience selector used by the Action center summary.
+export const RULES_BY_KIND = (k) => RULES.filter((r) => r.kind === k);

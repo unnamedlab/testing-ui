@@ -57,24 +57,17 @@
   --radius: 10px;
   --radius-sm: 7px;
   --radius-lg: 16px;
+  /* consolidación: padding de página escalable por densidad + ancho único de lista maestra */
+  --page-px: 28px; --page-py: 24px;
+  --master-w: 244px;
 
-  /* canonical content widths — replace the 16+ ad-hoc maxWidth magic numbers.
-     page wrappers map to this 4-step scale; master-rail asides and side panels
-     share one width each so views/tabs stop "jumping" between sizes. */
-  --page-wide:   1180px;
-  --page:        1080px;
-  --page-narrow:  920px;
-  --page-read:    760px;
-  --sidebar:      240px;
-  --drawer:       400px;
+  /* ---- UX-02: typography scale (one defined hierarchy) ---- */
+  --title-hero: 32px;     /* primary object / landing name */
+  --title-page: 26px;     /* standard module page title */
+  --title-section: 20px;  /* SectionHead / in-page section */
+  --title-card: 17px;     /* drawer · modal · card header */
 
   --grid-color: oklch(0.30 0.015 248 / 0.5);
-
-  /* overlay scrims — were referenced everywhere (Modal/Drawer) but never defined,
-     so modals had no dimmed backdrop. Defined here for the shared shells. */
-  --scrim:      oklch(0.12 0.02 248 / 0.55);
-  --scrim-soft: oklch(0.12 0.02 248 / 0.34);
-  --scrim-blur: blur(3px);
 }
 
 [data-theme="light"] {
@@ -112,8 +105,8 @@
   --grid-color: oklch(0.80 0.01 248 / 0.55);
 }
 
-[data-density="compact"] { --topbar: 46px; --pad: 11px; --row-h: 32px; --radius: 8px; }
-[data-density="comfy"]   { --topbar: 60px; --pad: 22px; --row-h: 46px; --radius: 12px; }
+[data-density="compact"] { --topbar: 46px; --pad: 11px; --row-h: 32px; --radius: 8px; --title-hero: 28px; --title-page: 23px; --title-section: 18px; --title-card: 16px; --page-px: 18px; --page-py: 14px; }
+[data-density="comfy"]   { --topbar: 60px; --pad: 22px; --row-h: 46px; --radius: 12px; --title-hero: 36px; --title-page: 29px; --title-section: 22px; --title-card: 18px; --page-px: 40px; --page-py: 34px; }
 
 [data-glow="off"] { --glow: 0 0 0 1px var(--accent-ghost); }
 [data-glow="off"] .rail-logo-mk { box-shadow: 0 0 0 1px var(--accent-dim); }
@@ -367,6 +360,7 @@ body {
   letter-spacing: .04em; white-space: nowrap;
 }
 .wb-body { flex: 1; min-height: 0; position: relative; display: flex; flex-direction: column; }
+.wb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; }
 
 /* ---- generic surfaces ---- */
 .panel { background: var(--bg-1); border: 1px solid var(--line-soft); border-radius: var(--radius); }
@@ -375,6 +369,11 @@ body {
   transition: border-color .15s, transform .15s, box-shadow .15s;
 }
 .card.hover:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: var(--shadow-2); }
+
+/* hover utility (reemplaza hovers JS inline onMouseEnter/Leave) */
+.hov { background: transparent; transition: background .12s; }
+.hov:hover { background: var(--bg-2); }
+.hov.is-active { background: var(--accent-ghost); }
 
 .badge {
   display: inline-flex; align-items: center; gap: 5px;
@@ -491,6 +490,22 @@ body {
 .seg button:hover { color: var(--text); }
 .seg button.on { background: var(--bg-2); color: var(--text); box-shadow: var(--shadow-1); }
 
+/* ---- UX-02: title hierarchy classes (serif, tokenized) ---- */
+.h-hero, .h-page, .h-section, .h-card {
+  font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.02em;
+  margin: 0; color: var(--text); line-height: 1.1; text-wrap: pretty;
+}
+.h-hero    { font-size: var(--title-hero); }
+.h-page    { font-size: var(--title-page); }
+.h-section { font-size: var(--title-section); font-weight: 500; letter-spacing: -0.01em; }
+.h-card    { font-size: var(--title-card); letter-spacing: -0.01em; }
+
+/* ---- UX-02: PageHeader (eyebrow + title + actions) ---- */
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.page-head .ph-l { min-width: 0; }
+.page-head .ph-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+.page-head .ph-sub { font-size: 14px; color: var(--text-dim); margin-top: 6px; text-wrap: pretty; }
+
 /* tooltip-ish floating card */
 .float {
   position: absolute; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius);
@@ -511,8 +526,6 @@ body {
 .tab svg { width: 14px; height: 14px; }
 .tab-badge { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); }
 .tab.on .tab-badge { color: var(--accent); }
-/* flush: la cabecera del módulo ya aporta su borde/fondo; las tabs no duplican el borde inferior */
-.tabs.flush { border-bottom: none; }
 
 /* Lineage — origen → transformación → destino, vertical, reutilizable */
 .lin-step { position: relative; display: flex; gap: 12px; padding-bottom: 16px; }

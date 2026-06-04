@@ -1,12 +1,12 @@
 /* AXIOM — data_analytics.js · fixture + helpers regenerados
    Consumido por AnalyticsView. */
 export const DIMS = {
-  pattern: { label: "Patrón",       domain: ["Layering", "Structuring", "AIS gap", "Sanctions", "Normal"] },
-  juris:   { label: "Jurisdicción", domain: ["UAE", "Cyprus", "BVI", "Panama", "Russia"] },
-  channel: { label: "Canal",        domain: ["SWIFT", "Correspondent", "Trade finance", "Crypto"] },
-  month:   { label: "Mes",          domain: ["Ene", "Feb", "Mar", "Abr", "May", "Jun"] },
+  pattern: { label: "Pattern",      domain: ["Layering", "Structuring", "AIS gap", "Sanctions", "Normal"] },
+  juris:   { label: "Jurisdiction", domain: ["UAE", "Cyprus", "BVI", "Panama", "Russia"] },
+  channel: { label: "Channel",      domain: ["SWIFT", "Correspondent", "Trade finance", "Crypto"] },
+  month:   { label: "Month",        domain: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"] },
 };
-export const MEASURES = { amount: { label: "Importe" }, count: { label: "Registros" } };
+export const MEASURES = { amount: { label: "Amount" }, count: { label: "Records" } };
 
 const PATS = DIMS.pattern.domain, JUR = DIMS.juris.domain, CHN = DIMS.channel.domain, MON = DIMS.month.domain;
 function seeded(n) { let x = Math.sin(n) * 10000; return x - Math.floor(x); }
@@ -63,7 +63,7 @@ export function histo(rows) {
   rows.forEach((r) => { b[Math.min(9, Math.floor((r.risk || 0) / 10))]++; });
   return b;
 }
-export function fmtNum(v) { return v >= 1000 ? Math.round(v).toLocaleString("es-ES") : String(v); }
+export function fmtNum(v) { return v >= 1000 ? Math.round(v).toLocaleString("en-US") : String(v); }
 export function fmtMoney(v) {
   if (v >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
   if (v >= 1e3) return "$" + (v / 1e3).toFixed(0) + "K";

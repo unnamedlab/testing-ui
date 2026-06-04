@@ -1,18 +1,28 @@
 import { useMemo, useState } from 'react';
 import { ENTITIES, ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
-import { CASES, CASE_BY_ID, ANALYSTS } from '../data/data_ext.js';
+import { ANALYSTS } from '../data/data_ext.js';
+import { PROJECTS, PROJECT_BY_ID, caseRef } from '../data/data_projects.js';
 import { Badge, Icon, RiskPill, SectionHead, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 import { DossierModal } from '../components/Reports.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
-   AXIOM — Reports (★ Phase 3 authoring)
-   Promotes the printable DossierModal seed into a first-class
-   module: a block editor that embeds LIVE ontology objects,
-   charts and findings, then exports to the existing dossier PDF.
+   AXIOM — Reports (★ Phase 3 authoring) — UX-01 i18n.
+   Block editor that embeds LIVE ontology objects, charts and
+   findings, then exports to the dossier PDF.
    ============================================================ */
 
 const keyEnts = ENTITIES.filter(e => e.risk >= 70).slice(0, 6);
+
+// Notebook (clúster C): el cuaderno de análisis es ahora un TIPO DE BLOQUE de Reports,
+// no un módulo aparte. Estas celdas son contenido de demo (no copy traducible).
+const NOTEBOOK_SEED = [
+  { type: "md", text: "## Layering analysis\nGoal: quantify the volume moved between Aurora and Helios and trace the chain." },
+  { type: "code", lang: "python", code: "txns = ontology.query(\"Txn\").filter(pattern=\"Layering\")\nchains = layering_chains(txns, max_hops=5)\nchains.summary()", out: "3 chains · $20.4M · 3–5 hops" },
+  { type: "md", text: "The largest transfer routes through two jurisdictions in 48h." },
+  { type: "code", lang: "python", code: "top = chains.sort(\"amount\").head(1)\ntop.path()", out: "Aurora USD → Helios EUR → Northwind CHF  ($4.82M)" },
+];
 
 // Seeded reports — drafts an analyst would already have on the case.
 const SEED_REPORTS = [
@@ -26,6 +36,7 @@ const SEED_REPORTS = [
       { type: "h", text: "2 · Financial findings" },
       { type: "p", text: "Three layering chains moved $20.4M between Aurora Trading FZE and Helios Maritime over 30 days, structured across 3–5 hops to obscure origin. Largest transfer TXN-88241 ($4.82M) routed through two jurisdictions within 48 hours." },
       { type: "chart", label: "Layering volume · 30 days", kind: "bars" },
+      { type: "notebook", cells: NOTEBOOK_SEED },
       { type: "h", text: "3 · Assessment & recommendations" },
       { type: "findings", items: [
         "File a Suspicious Transaction Report for the Aurora→Helios chain.",
@@ -39,16 +50,18 @@ const SEED_REPORTS = [
 ];
 
 function StatusDot({ s }) {
+  const { t } = useI18n();
   const c = s === "Published" ? "var(--ok)" : s === "In review" ? "var(--warn)" : "var(--text-faint)";
-  return <span className="mono" style={{ fontSize:11, color:c, display:"inline-flex", alignItems:"center", gap:6 }}><span style={{ width:7,height:7,borderRadius:"50%",background:c }} />{s}</span>;
+  return <span className="mono" style={{ fontSize:11, color:c, display:"inline-flex", alignItems:"center", gap:6 }}><span style={{ width:7,height:7,borderRadius:"50%",background:c }} />{t(s)}</span>;
 }
 
 // ---- editor blocks ----
 function MiniBars() {
+  const { t } = useI18n();
   const vals = [38, 62, 30, 81, 54, 72, 44, 90, 60];
   return (
     <div className="card" style={{ padding:"16px 18px" }}>
-      <div className="row between center" style={{ marginBottom:14 }}><div className="eyebrow">Layering volume · 30 days</div><Badge kind="accent"><Icon name="sparkles" size={11}/>live</Badge></div>
+      <div className="row between center" style={{ marginBottom:14 }}><div className="eyebrow">{t('Layering volume · 30 days')}</div><Badge kind="accent"><Icon name="sparkles" size={11}/>{t('live')}</Badge></div>
       <div className="row" style={{ alignItems:"flex-end", gap:7, height:96 }}>
         {vals.map((v,i)=>(
           <div key={i} style={{ flex:1, height:`${v}%`, borderRadius:"4px 4px 0 0",
@@ -60,6 +73,7 @@ function MiniBars() {
 }
 
 function ObjectStrip({ ids, openEntity }) {
+  const { t } = useI18n();
   return (
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
       {ids.map(id => {
@@ -70,7 +84,7 @@ function ObjectStrip({ ids, openEntity }) {
             <TypeGlyph type={e.type} size={34} />
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ fontSize:13.5, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</div>
-              <div className="t-faint" style={{ fontSize:11.5 }}>{TYPE_BY_ID[e.type].name}</div>
+              <div className="t-faint" style={{ fontSize:11.5 }}>{t(TYPE_BY_ID[e.type].name)}</div>
             </div>
             <RiskPill r={e.risk} />
           </button>
@@ -80,11 +94,37 @@ function ObjectStrip({ ids, openEntity }) {
   );
 }
 
+// ---- Notebook cells block (clúster C: el cuaderno vive dentro del informe) ----
+function NotebookCells({ cells }) {
+  const [ran, setRan] = useState({});
+  return (
+    <div className="col" style={{ display:"flex", flexDirection:"column", gap:12 }}>
+      {cells.map((c,i)=> c.type==="md" ? (
+        <div key={i} style={{ padding:"2px 0" }}>
+          {c.text.split("\n").map((ln,j)=> ln.startsWith("## ")
+            ? <div key={j} className="serif" style={{ fontSize:18, fontWeight:600, margin:"4px 0" }}>{ln.slice(3)}</div>
+            : <p key={j} className="t-dim" style={{ fontSize:14, lineHeight:1.6, margin:"3px 0" }}>{ln}</p>)}
+        </div>
+      ) : (
+        <div key={i} className="card" style={{ overflow:"hidden" }}>
+          <div className="row between center" style={{ padding:"8px 12px", borderBottom:"1px solid var(--line-soft)", background:"var(--bg-inset)" }}>
+            <span className="mono t-faint" style={{ fontSize:11 }}>{c.lang}</span>
+            <button className="icon-btn" style={{ width:26, height:26, color: ran[i] ? "var(--ok)" : "var(--text-dim)" }} onClick={()=>setRan(r=>({ ...r, [i]:true }))}><Icon name={ran[i] ? "check" : "play"} size={14} /></button>
+          </div>
+          <pre className="mono" style={{ margin:0, padding:"12px 14px", fontSize:12.5, lineHeight:1.7, color:"var(--text-dim)", whiteSpace:"pre-wrap" }}>{c.code}</pre>
+          {ran[i] && <div className="mono" style={{ padding:"10px 14px", borderTop:"1px solid var(--line-soft)", fontSize:12.5, color:"var(--accent-2)", background:"var(--bg-inset)" }}>→ {c.out}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Block({ b, openEntity, onChange, onRemove }) {
+  const { t } = useI18n();
   const wrap = (inner, insertLabel) => (
     <div className="rep-block">
       <div className="rep-block-rail">
-        <button className="icon-btn sm" title="Remove block" onClick={onRemove}><Icon name="x" size={13} /></button>
+        <button className="icon-btn sm" title={t('Remove block')} onClick={onRemove}><Icon name="x" size={13} /></button>
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         {insertLabel && <div className="eyebrow" style={{ marginBottom:8 }}>{insertLabel}</div>}
@@ -102,13 +142,14 @@ function Block({ b, openEntity, onChange, onRemove }) {
       onBlur={e=>onChange({ ...b, text:e.currentTarget.textContent })}
       style={{ fontSize:14.5, lineHeight:1.65, color:"var(--text-dim)", outline:"none" }}>{b.text}</div>
   );
-  if (b.type === "objects") return wrap(<ObjectStrip ids={b.ids} openEntity={openEntity} />, b.label || "Embedded objects");
+  if (b.type === "objects") return wrap(<ObjectStrip ids={b.ids} openEntity={openEntity} />, t(b.label || "Embedded objects"));
   if (b.type === "chart") return wrap(<MiniBars />);
   if (b.type === "findings") return wrap(
     <ul style={{ margin:0, paddingLeft:18, fontSize:14.5, lineHeight:1.7, color:"var(--text-dim)" }}>
       {b.items.map((it,i)=><li key={i}>{it}</li>)}
-    </ul>, "Recommendations"
+    </ul>, t("Recommendations")
   );
+  if (b.type === "notebook") return wrap(<NotebookCells cells={b.cells} />, t("Notebook"));
   return null;
 }
 
@@ -118,10 +159,12 @@ const INSERTS = [
   ["objects", "Live objects", "share"],
   ["chart", "Chart", "bars"],
   ["findings", "Findings list", "check"],
+  ["notebook", "Notebook cells", "code"],
 ];
 
 function Editor({ report, openEntity, onExport }) {
-  const c = CASE_BY_ID[report.caseId] || CASES[0];
+  const { t } = useI18n();
+  const c = PROJECT_BY_ID[report.caseId] || PROJECTS[0];
   const [blocks, setBlocks] = useState(report.blocks.length ? report.blocks : [
     { type:"h", text:"1 · Summary" }, { type:"p", text:"Start writing, or insert a block below." },
   ]);
@@ -135,6 +178,7 @@ function Editor({ report, openEntity, onExport }) {
       objects: { type:"objects", label:"Embedded objects", ids: keyEnts.slice(0,3).map(e=>e.id) },
       chart: { type:"chart" },
       findings: { type:"findings", items:["First recommendation."] },
+      notebook: { type:"notebook", cells: NOTEBOOK_SEED },
     }[type];
     setBlocks(bs => [...bs, tmpl]); setInsertOpen(false);
   }
@@ -146,24 +190,24 @@ function Editor({ report, openEntity, onExport }) {
         <div className="row gap-12 center" style={{ minWidth:0 }}>
           <input value={title} onChange={e=>setTitle(e.target.value)}
             style={{ background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"var(--font-serif)", fontSize:19, fontWeight:600, minWidth:0, width:"min(46ch, 52vw)" }} />
-          <MarkingChip level={c.classification} />
-          <span className="t-faint mono" style={{ fontSize:11 }}>inherits {c.name}</span>
+          <MarkingChip level={c.cls} />
+          <span className="t-faint mono" style={{ fontSize:11 }}>{t('inherits {case}', { case: t(c.name) })}</span>
         </div>
         <div className="row gap-8 center">
-          <span className="t-faint mono" style={{ fontSize:11 }}>Autosaved</span>
-          <button className="btn sm"><Icon name="user" size={14}/>Share</button>
-          <button className="btn primary sm" onClick={()=>onExport(blocks, title)}><Icon name="download" size={14}/>Export PDF</button>
+          <span className="t-faint mono" style={{ fontSize:11 }}>{t('Autosaved')}</span>
+          <button className="btn sm"><Icon name="user" size={14}/>{t('Share')}</button>
+          <button className="btn primary sm" onClick={onExport}><Icon name="download" size={14}/>{t('Export PDF')}</button>
         </div>
       </div>
 
       {/* document */}
       <div className="content" style={{ padding:"28px 0 70px" }}>
-        <div style={{ maxWidth:"var(--page-read)", margin:"0 auto", padding:"0 28px" }} className="fade-in">
+        <div style={{ maxWidth:760, margin:"0 auto", padding:"0 28px" }} className="fade-in">
           <div className="row gap-10 center" style={{ marginBottom:6 }}>
-            <Badge kind="accent"><Icon name="sparkles" size={11}/>AI-assembled draft</Badge>
+            <Badge kind="accent"><Icon name="sparkles" size={11}/>{t('AI-assembled draft')}</Badge>
             <StatusDot s={report.status} />
           </div>
-          <div className="t-faint mono" style={{ fontSize:11, marginBottom:22 }}>Lead {ANALYSTS[c.lead]?.name || "—"} · Ref AXM-{(report.caseId||"case").toUpperCase()}-0612 · {report.updated}</div>
+          <div className="t-faint mono" style={{ fontSize:11, marginBottom:22 }}>{t('Lead {lead} · Ref {ref} · {when}', { lead: ANALYSTS[c.lead]?.name || "—", ref: `AXM-${(report.caseId||"case").toUpperCase()}-${caseRef(report.caseId||"case")}`, when: report.updated })}</div>
 
           <div className="col" style={{ gap:4 }}>
             {blocks.map((b,i)=>(
@@ -176,14 +220,14 @@ function Editor({ report, openEntity, onExport }) {
           {/* insert affordance */}
           <div style={{ position:"relative", marginTop:14 }}>
             <button className="rep-insert" onClick={()=>setInsertOpen(o=>!o)}>
-              <Icon name="plus" size={15} />Insert block
+              <Icon name="plus" size={15} />{t('Insert block')}
             </button>
             {insertOpen && (
               <div className="panel" style={{ position:"absolute", top:"calc(100% + 8px)", left:0, zIndex:20, padding:7, width:220, boxShadow:"var(--shadow-3)" }}>
                 {INSERTS.map(([k,label,icon])=>(
                   <button key={k} className="rep-insert-row" onClick={()=>add(k)}>
                     <span style={{ width:26, display:"grid", placeItems:"center", color:"var(--accent)" }}><Icon name={icon} size={16}/></span>
-                    {label}
+                    {t(label)}
                   </button>
                 ))}
               </div>
@@ -196,18 +240,19 @@ function Editor({ report, openEntity, onExport }) {
 }
 
 export function ReportsView({ openEntity, go }) {
+  const { t } = useI18n();
   const [reports] = useState(SEED_REPORTS);
   const [selId, setSelId] = useState(SEED_REPORTS[0].id);
-  const [dossier, setDossier] = useState(null);
+  const [dossier, setDossier] = useState(false);
   const sel = useMemo(()=>reports.find(r=>r.id===selId), [reports, selId]);
 
   return (
-    <div className="content" style={{ display:"grid", gridTemplateColumns:"288px 1fr", padding:0, overflow:"hidden" }}>
+    <div className="content" style={{ display:"grid", gridTemplateColumns:"var(--master-w) 1fr", padding:0, overflow:"hidden" }}>
       {/* report list */}
       <aside style={{ borderRight:"1px solid var(--line-soft)", overflow:"auto", background:"var(--bg-1)", display:"flex", flexDirection:"column" }}>
         <div className="row between center" style={{ padding:"16px 16px 12px" }}>
-          <div><div className="eyebrow">Reports</div><div className="t-faint mono" style={{ fontSize:11, marginTop:4 }}>{reports.length} on this case</div></div>
-          <button className="btn primary sm"><Icon name="plus" size={14}/>New</button>
+          <div><div className="eyebrow">{t('Reports')}</div><div className="t-faint mono" style={{ fontSize:11, marginTop:4 }}>{t('{n} on this project', { n: reports.length })}</div></div>
+          <button className="btn primary sm"><Icon name="plus" size={14}/>{t('New')}</button>
         </div>
         <div style={{ padding:"0 10px 16px", display:"flex", flexDirection:"column", gap:6 }}>
           {reports.map(r=>(
@@ -224,9 +269,9 @@ export function ReportsView({ openEntity, go }) {
         </div>
       </aside>
 
-      {sel && <Editor report={sel} openEntity={openEntity} onExport={(blocks,title)=>setDossier({ blocks, title, caseId: sel.caseId })} />}
+      {sel && <Editor report={sel} openEntity={openEntity} onExport={()=>setDossier(true)} />}
 
-      <DossierModal open={!!dossier} caseId={dossier?.caseId} blocks={dossier?.blocks} title={dossier?.title} onClose={()=>setDossier(null)} />
+      <DossierModal open={dossier} caseId={sel?.caseId} onClose={()=>setDossier(false)} />
 
       <style>{`
         .rep-card { text-align:left; border:1px solid var(--line-soft); background:var(--bg-inset); border-radius:11px; padding:13px 14px; cursor:pointer; transition:border-color .14s, background .14s; }

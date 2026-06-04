@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ENTITIES, NOTIFS, TYPE_BY_ID } from '../data/data.js';
-import { Badge, Icon, Modal, RiskPill, TypeGlyph } from './ui.jsx';
+import { PROJECTS, PROJECT_BY_ID, ACTIVE_PROJECT } from '../data/data_projects.js';
+import { ANALYSTS, CURRENT_USER } from '../data/data_ext.js';
+import { Badge, EmptyState, Icon, RiskPill, TypeGlyph } from './ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — App shell (rail, topbar, command palette, notifs)
@@ -19,11 +22,11 @@ export const NAV_GROUPS = [
     { view: "map", icon: "globe", label: "Geospatial" },
     { view: "dashboard", icon: "layers", label: "Operations" },
     { view: "analytics", icon: "bars", label: "Analytics" },
-    { view: "notebook", icon: "note", label: "Notebook" },
   ]},
   { id: "act", label: "Decide & Act", items: [
-    { view: "projects", icon: "folder", label: "Workspaces" },
+    { view: "cases", icon: "bell", label: "Alerts" },
     { view: "actions", icon: "bolt", label: "Actions" },
+    { view: "rules", icon: "filter", label: "Rules" },
     { view: "reason", icon: "cpu", label: "Reason" },
     { view: "reports", icon: "doc", label: "Reports" },
     { view: "workshop", icon: "blocks", label: "Workshop" },
@@ -44,23 +47,25 @@ export const NAV_GROUPS = [
 // that Phase 2 folded into a parent module (explore, graph2, brushing, evidence, health):
 // they no longer sit in the rail, but stay searchable and open their parent in the right mode.
 export const NAV = [
-  { view: "home", icon: "grid", label: "Workspace" },
+  { view: "home", icon: "grid", label: "Home" },
+  { view: "projects", icon: "folder", label: "Projects" },
   ...NAV_GROUPS.flatMap(g => g.items),
-  { view: "cases", icon: "bell", label: "Alerts & Cases" },
   { view: "explore", icon: "table", label: "Explore" },
   { view: "graph2", icon: "route", label: "Graph Analysis" },
   { view: "brushing", icon: "focus", label: "Linked analysis" },
   { view: "evidence", icon: "doc", label: "Evidence" },
   { view: "health", icon: "pulse", label: "Data Health" },
-  { view: "admin", icon: "settings", label: "Administración" },
+  { view: "admin", icon: "settings", label: "Administration" },
 ];
 
-// The active case shown in the context switcher (single source of truth).
-export const ACTIVE_CASE = "BLACKFROST";
+// The active project shown in the context switcher (R-4: one `project` domain object,
+// single source of truth). Home, Alerts & Cases and Workspaces are all views of PROJECTS.
+const ACTIVE = PROJECT_BY_ID[ACTIVE_PROJECT];
+const CTX_OTHERS = PROJECTS.filter(p => p.id !== ACTIVE_PROJECT && p.pinned);
 
 export const PALETTE_ACTIONS = [
-  { id:"new-case", label:"New investigation", icon:"plus" },
-  { id:"dossier", label:"Generate case dossier", icon:"doc" },
+  { id:"new-case", label:"New project", icon:"plus" },
+  { id:"dossier", label:"Generate dossier", icon:"doc" },
   { id:"copilot", label:"Ask the Copilot", icon:"sparkles" },
   { id:"connect", label:"Connect a data source", icon:"download" },
   { id:"theme", label:"Toggle light / dark theme", icon:"moon" },
@@ -68,6 +73,7 @@ export const PALETTE_ACTIONS = [
 ];
 
 export function Rail({ view, go }) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(() => {
     try { return localStorage.getItem("axiom.rail") === "expanded"; } catch { return false; }
   });
@@ -80,7 +86,7 @@ export function Rail({ view, go }) {
   }
   return (
     <nav className={"rail" + (expanded ? " expanded" : "")} aria-label="Primary">
-      <button type="button" className="rail-logo" onClick={()=>go("home")} aria-label="AXIOM — Workspace home">
+      <button type="button" className="rail-logo" onClick={()=>go("home")} aria-label="AXIOM — Home">
         <span className="rail-logo-mk"><Icon name="axiom" /></span>
         <span className="rail-wordmark" aria-hidden="true">AXIOM</span>
       </button>
@@ -89,17 +95,17 @@ export function Rail({ view, go }) {
         {NAV_GROUPS.map(g => (
           <div className="rail-group" key={g.id} role="group" aria-label={g.label}>
             <div className="rail-group-h">
-              <span className="rail-group-label">{g.label}</span>
+              <span className="rail-group-label">{t(g.label)}</span>
               <span className="rail-group-line" aria-hidden="true"></span>
             </div>
             {g.items.map(n => (
               <button key={n.view} type="button"
                 className={"rail-btn" + (view===n.view ? " active":"")}
-                aria-label={n.label} aria-current={view===n.view ? "page" : undefined}
+                aria-label={t(n.label)} aria-current={view===n.view ? "page" : undefined}
                 onClick={()=>go(n.view)}>
                 <Icon name={n.icon} />
-                <span className="rail-text">{n.label}</span>
-                <span className="tip" aria-hidden="true">{n.label}</span>
+                <span className="rail-text">{t(n.label)}</span>
+                <span className="tip" aria-hidden="true">{t(n.label)}</span>
               </button>
             ))}
           </div>
@@ -108,55 +114,60 @@ export function Rail({ view, go }) {
 
       <button type="button"
         className={"rail-btn rail-pinned" + (view==="admin"?" active":"")}
-        aria-label="Administración" aria-current={view==="admin" ? "page" : undefined}
+        aria-label={t('Administration')} aria-current={view==="admin" ? "page" : undefined}
         onClick={()=>go("admin")}>
         <Icon name="settings" />
-        <span className="rail-text">Administración</span>
-        <span className="tip" aria-hidden="true">Administración</span>
+        <span className="rail-text">{t('Administration')}</span>
+        <span className="tip" aria-hidden="true">{t('Administration')}</span>
       </button>
 
       <button type="button" className="rail-toggle" onClick={toggle}
-        aria-label={expanded ? "Collapse navigation" : "Expand navigation"} aria-pressed={expanded}>
+        aria-label={expanded ? t("Collapse navigation") : t("Expand navigation")} aria-pressed={expanded}>
         <Icon name="chevron" />
-        <span className="rail-text">Collapse</span>
+        <span className="rail-text">{t('Collapse')}</span>
       </button>
     </nav>
   );
 }
 
+// ---- UX-2: una sola taxonomía ----------------------------------------------
+// Las migas derivan del MISMO árbol que el rail (NAV_GROUPS): primer nivel = grupo
+// de capacidad, segundo = módulo. Los sub-destinos fusionados (Phase 2) cuelgan su
+// lente como hoja del módulo padre. El proyecto activo NO va en la miga — vive en
+// el context switcher de la izquierda.
+const RAIL_GROUP_OF = {};   // view -> etiqueta de grupo
+const RAIL_LABEL_OF = {};   // view -> etiqueta de módulo
+NAV_GROUPS.forEach(g => g.items.forEach(it => { RAIL_GROUP_OF[it.view] = g.label; RAIL_LABEL_OF[it.view] = it.label; }));
+
+// sub-destino fusionado -> [vista padre, etiqueta de la lente]
+const SUBLENS = {
+  explore:  ["ontology", "Browse"],
+  graph2:   ["graph", "Graph analysis"],
+  brushing: ["graph", "Linked analysis"],
+  health:   ["pipeline", "Data Health"],
+  evidence: ["cases", "Evidence"],
+  entity:   ["graph", null],
+};
+function railCrumb(view) {
+  if (SUBLENS[view]) {
+    const [parent, leaf] = SUBLENS[view];
+    const base = [RAIL_GROUP_OF[parent], RAIL_LABEL_OF[parent]];
+    return leaf ? [...base, leaf] : base;
+  }
+  if (RAIL_GROUP_OF[view]) return [RAIL_GROUP_OF[view], RAIL_LABEL_OF[view]];
+  return null;
+}
 export const CRUMBS = {
-  projects: ["Workspaces"],
-  home: ["Workspace"],
-  explore: ["Object Explorer"],
-  ontology: ["Ontology Explorer"],
-  resolve: ["Ontology", "Entity Resolution"],
-  graph: ["Graph"],
-  map: ["Geospatial"],
-  pipeline: ["Data Integration", "Pipeline Builder"],
-  sources: ["Data Integration", "Sources"],
-  notebook: ["Analysis", "Notebook"],
-  watchlist: ["Watchlists"],
-  cases: ["Alerts & Cases"],
-  dashboard: ["Operations"],
-  workshop: ["Workshop"],
-  actions: ["Operations", "Actions"],
-  health: ["Data Integration", "Data Health"],
-  models: ["Machine Learning", "Models"],
-  graph2: ["Graph analysis"],
-  analytics: ["Analysis", "Flagged transactions"],
-  reason: ["Reason", "Agent Studio"],
-  brushing: ["Linked analysis"],
-  evidence: ["Evidence"],
-  code: ["Data Integration", "Repositories"],
+  ...Object.fromEntries([...Object.keys(RAIL_GROUP_OF), ...Object.keys(SUBLENS)].map(v => [v, railCrumb(v)])),
+  home: ["Home"],
+  projects: ["Projects"],
   admin: ["Administration"],
-  reports: ["Reports"],
-  govern: ["Governance & Audit"],
-  entity: ["Graph"],
   search: ["Search"],
 };
 
 // ---- Context switcher: the active case/workspace lives here, not in the rail ----
 function ContextSwitcher({ go }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -170,32 +181,34 @@ function ContextSwitcher({ go }) {
   return (
     <div className="ctx" ref={ref}>
       <button type="button" className="ctx-btn" onClick={()=>setOpen(o=>!o)}
-        aria-expanded={open} aria-haspopup="menu" aria-label={"Active context: Case " + ACTIVE_CASE}>
+        aria-expanded={open} aria-haspopup="menu" aria-label={"Active project: " + ACTIVE.name}>
         <span className="ctx-dot" aria-hidden="true"></span>
         <span className="ctx-meta">
-          <span className="ctx-kind">Case</span>
-          <span className="ctx-name">{ACTIVE_CASE}</span>
+          <span className="ctx-kind">{t('Project')}</span>
+          <span className="ctx-name">{t(ACTIVE.name)}</span>
         </span>
         <Icon name="chevron" size={13} />
       </button>
       {open && (
         <div className="ctx-menu panel" role="menu">
-          <div className="ctx-sec">Active case</div>
+          <div className="ctx-sec">{t('Active project')}</div>
           <button type="button" className="ctx-item active" role="menuitem" onClick={()=>{ setOpen(false); go("dashboard"); }}>
             <span className="ctx-dot" aria-hidden="true"></span>
-            <span className="ctx-item-name">Case {ACTIVE_CASE}</span>
-            <span className="ctx-pill">lead</span>
+            <span className="ctx-item-name">{t(ACTIVE.name)}</span>
+            <span className="ctx-pill">{t('lead')}</span>
           </button>
-          <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("cases"); }}>
-            <span className="ctx-dot amber" aria-hidden="true"></span>
-            <span className="ctx-item-name">Case NIGHTJAR</span>
-          </button>
+          {CTX_OTHERS.map(p=>(
+            <button key={p.id} type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("projects"); }}>
+              <span className={"ctx-dot" + (p.sla==="At risk"?" amber":"")} aria-hidden="true"></span>
+              <span className="ctx-item-name">{t(p.name)}</span>
+            </button>
+          ))}
           <div className="ctx-divider" aria-hidden="true"></div>
           <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("cases"); }}>
-            <Icon name="bell" size={15}/><span className="ctx-item-name">All alerts &amp; cases</span>
+            <Icon name="bell" size={15}/><span className="ctx-item-name">{t('All alerts')}</span>
           </button>
           <button type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("projects"); }}>
-            <Icon name="folder" size={15}/><span className="ctx-item-name">All workspaces…</span>
+            <Icon name="folder" size={15}/><span className="ctx-item-name">{t('All projects…')}</span>
           </button>
         </div>
       )}
@@ -204,9 +217,11 @@ function ContextSwitcher({ go }) {
 }
 
 export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, openNotifs, notifCount, openCopilot }) {
-  // F-09: for the entity 360 the trail comes from where it was opened (origin).
-  // F-04: el caso activo vive SÓLO en el conmutador de contexto — nunca en el breadcrumb.
-  const crumbs = (view === "entity" ? CRUMBS[origin] : CRUMBS[view]) || ["Workspace"];
+  const { t, lang, setLang } = useI18n();
+  const ME = ANALYSTS[CURRENT_USER];
+  // F-09: for the entity 360 the trail comes from where it was opened (origin),
+  // not a constant — so opening an object from Search reads "Search › Name".
+  const crumbs = (view === "entity" ? CRUMBS[origin] : CRUMBS[view]) || ["Home"];
   return (
     <header className="topbar">
       <ContextSwitcher go={go} />
@@ -215,7 +230,7 @@ export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, op
         {crumbs.map((c,i)=>(
           <React.Fragment key={i}>
             {i>0 && <span className="sep"><Icon name="chevron" size={13}/></span>}
-            <span className={i===0?"c-mod":"c-leaf"}>{c}</span>
+            <span className={i===0?"c-mod":"c-leaf"}>{t(c)}</span>
           </React.Fragment>
         ))}
         {leaf && <><span className="sep"><Icon name="chevron" size={13}/></span><span className="c-leaf">{leaf}</span></>}
@@ -223,7 +238,7 @@ export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, op
 
       <div className="search" onClick={openSearch}>
         <Icon name="search" size={16}/>
-        <span style={{ flex:1, fontSize:13 }}>Search objects, links & data…</span>
+        <span style={{ flex:1, fontSize:13 }}>{t('Search objects, links & data…')}</span>
         <span className="kbd">⌘K</span>
       </div>
 
@@ -231,14 +246,18 @@ export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, op
         <button className="btn sm" onClick={openCopilot} style={{ gap:6, background:"var(--accent-ghost)", borderColor:"var(--accent-dim)", color:"var(--accent)" }}>
           <Icon name="sparkles" size={15}/>Copilot
         </button>
-        <button className="icon-btn" onClick={()=>setTheme(theme==="dark"?"light":"dark")} title="Toggle theme">
+        <button className="icon-btn" onClick={()=>setLang(lang==="en"?"es":"en")} title={t('Switch language')} aria-label={t('Switch language')}
+          style={{ display:"flex", alignItems:"center", width:"auto", padding:"0 9px", gap:6, fontFamily:"var(--font-mono)", fontSize:11, fontWeight:700, letterSpacing:".06em" }}>
+          <Icon name="globe" size={16}/>{lang.toUpperCase()}
+        </button>
+        <button className="icon-btn" onClick={()=>setTheme(theme==="dark"?"light":"dark")} title={t('Toggle theme')}>
           <Icon name={theme==="dark"?"sun":"moon"} />
         </button>
-        <button className={"icon-btn" + (notifCount?" dot-badge":"")} onClick={openNotifs} title="Alerts">
+        <button className={"icon-btn" + (notifCount?" dot-badge":"")} onClick={openNotifs} title={t('Notifications')} aria-label={t('Notifications')}>
           <Icon name="bell" />
         </button>
         <div className="vdivider" style={{ height:22, margin:"0 4px" }} />
-        <div className="avatar" title="Ana Reyes · Lead Analyst">AR</div>
+        <div className="avatar" title={`${ME.name} · ${t(ME.role)}`}>{CURRENT_USER}</div>
       </div>
     </header>
   );
@@ -246,6 +265,7 @@ export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, op
 
 // ---- Command palette / global search ----
 export function CommandPalette({ open, onClose, go, openEntity, runSearch, runAction }) {
+  const { t } = useI18n();
   const [q, setQ] = useState("");
   const inputRef = useRef(null);
   useEffect(()=>{ if(open){ setQ(""); setTimeout(()=>inputRef.current?.focus(), 40); } }, [open]);
@@ -274,7 +294,7 @@ export function CommandPalette({ open, onClose, go, openEntity, runSearch, runAc
           <span className="t-accent"><Icon name="search" size={19}/></span>
           <input ref={inputRef} value={q} onChange={e=>setQ(e.target.value)}
             onKeyDown={e=>{ if(e.key==="Enter") submit(); }}
-            placeholder="Search the ontology…"
+            placeholder={t('Search the ontology…')}
             style={{ flex:1, background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"var(--font-ui)", fontSize:16 }} />
           <span className="kbd" style={{ fontFamily:"var(--font-mono)", fontSize:11, color:"var(--text-faint)", border:"1px solid var(--line)", borderRadius:5, padding:"2px 7px" }}>ESC</span>
         </div>
@@ -282,11 +302,11 @@ export function CommandPalette({ open, onClose, go, openEntity, runSearch, runAc
           {q.trim() && (
             <button className="cmd-row" onClick={submit}>
               <span style={{ width:30, display:"grid", placeItems:"center", color:"var(--accent)" }}><Icon name="search" size={18}/></span>
-              <div style={{ textAlign:"left", flex:1, fontSize:14 }}>See all results for “<b style={{fontWeight:600}}>{q.trim()}</b>”</div>
+              <div style={{ textAlign:"left", flex:1, fontSize:14 }}>{t('See all results for')} “<b style={{fontWeight:600}}>{q.trim()}</b>”</div>
               <span className="kbd" style={{ fontFamily:"var(--font-mono)", fontSize:11, color:"var(--text-faint)", border:"1px solid var(--line)", borderRadius:5, padding:"1px 6px" }}>↵</span>
             </button>
           )}
-          <div className="eyebrow" style={{ padding:"8px 10px 4px" }}>Objects · {results.ent.length}</div>
+          <div className="eyebrow" style={{ padding:"8px 10px 4px" }}>{t('Objects')} · {results.ent.length}</div>
           {results.ent.map(e=>(
             <button key={e.id} className="cmd-row" onClick={()=>{ onClose(); openEntity(e.id); }}>
               <TypeGlyph type={e.type} size={30} />
@@ -297,22 +317,22 @@ export function CommandPalette({ open, onClose, go, openEntity, runSearch, runAc
               <RiskPill r={e.risk} />
             </button>
           ))}
-          {results.ent.length===0 && <div className="t-faint" style={{ padding:"10px", fontSize:13 }}>No objects match “{q}”.</div>}
+          {results.ent.length===0 && <div className="t-faint" style={{ padding:"10px", fontSize:13 }}>{t('No objects match')} “{q}”.</div>}
           {results.acts.length>0 && <>
-            <div className="eyebrow" style={{ padding:"12px 10px 4px" }}>Actions</div>
+            <div className="eyebrow" style={{ padding:"12px 10px 4px" }}>{t('Actions')}</div>
             {results.acts.map(a=>(
               <button key={a.id} className="cmd-row" onClick={()=>{ onClose(); runAction(a.id); }}>
                 <span style={{ width:30, display:"grid", placeItems:"center", color:"var(--accent)" }}><Icon name={a.icon} size={18}/></span>
-                <div style={{ textAlign:"left", flex:1, fontSize:14 }}>{a.label}</div>
+                <div style={{ textAlign:"left", flex:1, fontSize:14 }}>{t(a.label)}</div>
                 <span className="t-faint"><Icon name="arrowRight" size={15}/></span>
               </button>
             ))}
           </>}
-          <div className="eyebrow" style={{ padding:"12px 10px 4px" }}>Go to</div>
+          <div className="eyebrow" style={{ padding:"12px 10px 4px" }}>{t('Go to')}</div>
           {results.nav.map(n=>(
             <button key={n.view} className="cmd-row" onClick={()=>{ onClose(); go(n.view); }}>
               <span style={{ width:30, display:"grid", placeItems:"center", color:"var(--text-dim)" }}><Icon name={n.icon} size={18}/></span>
-              <div style={{ textAlign:"left", flex:1, fontSize:14 }}>{n.label}</div>
+              <div style={{ textAlign:"left", flex:1, fontSize:14 }}>{t(n.label)}</div>
               <span className="t-faint"><Icon name="arrowRight" size={15}/></span>
             </button>
           ))}
@@ -329,6 +349,7 @@ export function CommandPalette({ open, onClose, go, openEntity, runSearch, runAc
 
 // ---- Notifications drawer ----
 export function NotifDrawer({ open, onClose }) {
+  const { t } = useI18n();
   const [items, setItems] = useState(NOTIFS);
   if (!open) return null;
   return (
@@ -339,11 +360,11 @@ export function NotifDrawer({ open, onClose }) {
         animation:"rise .25s cubic-bezier(.2,.7,.2,1) both",
       }}>
         <div className="row between center" style={{ padding:"13px 15px", borderBottom:"1px solid var(--line-soft)" }}>
-          <div className="row gap-8 center"><span className="serif" style={{ fontSize:16 }}>Alerts</span>{items.filter(n=>n.sev==="alert").length>0 && <Badge kind="alert">{items.filter(n=>n.sev==="alert").length} critical</Badge>}</div>
-          <button className="btn ghost sm" onClick={()=>setItems([])}>Mark read</button>
+          <div className="row gap-8 center"><span className="serif" style={{ fontSize:16 }}>{t('Notifications')}</span>{items.filter(n=>n.sev==="alert").length>0 && <Badge kind="alert">{t('{n} critical',{n:items.filter(n=>n.sev==="alert").length})}</Badge>}</div>
+          <button className="btn ghost sm" onClick={()=>setItems([])}>{t('Mark read')}</button>
         </div>
         <div style={{ maxHeight:"60vh", overflow:"auto" }}>
-          {items.length===0 && <div className="col center" style={{ padding:"34px 0", gap:8, color:"var(--text-faint)" }}><Icon name="check" size={22}/><span style={{ fontSize:13 }}>All caught up</span></div>}
+          {items.length===0 && <div style={{ padding:"16px" }}><EmptyState compact title={t('All caught up')} /></div>}
           {items.map((n,i)=>(
             <div key={i} onClick={()=>setItems(its=>its.filter((_,j)=>j!==i))} className="row gap-10" style={{ padding:"12px 15px", borderBottom:"1px solid var(--line-soft)", cursor:"pointer" }}>
               <span style={{ color:`var(--${n.sev==="ok"?"ok":n.sev})`, marginTop:1 }}>
@@ -363,30 +384,34 @@ export function NotifDrawer({ open, onClose }) {
 }
 
 export function ShortcutsModal({ open, onClose }) {
+  const { t } = useI18n();
+  if (!open) return null;
   const groups = [
     ["Navigation", [["⌘ K","Search & command palette"],["⌘ J","Open Copilot"],["?","Keyboard shortcuts"],["Esc","Close overlay"]]],
     ["Graph", [["Drag","Pan canvas / move node"],["Scroll","Zoom"],["2× click","Open 360° / expand"],["Click","Select node"]]],
-    ["Actions", [["G then C","New investigation"],["E","Export dossier"],["T","Toggle theme"]]],
+    ["Actions", [["G then C","New project"],["E","Export dossier"],["T","Toggle theme"]]],
   ];
   return (
-    <Modal open={open} onClose={onClose} width="min(560px,92vw)">
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
+      <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(560px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
         <div className="row between center" style={{ padding:"15px 20px", borderBottom:"1px solid var(--line-soft)" }}>
-          <span className="serif" style={{ fontSize:18, whiteSpace:"nowrap" }}>Keyboard shortcuts</span>
+          <span className="serif" style={{ fontSize:18, whiteSpace:"nowrap" }}>{t('Keyboard shortcuts')}</span>
           <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
         </div>
         <div style={{ padding:"8px 20px 20px" }}>
           {groups.map(([g,rows])=>(
             <div key={g} style={{ marginTop:14 }}>
-              <div className="eyebrow" style={{ marginBottom:8 }}>{g}</div>
+              <div className="eyebrow" style={{ marginBottom:8 }}>{t(g)}</div>
               {rows.map(([k,d])=>(
                 <div key={k} className="row between center" style={{ padding:"6px 0" }}>
-                  <span style={{ fontSize:13 }} className="t-dim">{d}</span>
+                  <span style={{ fontSize:13 }} className="t-dim">{t(d)}</span>
                   <span className="kbd mono" style={{ fontSize:11.5, color:"var(--text)", border:"1px solid var(--line)", borderRadius:5, padding:"2px 8px", background:"var(--bg-inset)" }}>{k}</span>
                 </div>
               ))}
             </div>
           ))}
         </div>
-    </Modal>
+      </div>
+    </div>
   );
 }

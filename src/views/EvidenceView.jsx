@@ -3,9 +3,10 @@ import { DOCS } from '../data/data_evidence.js';
 import { TYPE_BY_ID } from '../data/data.js';
 import { Badge, Icon, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
-   AXIOM — Evidence / Document viewer
+   AXIOM — Evidence / Document viewer (UX-01 i18n)
    PDF highlights · image detections · CSV mapping → extraction.
    ============================================================ */
 function tcls(type){ return (TYPE_BY_ID[type]||{}).cls || "tc-org"; }
@@ -14,9 +15,10 @@ function confColor(c){ return c>=0.9?"var(--ok)":c>=0.78?"var(--warn)":"var(--al
 const RES = { matched:{ kind:"ok", label:"matched" }, new:{ kind:"info", label:"new object" }, review:{ kind:"warn", label:"review" } };
 
 function Mention({ ent, surface, selected, onClick }){
+  const { t } = useI18n();
   return (
     <span className={"tc "+tcls(ent.type)} onClick={(e)=>{ e.stopPropagation(); onClick(ent.id); }}
-      title={`${tname(ent.type)} · ${ent.res} · ${Math.round(ent.conf*100)}%`}
+      title={`${t(tname(ent.type))} · ${t(ent.res)} · ${Math.round(ent.conf*100)}%`}
       style={{ cursor:"pointer", color:"var(--text)", padding:"0 3px", borderRadius:4,
         background: selected ? "color-mix(in oklab, var(--c) 30%, transparent)" : "color-mix(in oklab, var(--c) 13%, transparent)",
         borderBottom:"2px solid var(--c)", boxShadow: selected ? "0 0 0 1px var(--c)" : "none", transition:"background .12s, box-shadow .12s", whiteSpace:"nowrap" }}>
@@ -25,13 +27,14 @@ function Mention({ ent, surface, selected, onClick }){
   );
 }
 function PdfView({ doc, sel, onSel }){
+  const { t } = useI18n();
   const byId = useMemo(()=>Object.fromEntries(doc.entities.map(e=>[e.id,e])),[doc]);
   return (
-    <div style={{ maxWidth:"var(--page-read)", margin:"0 auto", background:"var(--bg-1)", border:"1px solid var(--line)", borderRadius:10, boxShadow:"var(--shadow-2)", overflow:"hidden" }}>
+    <div style={{ maxWidth:720, margin:"0 auto", background:"var(--bg-1)", border:"1px solid var(--line)", borderRadius:10, boxShadow:"var(--shadow-2)", overflow:"hidden" }}>
       <div style={{ background:`color-mix(in oklab, var(--alert) 16%, var(--bg-inset))`, borderBottom:"1px solid color-mix(in oklab,var(--alert) 40%,transparent)", textAlign:"center", padding:"5px", fontFamily:"var(--font-mono)", fontSize:10.5, letterSpacing:".18em", fontWeight:600, color:"var(--alert)" }}>{doc.cls} // AXIOM-INT // NEED-TO-KNOW</div>
       <div style={{ padding:"34px 44px 44px" }}>
-        <div className="eyebrow" style={{ marginBottom:8 }}>{doc.sub}</div>
-        <h2 className="serif" style={{ fontSize:23, fontWeight:600, margin:"0 0 22px", letterSpacing:"-0.01em", lineHeight:1.2 }}>{doc.title}</h2>
+        <div className="eyebrow" style={{ marginBottom:8 }}>{t(doc.sub)}</div>
+        <h2 className="h-section" style={{ margin:"0 0 22px", lineHeight:1.2 }}>{t(doc.title)}</h2>
         <div style={{ fontFamily: doc.mono?"var(--font-mono)":"var(--font-serif)", fontSize: doc.mono?13:15.5, lineHeight: doc.mono?2:1.75, color:"var(--text-dim)" }}>
           {doc.body.map((para,pi)=>(
             <p key={pi} style={{ margin: doc.mono?"0":"0 0 16px", whiteSpace: doc.mono?"pre":"normal" }}>
@@ -46,10 +49,11 @@ function PdfView({ doc, sel, onSel }){
   );
 }
 function ImageView({ doc, sel, onSel }){
+  const { t } = useI18n();
   return (
-    <div style={{ maxWidth:"var(--page-read)", margin:"0 auto" }}>
+    <div style={{ maxWidth:760, margin:"0 auto" }}>
       <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid var(--line)", boxShadow:"var(--shadow-2)", aspectRatio:"16 / 10", backgroundImage:"repeating-linear-gradient(45deg, var(--bg-2) 0 14px, var(--bg-inset) 14px 28px)" }}>
-        <div style={{ position:"absolute", inset:0, display:"grid", placeItems:"center" }}><span className="mono" style={{ fontSize:12, color:"var(--text-faint)", letterSpacing:".08em" }}>satellite imagery — drop real capture here</span></div>
+        <div style={{ position:"absolute", inset:0, display:"grid", placeItems:"center" }}><span className="mono" style={{ fontSize:12, color:"var(--text-faint)", letterSpacing:".08em" }}>{t('satellite imagery — drop real capture here')}</span></div>
         {doc.boxes.map(b=>{ const on=sel===b.id; const e=doc.entities.find(x=>x.id===b.id);
           return (
             <div key={b.id} className={"tc "+tcls(b.type)} onClick={(ev)=>{ ev.stopPropagation(); onSel(b.id); }}
@@ -60,15 +64,16 @@ function ImageView({ doc, sel, onSel }){
           );
         })}
       </div>
-      <div className="t-faint mono" style={{ fontSize:11, marginTop:10, textAlign:"center" }}>click a detection to inspect · {doc.boxes.length} objects found</div>
+      <div className="t-faint mono" style={{ fontSize:11, marginTop:10, textAlign:"center" }}>{t('click a detection to inspect · {n} objects found', { n: doc.boxes.length })}</div>
     </div>
   );
 }
 function CsvView({ doc, sel, onSel }){
+  const { t } = useI18n();
   return (
-    <div style={{ maxWidth:"var(--page-narrow)", margin:"0 auto" }}>
+    <div style={{ maxWidth:880, margin:"0 auto" }}>
       <div className="card" style={{ padding:16, marginBottom:14 }}>
-        <div className="eyebrow" style={{ marginBottom:10 }}>Column mapping → ontology</div>
+        <div className="eyebrow" style={{ marginBottom:10 }}>{t('Column mapping → ontology')}</div>
         <div className="row gap-8 wrap">
           {doc.columns.map(c=>(
             <div key={c.name} className="row gap-8 center" style={{ padding:"7px 10px", background:"var(--bg-2)", borderRadius:8, border:"1px solid var(--line-soft)" }}>
@@ -99,6 +104,7 @@ function CsvView({ doc, sel, onSel }){
   );
 }
 function ExtractionPanel({ doc, sel, onSel }){
+  const { t } = useI18n();
   const [f,setF] = useState("all");
   const list = f==="all" ? doc.entities : doc.entities.filter(e=>e.res===f);
   const n = { matched:doc.entities.filter(e=>e.res==="matched").length, new:doc.entities.filter(e=>e.res==="new").length, review:doc.entities.filter(e=>e.res==="review").length };
@@ -106,12 +112,12 @@ function ExtractionPanel({ doc, sel, onSel }){
     <aside style={{ width:344, flex:"none", borderLeft:"1px solid var(--line-soft)", background:"var(--bg-1)", display:"flex", flexDirection:"column", minHeight:0 }}>
       <div style={{ padding:"16px 16px 12px", borderBottom:"1px solid var(--line-soft)" }}>
         <div className="row between center" style={{ marginBottom:10 }}>
-          <div className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="sparkles" size={17}/></span><span className="serif" style={{ fontSize:16 }}>Extracted entities</span></div>
+          <div className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="sparkles" size={17}/></span><span className="serif" style={{ fontSize:16 }}>{t('Extracted entities')}</span></div>
           <Badge kind="accent">{doc.entities.length}</Badge>
         </div>
         <div className="row gap-6 wrap">
           {[["all","All",doc.entities.length],["matched","Matched",n.matched],["new","New",n.new],["review","Review",n.review]].map(([k,l,c])=>(
-            <button key={k} className={"chip"+(f===k?" on":"")} onClick={()=>setF(k)} style={{ height:26 }}>{l} <span className="t-faint" style={{ marginLeft:2 }}>{c}</span></button>
+            <button key={k} className={"chip"+(f===k?" on":"")} onClick={()=>setF(k)} style={{ height:26 }}>{t(l)} <span className="t-faint" style={{ marginLeft:2 }}>{c}</span></button>
           ))}
         </div>
       </div>
@@ -120,18 +126,18 @@ function ExtractionPanel({ doc, sel, onSel }){
           <button key={e.id} onClick={()=>onSel(on?null:e.id)} className="card" style={{ width:"100%", textAlign:"left", padding:12, marginBottom:8, cursor:"pointer", borderColor: on?"var(--accent)":"var(--line-soft)", boxShadow: on?"0 0 0 1px var(--accent)":"none", background: on?"var(--bg-2)":"var(--bg-1)" }}>
             <div className="row gap-10 center">
               <TypeGlyph type={e.type} size={32}/>
-              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</div><div className="t-faint" style={{ fontSize:11, marginTop:1 }}>{tname(e.type)}</div></div>
-              <Badge kind={r.kind} dot>{r.label}</Badge>
+              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</div><div className="t-faint" style={{ fontSize:11, marginTop:1 }}>{t(tname(e.type))}</div></div>
+              <Badge kind={r.kind} dot>{t(r.label)}</Badge>
             </div>
             <div className="row gap-8 center" style={{ marginTop:10 }}>
               <span className="mono" style={{ fontSize:11, color:confColor(e.conf), width:34 }}>{Math.round(e.conf*100)}%</span>
               <div className="meter" style={{ flex:1 }}><i style={{ width:Math.round(e.conf*100)+"%", background:confColor(e.conf) }}/></div>
-              {e.res==="matched" ? <span className="t-faint row gap-4 center" style={{ fontSize:11 }}><Icon name="link" size={12}/>ontology</span> : <span className="t-faint" style={{ fontSize:11 }}>{e.res==="new"?"unlinked":"ambiguous"}</span>}
+              {e.res==="matched" ? <span className="t-faint row gap-4 center" style={{ fontSize:11 }}><Icon name="link" size={12}/>{t('ontology')}</span> : <span className="t-faint" style={{ fontSize:11 }}>{e.res==="new"?t('unlinked'):t('ambiguous')}</span>}
             </div>
             {on && (
               <div className="row gap-6" style={{ marginTop:11 }}>
-                {e.res==="matched" ? <button className="btn sm" style={{ flex:1 }}><Icon name="expand" size={13}/>Open 360°</button> : <button className="btn sm" style={{ flex:1 }}><Icon name="plus" size={13}/>{e.res==="new"?"Create object":"Resolve"}</button>}
-                <button className="btn primary sm" style={{ flex:1 }}><Icon name="graph" size={13}/>Add to graph</button>
+                {e.res==="matched" ? <button className="btn sm" style={{ flex:1 }}><Icon name="expand" size={13}/>{t('Open 360°')}</button> : <button className="btn sm" style={{ flex:1 }}><Icon name="plus" size={13}/>{e.res==="new"?t('Create object'):t('Resolve')}</button>}
+                <button className="btn primary sm" style={{ flex:1 }}><Icon name="graph" size={13}/>{t('Add to graph')}</button>
               </div>
             )}
           </button>
@@ -140,27 +146,28 @@ function ExtractionPanel({ doc, sel, onSel }){
       <div style={{ borderTop:"1px solid var(--line-soft)", padding:14 }}>
         <div className="row between" style={{ marginBottom:10 }}>
           {[["Source",doc.source],["Ingested",doc.ingested],["SHA-256",doc.sha]].map(([k,v])=>(
-            <div key={k} style={{ minWidth:0 }}><div className="t-faint" style={{ fontSize:10 }}>{k}</div><div className="mono" style={{ fontSize:11, color:"var(--text-dim)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{v}</div></div>
+            <div key={k} style={{ minWidth:0 }}><div className="t-faint" style={{ fontSize:10 }}>{t(k)}</div><div className="mono" style={{ fontSize:11, color:"var(--text-dim)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{v}</div></div>
           ))}
         </div>
         <div className="row gap-8 center" style={{ padding:"8px 10px", borderRadius:8, background:"var(--bg-2)", marginBottom:10 }}>
-          <span className="t-faint"><Icon name="shield" size={14}/></span><span className="t-faint" style={{ fontSize:11 }}>Extracted by AXIOM NLP · review pending · provenance retained.</span>
+          <span className="t-faint"><Icon name="shield" size={14}/></span><span className="t-faint" style={{ fontSize:11 }}>{t('Extracted by AXIOM NLP · review pending · provenance retained.')}</span>
         </div>
-        <button className="btn primary" style={{ width:"100%" }}><Icon name="check" size={15}/>Confirm {n.matched} matches</button>
+        <button className="btn primary" style={{ width:"100%" }}><Icon name="check" size={15}/>{t('Confirm {n} matches', { n: n.matched })}</button>
       </div>
     </aside>
   );
 }
 function DocList({ docs, selId, onSel }){
+  const { t } = useI18n();
   return (
-    <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
-      <div style={{ padding:"16px 16px 8px" }} className="row between center"><div className="eyebrow">Evidence · {docs.length}</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
+    <aside style={{ width:"var(--master-w)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
+      <div style={{ padding:"16px 16px 8px" }} className="row between center"><div className="eyebrow">{t('Evidence')} · {docs.length}</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
       <div style={{ padding:"0 8px 16px" }}>
         {docs.map(d=>{ const on=selId===d.id; const ic=d.kind==="image"?"image":d.kind==="csv"?"table":"doc";
           return (
             <button key={d.id} onClick={()=>onSel(d.id)} className="row gap-10 center" style={{ width:"100%", textAlign:"left", border:"none", background: on?"var(--accent-ghost)":"none", borderRadius:9, padding:"10px", cursor:"pointer", marginBottom:2, boxShadow: on?"inset 0 0 0 1px var(--accent-dim)":"none" }}>
               <div style={{ width:30,height:30,borderRadius:8,flex:"none",display:"grid",placeItems:"center", background:"var(--bg-2)", color: on?"var(--accent)":"var(--text-dim)" }}><Icon name={ic} size={16}/></div>
-              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:12.5, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color: on?"var(--text)":"var(--text-dim)" }}>{d.name}</div><div className="t-faint mono" style={{ fontSize:10 }}>{d.entities.length} entities</div></div>
+              <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:12.5, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color: on?"var(--text)":"var(--text-dim)" }}>{d.name}</div><div className="t-faint mono" style={{ fontSize:10 }}>{t('{n} entities', { n: d.entities.length })}</div></div>
               <MarkingChip level={d.cls} size="sm"/>
             </button>
           );
@@ -171,6 +178,7 @@ function DocList({ docs, selId, onSel }){
 }
 
 export function EvidenceView(){
+  const { t } = useI18n();
   const [docId,setDocId] = useState(DOCS[0].id);
   const [sel,setSel] = useState(null);
   const doc = DOCS.find(d=>d.id===docId);
@@ -186,12 +194,12 @@ export function EvidenceView(){
             <span className="t-faint mono" style={{ fontSize:11 }}>{doc.pages}</span>
           </div>
           <div className="row gap-8">
-            <button className="btn sm"><Icon name="sparkles" size={14}/>Re-run extraction</button>
-            <button className="btn sm"><Icon name="download" size={14}/>Download</button>
-            <button className="btn primary sm"><Icon name="plus" size={14}/>Add to case</button>
+            <button className="btn sm"><Icon name="sparkles" size={14}/>{t('Re-run extraction')}</button>
+            <button className="btn sm"><Icon name="download" size={14}/>{t('Download')}</button>
+            <button className="btn primary sm"><Icon name="plus" size={14}/>{t('Add to case')}</button>
           </div>
         </div>
-        <div className="content grid-bg" style={{ flex:1, overflow:"auto", padding:"28px 28px 60px" }} onClick={()=>setSel(null)}>
+        <div className="content grid-bg" style={{ flex:1, overflow:"auto", padding:"var(--page-py) var(--page-px) 60px" }} onClick={()=>setSel(null)}>
           {doc.kind==="pdf" && <PdfView doc={doc} sel={sel} onSel={setSel}/>}
           {doc.kind==="image" && <ImageView doc={doc} sel={sel} onSel={setSel}/>}
           {doc.kind==="csv" && <CsvView doc={doc} sel={sel} onSel={setSel}/>}

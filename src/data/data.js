@@ -3,8 +3,6 @@
    Sanctions-evasion / maritime smuggling investigation
    ============================================================ */
 
-import { pickWorkspaces } from './data_workspaces.js';
-
 // ---- Object type ontology ----
 export const OBJECT_TYPES = [
   { id: "person",  name: "Person",       cls: "tc-person",   glyph: "user",     count: 1284,  desc: "Natural persons: directors, beneficial owners, crew, contacts." },
@@ -170,18 +168,9 @@ export const APPS = [
   { id: "workshop", name: "Workshop", desc: "Build analytic apps", icon: "blocks", view: "dashboard", color: "oklch(0.74 0.13 330)" },
 ];
 
-// Tarjetas ligeras de la Home. Proyección de WORKSPACES (fuente única). `members`
-// aquí es el TAMAÑO de equipo (w.team), no la lista nombrada (w.members).
-export const PROJECTS = pickWorkspaces(["blackfrost", "tradewind", "supply", "fraud"]).map((w) => ({
-  id: w.id,
-  name: w.nameEn,
-  sub: w.subEn,
-  updated: w.updated,
-  members: w.team,
-  alerts: w.counts.alerts,
-  pinned: w.pinned,
-  progress: w.progress,
-}));
+// ---- Projects / investigations ----
+// MOVED (R-4): unified into the single `project` domain object.
+// Import { PROJECTS } from './data_projects.js' instead.
 
 export const ACTIVITY = [
   { who: "Entity Resolution", what: "merged 14 duplicate Person objects", when: "2m", kind: "system" },

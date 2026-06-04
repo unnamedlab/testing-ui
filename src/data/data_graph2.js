@@ -1,14 +1,19 @@
-/* AXIOM — data_graph2.js · UNIFICADO (cluster ②)
-   Antes era un fixture propio (G2_* distinto al del lienzo principal).
-   Ahora DERIVA de data.js: GraphAnalysisView opera sobre el MISMO
-   grafo (entidades/aristas) que GraphView. Conclusiones comparables. */
-import { ENTITIES, EDGES } from './data.js';
+/* AXIOM — data_graph2.js · projection for GraphAnalysisView (IC-1)
+   This is now just a COORDINATE PROJECTION of the shared graph engine
+   (graph_model.js) into the viewBox GraphAnalysisView draws in
+   (0..100 × 0..86). The graph itself — nodes, edges, adjacency,
+   pathfinding, centrality — lives in graph_model.js and is shared by
+   every lens. No separate fixture, no separate topology. */
+import { GRAPH_NODES, GRAPH_LINKS } from './graph_model.js';
 
-// nodos en el espacio normalizado que espera GraphAnalysisView (viewBox 0..100 × 0..86)
-export const G2_NODES = ENTITIES.map((e) => ({
-  id: e.id, name: e.name, type: e.type,
-  x: +(e.x * 100).toFixed(1), y: +(e.y * 86).toFixed(1),
+// nodes in the normalized space GraphAnalysisView expects
+export const G2_NODES = GRAPH_NODES.map((n) => ({
+  id: n.id,
+  name: n.name,
+  type: n.type,
+  x: +(n.nx * 100).toFixed(1),
+  y: +(n.ny * 86).toFixed(1),
 }));
 
-// aristas como pares [a, b] sobre los mismos ids del grafo principal
-export const G2_EDGES = EDGES.map((e) => [e.s, e.t]);
+// edges as [a, b] id pairs over the same graph
+export const G2_EDGES = GRAPH_LINKS.map((l) => [l.s, l.t]);

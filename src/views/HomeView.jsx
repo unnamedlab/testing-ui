@@ -1,35 +1,35 @@
-import { useState } from 'react';
-import { BOARDS } from '../data/data_ext.js';
-import { ACTIVITY, APPS, ENTITIES, PROJECTS, SERIES, TRANSACTIONS, TYPE_BY_ID, fmtMoney } from '../data/data.js';
-import { Badge, Bars, Gauge, Icon, RiskPill, SectionHead, Stat, TypeGlyph } from '../components/ui.jsx';
+import { useEffect, useState } from 'react';
+import { BOARDS, ANALYSTS, CURRENT_USER } from '../data/data_ext.js';
+import { ACTIVITY, APPS, ENTITIES, SERIES, TRANSACTIONS, TYPE_BY_ID, fmtMoney } from '../data/data.js';
+import { PROJECTS } from '../data/data_projects.js';
+import { OPEN_ALERTS, ACTIVE_PROJECTS, PLATFORM_HEALTH, OVERVIEW_KPIS, OPERATIONS_BOARD } from '../data/data_overview.js';
+import { Badge, Bars, Gauge, Icon, RiskPill, SectionHead, Stat, TypeGlyph, PageHeader, Seg } from '../components/ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — Home workspace + Operations dashboard
    ============================================================ */
 
 export function HomeView({ go, openProject }) {
+  const { t, lang } = useI18n();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const id = setInterval(() => setNow(new Date()), 30000); return () => clearInterval(id); }, []);
+  const loc = lang === 'es' ? 'es-ES' : 'en-US';
+  const stamp = new Intl.DateTimeFormat(loc, { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(now)
+    + ' · ' + new Intl.DateTimeFormat(loc, { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' }).format(now) + ' UTC';
+  const me = ANALYSTS[CURRENT_USER];
   return (
-    <div className="content" style={{ padding: "28px 32px 60px" }}>
-      <div style={{ maxWidth: "var(--page-wide)", margin: "0 auto" }} className="fade-in">
+    <div className="content" style={{ padding: "var(--page-py) var(--page-px) 60px" }}>
+      <div style={{ maxWidth: 1180, margin: "0 auto" }} className="fade-in">
         {/* hero */}
-        <div className="row between" style={{ alignItems:"flex-end", marginBottom: 28 }}>
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 8 }}>Tuesday · 02 Jun 2026 · 09:14 UTC</div>
-            <h1 className="serif" style={{ fontSize: 38, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>
-              Welcome back, Ana
-            </h1>
-            <div className="t-dim" style={{ fontSize: 15, marginTop: 6 }}>
-              <span className="t-accent">12 alerts</span> need triage across 4 active investigations.
-            </div>
-          </div>
-          <div className="row gap-8">
-            <button className="btn"><Icon name="download" />Import data</button>
-            <button className="btn primary"><Icon name="plus" />New investigation</button>
-          </div>
-        </div>
+        <PageHeader variant="hero" eyebrow={stamp} title={t('Welcome back, {name}', { name: me.name.split(' ')[0] })}
+          sub={<><span className="t-accent">{t('{n} alerts', { n: OPEN_ALERTS })}</span> {t('need triage across {p} active projects.', { p: ACTIVE_PROJECTS })}</>}>
+          <button className="btn"><Icon name="download" />{t('Import data')}</button>
+          <button className="btn primary"><Icon name="plus" />{t('New project')}</button>
+        </PageHeader>
 
         {/* apps */}
-        <SectionHead eyebrow="Applications" title="Open a module" />
+        <SectionHead eyebrow={t('Applications')} title={t('Open a module')} />
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap: 14, marginBottom: 36 }}>
           {APPS.map(a=>(
             <button key={a.id} className="card hover" onClick={()=>go(a.view)} style={{
@@ -51,8 +51,8 @@ export function HomeView({ go, openProject }) {
         <div style={{ display:"grid", gridTemplateColumns:"1.55fr 1fr", gap: 24 }}>
           {/* projects */}
           <div>
-            <SectionHead eyebrow="Investigations" title="Your projects">
-              <button className="btn ghost sm">View all</button>
+            <SectionHead eyebrow={t('Projects')} title={t('Your projects')}>
+              <button className="btn ghost sm">{t('View all')}</button>
             </SectionHead>
             <div className="col gap-10">
               {PROJECTS.map(p=>(
@@ -66,9 +66,9 @@ export function HomeView({ go, openProject }) {
                       <div>
                         <div className="row gap-8 center">
                           <span style={{ fontSize:15, fontWeight:600 }}>{p.name}</span>
-                          {p.alerts>0 && <Badge kind="alert" dot>{p.alerts}</Badge>}
+                          {p.counts.alerts>0 && <Badge kind="alert" dot>{p.counts.alerts}</Badge>}
                         </div>
-                        <div className="t-faint" style={{ fontSize:12.5, marginTop:2 }}>{p.sub} · {p.members} members</div>
+                        <div className="t-faint" style={{ fontSize:12.5, marginTop:2 }}>{p.sub} · {p.members.length} {t('members')}</div>
                       </div>
                     </div>
                     <div className="col" style={{ alignItems:"flex-end", gap:7, minWidth:120 }}>
@@ -86,7 +86,7 @@ export function HomeView({ go, openProject }) {
 
           {/* activity */}
           <div>
-            <SectionHead eyebrow="Stream" title="Activity">
+            <SectionHead eyebrow={t('Stream')} title={t('Activity')}>
               <span className="live-dot" />
             </SectionHead>
             <div className="panel" style={{ padding: "6px 0" }}>
@@ -103,11 +103,14 @@ export function HomeView({ go, openProject }) {
               ))}
             </div>
             <div className="card" style={{ padding:16, marginTop:14 }}>
-              <div className="eyebrow" style={{ marginBottom:10 }}>Platform health</div>
+              <div className="row between center" style={{ marginBottom:10 }}>
+                <div className="eyebrow">{t('Platform health')}</div>
+                <button className="btn ghost sm" onClick={()=>go("health")}>{t('Data Health')} <Icon name="arrowRight" size={13}/></button>
+              </div>
               <div className="col gap-12">
-                {[["Ingestion",92,"var(--ok)"],["Entity resolution",88,"var(--accent)"],["Alert latency",74,"var(--warn)"]].map(([l,v,c])=>(
+                {PLATFORM_HEALTH.map(({ label:l, value:v, color:c })=>(
                   <div key={l} className="row gap-10 center">
-                    <span style={{ fontSize:12.5, width:120 }} className="t-dim">{l}</span>
+                    <span style={{ fontSize:12.5, width:120 }} className="t-dim">{t(l)}</span>
                     <div className="meter" style={{ flex:1 }}><i style={{ width:v+"%", background:c }} /></div>
                     <span className="mono t-dim" style={{ fontSize:11, width:30 }}>{v}%</span>
                   </div>
@@ -116,15 +119,14 @@ export function HomeView({ go, openProject }) {
             </div>
             <div className="card" style={{ padding:16, marginTop:14 }}>
               <div className="row between center" style={{ marginBottom:12 }}>
-                <div className="eyebrow">Shared boards</div>
-                <button className="btn ghost sm">New</button>
+                <div className="eyebrow">{t('Shared boards')}</div>
+                <button className="btn ghost sm">{t('New')}</button>
               </div>
               <div className="col gap-8">
                 {BOARDS.map(b=>(
-                  <button key={b.id} onClick={()=>go(b.kind==="map"?"map":b.kind==="graph"?"graph":"dashboard")} className="row gap-10 center" style={{ padding:"7px 6px", border:"none", background:"none", borderRadius:8, cursor:"pointer", textAlign:"left" }}
-                    onMouseEnter={ev=>ev.currentTarget.style.background="var(--bg-2)"} onMouseLeave={ev=>ev.currentTarget.style.background="none"}>
+                  <button key={b.id} onClick={()=>go(b.kind==="map"?"map":b.kind==="graph"?"graph":"dashboard")} className="row gap-10 center hov" style={{ padding:"7px 6px", border:"none", borderRadius:8, cursor:"pointer", textAlign:"left" }}>
                     <span style={{ width:28,height:28,borderRadius:8,display:"grid",placeItems:"center",background:"var(--bg-2)",color:"var(--text-dim)",flex:"none" }}><Icon name={b.kind==="map"?"globe":b.kind==="graph"?"graph":"grid"} size={15}/></span>
-                    <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{b.name}</div><div className="t-faint" style={{ fontSize:11 }}>{b.collab} collaborators · {b.updated}</div></div>
+                    <div style={{ flex:1, minWidth:0 }}><div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{b.name}</div><div className="t-faint" style={{ fontSize:11 }}>{b.collab} {t('collaborators')} · {b.updated}</div></div>
                   </button>
                 ))}
               </div>
@@ -138,7 +140,9 @@ export function HomeView({ go, openProject }) {
 
 // ---- Operations dashboard ----
 export function DashboardView({ go }) {
+  const { t } = useI18n();
   const [filter, setFilter] = useState(null); // {kind:'pattern'|'entity', value, label}
+  const [range, setRange] = useState("7d");
   const PATTERN_MAP = { "Layering":["layering","layer"], "AIS gap":["ais"], "Sanctions":["sanction"] };
   const shownTxns = TRANSACTIONS.filter(t=>{
     if(!filter) return true;
@@ -149,31 +153,30 @@ export function DashboardView({ go }) {
   function setCat(value){ setFilter(f=> f&&f.kind==="pattern"&&f.value===value ? null : {kind:"pattern", value, label:value}); }
   function setEnt(e){ setFilter(f=> f&&f.kind==="entity"&&f.value===e.id ? null : {kind:"entity", value:e.id, label:e.name}); }
   return (
-    <div className="content" style={{ padding: "24px 28px 60px" }}>
-      <div style={{ maxWidth: "var(--page-wide)", margin: "0 auto" }} className="fade-in">
-        <SectionHead eyebrow="Case BLACKFROST · live" title="Operations overview">
-          {filter && <button className="chip on" onClick={()=>setFilter(null)} style={{ marginRight:4 }}>Filtered: {filter.label} <Icon name="x" size={12} style={{ marginLeft:2 }}/></button>}
-          <div className="seg">
-            <button>24h</button><button className="on">7d</button><button>30d</button>
-          </div>
-          <button className="btn"><Icon name="download"/>Export</button>
-        </SectionHead>
+    <div className="content" style={{ padding: "var(--page-py) var(--page-px) 60px" }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto" }} className="fade-in">
+        <PageHeader eyebrow={t('Analyze')} title={t('Operations')}
+          sub={<span className="row gap-8 center" style={{ flexWrap:"wrap" }}><span className="badge accent"><Icon name="bars" size={11}/>{t('Saved board · published from Analytics')}</span><span className="t-faint mono" style={{ fontSize:11 }}>{t('updated {x}', { x: OPERATIONS_BOARD.updated })}</span></span>}>
+          {filter && <button className="chip on" onClick={()=>setFilter(null)} style={{ marginRight:4 }}>{t('Filtered:')} {filter.label} <Icon name="plus" size={12} style={{transform:"rotate(45deg)", marginLeft:2}}/></button>}
+          <Seg value={range} options={["24h","7d","30d"]} onChange={setRange} />
+          <button className="btn" onClick={()=>go("analytics")}><Icon name="bars"/>{t('Edit in Analytics')}</button>
+          <button className="btn"><Icon name="download"/>{t('Export')}</button>
+        </PageHeader>
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, marginBottom:18 }}>
-          <Stat label="Open alerts" value="12" sub="▲ 4 vs prev" trend="down" series={SERIES.alerts} color="var(--alert)" icon="alertTri" />
-          <Stat label="Flagged txns (7d)" value="$58.7M" sub="▲ 18%" trend="up" series={SERIES.txns} color="var(--accent)" icon="swap" />
-          <Stat label="Objects ingested" value="56.3K" sub="▲ 12.4K today" trend="up" series={SERIES.ingest} color="var(--ok)" icon="box" />
-          <Stat label="Resolution rate" value="88%" sub="▲ 3.1%" trend="up" series={SERIES.resolve} color="var(--info)" icon="merge" />
+          {OVERVIEW_KPIS.map(k=>(
+            <Stat key={k.key} label={t(k.label)} value={k.value} sub={k.sub} trend={k.trend} series={SERIES[k.seriesKey]} color={k.color} icon={k.icon} />
+          ))}
         </div>
 
         <div style={{ display:"grid", gridTemplateColumns:"1.6fr 1fr", gap:16, marginBottom:16 }}>
           {/* alert timeline */}
           <div className="card" style={{ padding:18 }}>
             <div className="row between center" style={{ marginBottom:16 }}>
-              <div className="eyebrow">Alert volume · last 7 days</div>
+              <div className="eyebrow">{t('Alert volume · last 7 days')}</div>
               <div className="row gap-12">
                 {[["Layering","var(--alert)","tri"],["AIS gap","var(--warn)","sq"],["Sanctions","var(--accent)","dot"]].map(([l,c,sh])=>(
-                  <button key={l} onClick={()=>setCat(l)} className="row gap-6 center" style={{ fontSize:11.5, border:"none", background:"none", cursor:"pointer", padding:"2px 4px", borderRadius:5, opacity: filter&&filter.kind==="pattern"&&filter.value!==l?0.4:1, outline: filter&&filter.value===l?"1px solid var(--accent)":"none" }}><i style={{ width:9,height:9,background:c,display:"inline-block", borderRadius: sh==="dot"?"50%":sh==="sq"?2:0, clipPath: sh==="tri"?"polygon(50% 0,100% 100%,0 100%)":"none" }}/><span className="t-dim">{l}</span></button>
+                  <button key={l} onClick={()=>setCat(l)} className="row gap-6 center" style={{ fontSize:11.5, border:"none", background:"none", cursor:"pointer", padding:"2px 4px", borderRadius:5, opacity: filter&&filter.kind==="pattern"&&filter.value!==l?0.4:1, outline: filter&&filter.value===l?"1px solid var(--accent)":"none" }}><i style={{ width:9,height:9,background:c,display:"inline-block", borderRadius: sh==="dot"?"50%":sh==="sq"?2:0, clipPath: sh==="tri"?"polygon(50% 0,100% 100%,0 100%)":"none" }}/><span className="t-dim">{t(l)}</span></button>
                 ))}
               </div>
             </div>
@@ -185,24 +188,23 @@ export function DashboardView({ go }) {
 
           {/* risk gauge + breakdown */}
           <div className="card" style={{ padding:18, display:"flex", flexDirection:"column" }}>
-            <div className="eyebrow" style={{ marginBottom:14 }}>Network risk index</div>
+            <div className="eyebrow" style={{ marginBottom:14 }}>{t('Network risk index')}</div>
             <div className="row gap-16 center" style={{ marginBottom:16 }}>
-              <Gauge value={84} label="84" sub="Critical" color="var(--alert)" size={104} />
+              <Gauge value={84} label="84" sub={t('Critical')} color="var(--alert)" size={104} />
               <div className="col gap-10" style={{ flex:1 }}>
                 {[["Financial",78,"var(--accent)"],["Maritime",90,"var(--alert)"],["Corporate",61,"var(--warn)"]].map(([l,v,c])=>(
                   <div key={l}>
-                    <div className="row between" style={{ fontSize:12, marginBottom:4 }}><span className="t-dim">{l}</span><span className="mono">{v}</span></div>
+                    <div className="row between" style={{ fontSize:12, marginBottom:4 }}><span className="t-dim">{t(l)}</span><span className="mono">{v}</span></div>
                     <div className="meter"><i style={{ width:v+"%", background:c }}/></div>
                   </div>
                 ))}
               </div>
             </div>
             <div className="divider" style={{ margin:"4px 0 14px" }} />
-            <div className="eyebrow" style={{ marginBottom:10 }}>Top risk entities</div>
+            <div className="eyebrow" style={{ marginBottom:10 }}>{t('Top risk entities')}</div>
             <div className="col gap-2">
               {ENTITIES.filter(e=>e.risk>=80).slice(0,4).map(e=>(
-                <button key={e.id} onClick={()=>setEnt(e)} className="row gap-10 center" style={{ padding:"7px 6px", border:"none", background: filter&&filter.value===e.id?"var(--accent-ghost)":"none", borderRadius:8, cursor:"pointer", textAlign:"left" }}
-                  onMouseEnter={ev=>{ if(!(filter&&filter.value===e.id)) ev.currentTarget.style.background="var(--bg-2)"; }} onMouseLeave={ev=>{ if(!(filter&&filter.value===e.id)) ev.currentTarget.style.background="none"; }}>
+                <button key={e.id} onClick={()=>setEnt(e)} className={"row gap-10 center hov"+(filter&&filter.value===e.id?" is-active":"")} style={{ padding:"7px 6px", border:"none", borderRadius:8, cursor:"pointer", textAlign:"left" }}>
                   <TypeGlyph type={e.type} size={28}/>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</div>
@@ -218,11 +220,11 @@ export function DashboardView({ go }) {
         {/* transactions table */}
         <div className="card" style={{ overflow:"hidden" }}>
           <div className="row between center" style={{ padding:"14px 18px", borderBottom:"1px solid var(--line-soft)" }}>
-            <div className="row gap-10 center"><div className="eyebrow">Flagged transactions</div>{filter && <Badge kind="accent">{shownTxns.length} match · {filter.label}</Badge>}</div>
-            <button className="btn ghost sm" onClick={()=>go("graph")}>Open in graph <Icon name="arrowRight" size={14}/></button>
+            <div className="row gap-10 center"><div className="eyebrow">{t('Flagged transactions')}</div>{filter && <Badge kind="accent">{shownTxns.length} match · {filter.label}</Badge>}</div>
+            <button className="btn ghost sm" onClick={()=>go("graph")}>{t('Open in graph')} <Icon name="arrowRight" size={14}/></button>
           </div>
           <table className="tbl">
-            <thead><tr><th>ID</th><th>Date</th><th>From</th><th>To</th><th style={{textAlign:"right"}}>Amount</th><th>Pattern</th><th></th></tr></thead>
+            <thead><tr><th>ID</th><th>{t('Date')}</th><th>{t('From')}</th><th>{t('To')}</th><th style={{textAlign:"right"}}>{t('Amount')}</th><th>{t('Pattern')}</th><th></th></tr></thead>
             <tbody>
               {shownTxns.map(t=>(
                 <tr key={t.id}>
@@ -235,7 +237,7 @@ export function DashboardView({ go }) {
                   <td style={{ textAlign:"right", color:"var(--text-faint)" }}><Icon name="chevron" size={15}/></td>
                 </tr>
               ))}
-              {shownTxns.length===0 && <tr><td colSpan={7} style={{ textAlign:"center", padding:"28px 0", color:"var(--text-faint)" }}>No transactions match “{filter?.label}”</td></tr>}
+              {shownTxns.length===0 && <tr><td colSpan={7} style={{ textAlign:"center", padding:"28px 0", color:"var(--text-faint)" }}>{t('No transactions match')} “{filter?.label}”</td></tr>}
             </tbody>
           </table>
         </div>

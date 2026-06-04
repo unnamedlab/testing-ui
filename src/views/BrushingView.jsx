@@ -1,19 +1,24 @@
 import { useMemo, useState } from 'react';
 import { B_EDGES, B_ENTITIES } from '../data/data_brushing.js';
+import { neighbors } from '../data/graph_model.js';
 import { Icon } from '../components/ui.jsx';
 import { GraphEdge, GraphNode, typeColor } from '../components/GraphCanvas.jsx';
+import { MapDefs, MapSea, MapLand, PortMarker, VesselMarker } from '../components/MapCanvas.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
-   AXIOM — Linked brushing
+   AXIOM — Linked brushing (IC-1)
    Select/hover an entity in ANY panel → it lights up in the
-   graph, map, table and timeline at once.
-   The graph panel renders through the shared GraphCanvas.
+   graph, map, table and timeline at once. All four panels read
+   the SAME graph engine (graph_model.js) as GraphView and
+   GraphAnalysisView — neighbor relationships come from there, not
+   a private fixture. The map plots objects at their REAL
+   geospatial position; objects with no location aren't on the map.
    ============================================================ */
 const TC = { person: typeColor("person"), org: typeColor("org"), vessel: typeColor("vessel"), port: typeColor("port"), account: typeColor("account") };
 const TN = { person:"Person", org:"Organization", vessel:"Vessel", port:"Facility", account:"Account" };
 const EBY = Object.fromEntries(B_ENTITIES.map(e=>[e.id,e]));
-const NEI = {}; B_ENTITIES.forEach(e=>NEI[e.id]=new Set());
-B_EDGES.forEach(([s,t])=>{ NEI[s].add(t); NEI[t].add(s); });
+const LOCATED = B_ENTITIES.filter(e=>e.located);
 
 function Panel({ icon, title, sub, children }){
   return <div className="card" style={{ display:"flex", flexDirection:"column", overflow:"hidden", minHeight:0 }}>
@@ -44,32 +49,35 @@ function GraphPanel({ active, isDim, onHover, onPick }){
   );
 }
 function MapPanel({ active, isDim, onHover, onPick }){
+  // Renders through the SAME MapCanvas primitives as MapView (IC-2): same
+  // landmasses, graticule, port diamonds and vessel arrows. This panel is the
+  // real map, smaller and brush-linked — not a separate mock.
   return (
-    <svg viewBox="0 0 100 90" width="100%" height="100%" style={{ display:"block", background:"var(--bg-inset)" }} preserveAspectRatio="xMidYMid meet" onMouseLeave={()=>onHover(null)}>
-      <g fill="var(--bg-2)" stroke="var(--line)" strokeWidth="0.4" opacity="0.9"><path d="M0,0 H46 Q42,14 32,18 Q16,22 0,21 Z"/><path d="M100,90 H44 Q56,60 76,58 Q92,60 100,46 Z"/></g>
-      {[20,40,60,80].map(g=><line key={g} x1={g} y1="0" x2={g} y2="90" stroke="var(--grid-color)" strokeWidth="0.3"/>)}
-      {B_ENTITIES.map(e=>{ const dim=isDim(e.id); const on=active===e.id;
-        return <g key={e.id} transform={`translate(${e.mx},${e.my})`} opacity={dim?0.25:1} style={{ cursor:"pointer", transition:"opacity .15s" }} onMouseEnter={()=>onHover(e.id)} onClick={()=>onPick(e.id)}>
-          {on && <circle r="4.5" fill="none" stroke="var(--accent)" strokeWidth="0.8"/>}
-          {e.type==="vessel" ? <path d="M0,-3 L2,2.6 L0,1.2 L-2,2.6 Z" fill={TC[e.type]} stroke="var(--bg)" strokeWidth="0.4"/>
-            : e.type==="port" ? <rect x="-2" y="-2" width="4" height="4" rx="0.6" transform="rotate(45)" fill={TC[e.type]} stroke="var(--bg)" strokeWidth="0.4"/>
-            : <circle r="2.4" fill={TC[e.type]} stroke="var(--bg)" strokeWidth="0.4"/>}
-          {on && <text y="-5" textAnchor="middle" fontSize="2.6" fontFamily="var(--font-mono)" fill="var(--text)">{e.name}</text>}
-        </g>;
+    <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ display:"block", background:"var(--bg-inset)" }} preserveAspectRatio="xMidYMid meet" onMouseLeave={()=>onHover(null)}>
+      <MapDefs/>
+      <MapSea w={100} h={100}/>
+      <MapLand w={100} h={100}/>
+      {LOCATED.map(e=>{ const dim=isDim(e.id); const on=active===e.id;
+        const common={ cx:e.mx, cy:e.my, name:e.name, alert:e.risk>=80, selected:on, dim, scale:0.42,
+          showLabel:on, fontSize:3, onClick:()=>onPick(e.id), onHover:()=>onHover(e.id) };
+        return e.type==="vessel"
+          ? <VesselMarker key={e.id} {...common} />
+          : <PortMarker key={e.id} {...common} />;
       })}
     </svg>
   );
 }
 function TablePanel({ active, isDim, onHover, onPick }){
+  const { t } = useI18n();
   return (
     <div style={{ position:"absolute", inset:0, overflow:"auto" }} onMouseLeave={()=>onHover(null)}>
       <table className="tbl" style={{ fontSize:12 }}>
-        <thead><tr><th>Object</th><th>Type</th><th style={{textAlign:"right"}}>Risk</th></tr></thead>
+        <thead><tr><th>{t('Object')}</th><th>{t('Type')}</th><th style={{textAlign:"right"}}>{t('Risk')}</th></tr></thead>
         <tbody>
           {B_ENTITIES.map(e=>{ const dim=isDim(e.id); const on=active===e.id;
             return <tr key={e.id} onMouseEnter={()=>onHover(e.id)} onClick={()=>onPick(e.id)} style={{ opacity:dim?0.3:1, background:on?"var(--accent-ghost)":"transparent", transition:"opacity .15s" }}>
               <td style={{ color:"var(--text)" }}><span className="row gap-8 center"><span style={{ width:8,height:8,borderRadius:2,background:TC[e.type],flex:"none" }}/><span style={{ fontWeight:on?600:500 }}>{e.name}</span></span></td>
-              <td style={{ color:TC[e.type] }}>{TN[e.type]}</td>
+              <td style={{ color:TC[e.type] }}>{t(TN[e.type])}</td>
               <td className="mono" style={{ textAlign:"right", color: e.risk>=80?"var(--alert)":"var(--text-dim)" }}>{e.risk}</td>
             </tr>;
           })}
@@ -97,28 +105,29 @@ function TimePanel({ active, isDim, onHover, onPick }){
 }
 
 export function BrushingView(){
+  const { t } = useI18n();
   const [sel,setSel] = useState(null);
   const [hover,setHover] = useState(null);
   const active = hover || sel;
-  const isDim = useMemo(()=> (id)=>{ if(!active) return false; if(id===active) return false; return !NEI[active]?.has(id); }, [active]);
+  const isDim = useMemo(()=> (id)=>{ if(!active) return false; if(id===active) return false; return !neighbors(active).has(id); }, [active]);
   function pick(id){ setSel(s=>s===id?null:id); }
   const a = active ? EBY[active] : null;
   return (
     <div className="content" style={{ display:"flex", flexDirection:"column", padding:0, overflow:"hidden" }}>
       <div className="row between center" style={{ padding:"11px 22px", borderBottom:"1px solid var(--line-soft)", flex:"none" }}>
         <div className="row gap-10 center">
-          <span className="badge accent"><span className="dt"/>Linked brushing</span>
-          <span className="t-dim" style={{ fontSize:12.5 }}>Hover or click any object — it highlights across all four views.</span>
+          <span className="badge accent"><span className="dt"/>{t('Linked brushing')}</span>
+          <span className="t-dim" style={{ fontSize:12.5 }}>{t('Hover or click any object — it highlights across all four views.')}</span>
         </div>
         {a
-          ? <div className="row gap-8 center"><span className="row gap-8 center" style={{ background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:8, padding:"4px 6px 4px 10px" }}><span style={{ width:9,height:9,borderRadius:2,background:TC[a.type] }}/><span style={{ fontSize:12.5, fontWeight:600 }}>{a.name}</span><span className="t-faint" style={{ fontSize:11 }}>· {NEI[a.id].size} links</span></span>{sel && <button className="btn ghost sm" onClick={()=>setSel(null)}><Icon name="x" size={13}/>Clear</button>}</div>
-          : <span className="t-faint" style={{ fontSize:12 }}>nothing selected</span>}
+          ? <div className="row gap-8 center"><span className="row gap-8 center" style={{ background:"var(--bg-2)", border:"1px solid var(--line)", borderRadius:8, padding:"4px 6px 4px 10px" }}><span style={{ width:9,height:9,borderRadius:2,background:TC[a.type] }}/><span style={{ fontSize:12.5, fontWeight:600 }}>{a.name}</span><span className="t-faint" style={{ fontSize:11 }}>· {t('{n} links', { n: neighbors(a.id).size })}</span></span>{sel && <button className="btn ghost sm" onClick={()=>setSel(null)}><Icon name="x" size={13}/>{t('Clear')}</button>}</div>
+          : <span className="t-faint" style={{ fontSize:12 }}>{t('nothing selected')}</span>}
       </div>
       <div style={{ flex:1, minHeight:0, display:"grid", gridTemplateColumns:"1fr 1fr", gridTemplateRows:"1fr 1fr", gap:14, padding:16 }}>
-        <Panel icon="graph" title="Connection graph" sub={B_ENTITIES.length+" objects · "+B_EDGES.length+" links"}><GraphPanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
-        <Panel icon="globe" title="Geospatial" sub="live AIS"><MapPanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
-        <Panel icon="table" title="Objects" sub={B_ENTITIES.length+" rows"}><TablePanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
-        <Panel icon="clock" title="Timeline" sub="first observed"><TimePanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
+        <Panel icon="graph" title={t('Connection graph')} sub={t('{n} objects · {m} links', { n: B_ENTITIES.length, m: B_EDGES.length })}><GraphPanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
+        <Panel icon="globe" title={t('Geospatial')} sub={t('{n} located', { n: LOCATED.length })}><MapPanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
+        <Panel icon="table" title={t('Objects')} sub={t('{n} rows', { n: B_ENTITIES.length })}><TablePanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
+        <Panel icon="clock" title={t('Timeline')} sub={t('first observed')}><TimePanel active={active} isDim={isDim} onHover={setHover} onPick={pick}/></Panel>
       </div>
     </div>
   );

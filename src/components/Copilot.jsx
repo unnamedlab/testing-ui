@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnswerCard, Drawer, Icon, mdInline } from './ui.jsx';
+import { ENTITY_BY_ID } from '../data/data.js';
+import { Icon, RiskPill, TypeGlyph } from './ui.jsx';
 import { complete, isModelAvailable } from '../services/claude.js';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — AI Copilot (natural-language query, AIP-style)
@@ -50,7 +52,41 @@ export function matchIntent(q){
   return null;
 }
 
+export function ResultCard({ res, openEntity, go }){
+  const { t } = useI18n();
+  return (
+    <div className="card" style={{ padding:14, marginTop:10, background:"var(--bg-2)" }}>
+      {res.entities && (
+        <>
+          <div className="eyebrow" style={{ marginBottom:8 }}>{t('Matched objects')} · {res.entities.length}</div>
+          <div className="col gap-2" style={{ marginBottom:12 }}>
+            {res.entities.map(id=>{ const e=ENTITY_BY_ID[id]; if(!e) return null; return (
+              <button key={id} onClick={()=>openEntity(id)} className="row gap-10 center hov" style={{ padding:"6px", border:"none", borderRadius:8, cursor:"pointer", textAlign:"left" }}>
+                <TypeGlyph type={e.type} size={26}/>
+                <span style={{ flex:1, minWidth:0, fontSize:13, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</span>
+                <RiskPill r={e.risk}/>
+              </button>
+            );})}
+          </div>
+        </>
+      )}
+      <div className="row gap-8 wrap">
+        {res.actions?.map(([v,label,ic])=>(
+          <button key={v} className="btn sm" onClick={()=>go(v)}><Icon name={ic} size={14}/>{t(label)}</button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function mdToHtml(t){
+  return t.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/\*\*(.+?)\*\*/g,"<b style='color:var(--text)'>$1</b>")
+    .replace(/\n/g,"<br/>");
+}
+
 export function Copilot({ open, onClose, go, openEntity }){
+  const { t } = useI18n();
   const [msgs, setMsgs] = useState([
     { role:"ai", text:"I'm your AXIOM analyst copilot. Ask about entities, money flows, vessels or the network — I'll query the ontology and link results back to the graph." },
   ]);
@@ -82,42 +118,45 @@ export function Copilot({ open, onClose, go, openEntity }){
     }
   }
 
+  if(!open) return null;
   return (
-    <Drawer open={open} onClose={onClose} zIndex={130} panelStyle={{ overflow:"hidden" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:130, background:"var(--scrim-soft)", backdropFilter:"var(--scrim-blur)" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:420, background:"var(--bg-1)",
+        borderLeft:"1px solid var(--line)", boxShadow:"var(--shadow-3)", display:"flex", flexDirection:"column", animation:"slideIn .26s both" }}>
         <div className="row between center" style={{ padding:"14px 18px", borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row gap-10 center">
             <div style={{ width:32,height:32,borderRadius:9,display:"grid",placeItems:"center",background:"linear-gradient(150deg,var(--accent),var(--accent-2))",color:"var(--accent-text)" }}><Icon name="sparkles" size={18}/></div>
-            <div><div style={{ fontSize:14, fontWeight:600 }}>Copilot</div><div className="t-faint" style={{ fontSize:11 }}>AIP · ontology-aware</div></div>
+            <div><div style={{ fontSize:14, fontWeight:600 }}>Copilot</div><div className="t-faint" style={{ fontSize:11 }}>{t('AIP · ontology-aware')}</div></div>
           </div>
-          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
+          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{ transform:"rotate(45deg)" }}/></button>
         </div>
 
         <div ref={scrollRef} style={{ flex:1, overflow:"auto", padding:18 }}>
           {msgs.map((m,i)=>(
             <div key={i} style={{ marginBottom:16, display:"flex", justifyContent: m.role==="user"?"flex-end":"flex-start" }}>
-              <div style={{ maxWidth: m.role==="user"?"82%":"100%", width: m.result?"100%":undefined }}>
-                {m.result
-                  ? <AnswerCard text={m.text} cites={m.result.entities} actions={m.result.actions} showRisk style={{ background:"var(--bg-2)" }}
-                      openEntity={(id)=>{onClose();openEntity(id);}} onAction={(v)=>{onClose();go(v);}} />
-                  : <div style={{ padding: m.role==="user"?"9px 13px":"0", borderRadius:12,
-                      background: m.role==="user"?"var(--accent)":"transparent", color: m.role==="user"?"var(--accent-text)":"var(--text)",
-                      fontSize:13.5, lineHeight:1.55 }}>{m.role==="user"? m.text : mdInline(m.text)}</div>}
+              <div style={{ maxWidth: m.role==="user"?"82%":"100%" }}>
+                <div style={{ padding: m.role==="user"?"9px 13px":"0", borderRadius:12,
+                  background: m.role==="user"?"var(--accent)":"transparent", color: m.role==="user"?"var(--accent-text)":"var(--text)",
+                  fontSize:13.5, lineHeight:1.55 }}
+                  dangerouslySetInnerHTML={{ __html: m.role==="user"? m.text : mdToHtml(t(m.text)) }} />
+                {m.result && <ResultCard res={m.result} openEntity={(id)=>{onClose();openEntity(id);}} go={(v)=>{onClose();go(v);}} />}
               </div>
             </div>
           ))}
-          {busy && <div className="row gap-6 center t-faint" style={{ fontSize:13 }}><span className="live-dot" style={{ background:"var(--accent)" }}/>Querying ontology…</div>}
+          {busy && <div className="row gap-6 center t-faint" style={{ fontSize:13 }}><span className="live-dot" style={{ background:"var(--accent)" }}/>{t('Querying ontology…')}</div>}
         </div>
 
         <div style={{ padding:"0 16px 10px" }}>
           <div className="row gap-6 wrap" style={{ marginBottom:10 }}>
-            {COPILOT_SUGGESTIONS.map(s=><button key={s} className="chip" style={{ fontSize:11.5, height:24 }} onClick={()=>send(s)}>{s}</button>)}
+            {COPILOT_SUGGESTIONS.map(s=><button key={s} className="chip" style={{ fontSize:11.5, height:24 }} onClick={()=>send(s)}>{t(s)}</button>)}
           </div>
           <div className="row gap-8 center" style={{ background:"var(--bg-inset)", border:"1px solid var(--line)", borderRadius:11, padding:"6px 6px 6px 12px" }}>
             <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")send();}}
-              placeholder="Ask the ontology…" style={{ flex:1, background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"var(--font-ui)", fontSize:13.5 }} />
+              placeholder={t('Ask the ontology…')} style={{ flex:1, background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"var(--font-ui)", fontSize:13.5 }} />
             <button className="btn primary sm" style={{ width:34, padding:0 }} onClick={()=>send()} disabled={busy}><Icon name="arrowRight" size={16}/></button>
           </div>
         </div>
-    </Drawer>
+      </div>
+    </div>
   );
 }

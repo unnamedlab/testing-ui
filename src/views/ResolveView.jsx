@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { ENTITIES, TYPE_BY_ID } from '../data/data.js';
-import { Icon, PageHeader, TypeGlyph, RiskPill } from '../components/ui.jsx';
+import { Icon, TypeGlyph, RiskPill, PageHeader, EmptyState } from '../components/ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
-   AXIOM — ResolveView (regenerado)
-   Cola de resolución de entidades: pares candidatos a fusionar.
+   AXIOM — ResolveView
+   Entity-resolution queue: candidate pairs to merge.
+   (UX-01: fully i18n'd.)
    ============================================================ */
 function buildPairs() {
   const pairs = [];
@@ -19,19 +21,21 @@ function buildPairs() {
 }
 
 export function ResolveView() {
+  const { t } = useI18n();
   const [pairs, setPairs] = useState(buildPairs);
   function resolve(id) { setPairs((p) => p.filter((x) => x.id !== id)); }
   return (
-    <div className="content" style={{ padding: "24px 28px 60px" }}>
-      <div style={{ maxWidth: "var(--page)", margin: "0 auto" }} className="fade-in">
-        <PageHeader eyebrow="Ontología · resolución de entidades" title="Cola de resolución" sub="Pares de objetos que el motor cree que son la misma entidad. Confírmalos o sepáralos." />
+    <div className="content" style={{ padding: "var(--page-py) var(--page-px) 60px" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto" }} className="fade-in">
+        <PageHeader eyebrow={t('Explore & Model')} title={t('Entity Resolution')}
+          sub={t('Object pairs the engine believes are the same entity. Confirm or split them.')} />
 
         <div className="col" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {pairs.map((p) => (
             <div key={p.id} className="card" style={{ padding: 16 }}>
               <div className="row between center" style={{ marginBottom: 14 }}>
-                <span className="badge accent"><span className="dt" />candidato · {Math.round(p.conf * 100)}%</span>
-                <span className="t-faint mono" style={{ fontSize: 11 }}>{TYPE_BY_ID[p.a.type] ? TYPE_BY_ID[p.a.type].name : p.a.type}</span>
+                <span className="badge accent"><span className="dt" />{t('candidate')} · {Math.round(p.conf * 100)}%</span>
+                <span className="t-faint mono" style={{ fontSize: 11 }}>{TYPE_BY_ID[p.a.type] ? t(TYPE_BY_ID[p.a.type].name) : p.a.type}</span>
               </div>
               <div className="row gap-16 center" style={{ marginBottom: 14 }}>
                 <div className="row gap-10 center" style={{ flex: 1, minWidth: 0 }}><TypeGlyph type={p.a.type} size={34} /><div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{p.a.name}</div><div className="t-faint" style={{ fontSize: 12 }}>{p.a.sub}</div></div><RiskPill r={p.a.risk} /></div>
@@ -39,12 +43,12 @@ export function ResolveView() {
                 <div className="row gap-10 center" style={{ flex: 1, minWidth: 0 }}><TypeGlyph type={p.b.type} size={34} /><div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{p.b.name}</div><div className="t-faint" style={{ fontSize: 12 }}>{p.b.sub}</div></div><RiskPill r={p.b.risk} /></div>
               </div>
               <div className="row gap-8" style={{ justifyContent: "flex-end" }}>
-                <button className="btn" onClick={() => resolve(p.id)}><Icon name="x" size={14} />Son distintos</button>
-                <button className="btn primary" onClick={() => resolve(p.id)}><Icon name="merge" size={14} />Fusionar</button>
+                <button className="btn" onClick={() => resolve(p.id)}><Icon name="plus" size={14} style={{ transform: "rotate(45deg)" }} />{t('Not the same')}</button>
+                <button className="btn primary" onClick={() => resolve(p.id)}><Icon name="merge" size={14} />{t('Merge')}</button>
               </div>
             </div>
           ))}
-          {pairs.length === 0 && <div className="card col center" style={{ padding: "40px 0", gap: 10, color: "var(--text-faint)" }}><Icon name="check" size={24} /><span style={{ fontSize: 13 }}>Cola vacía — nada pendiente de resolución.</span></div>}
+          {pairs.length === 0 && <EmptyState title={t('Queue empty — nothing pending resolution.')} />}
         </div>
       </div>
     </div>

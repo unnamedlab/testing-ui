@@ -1,32 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { ANALYSTS, COMMENTS, T_END, T_START, dstr } from '../data/data_ext.js';
 import { EDGES, ENTITY_BY_ID, TRANSACTIONS, TYPE_BY_ID, fmtMoney, riskLabel } from '../data/data.js';
-import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx';
-import { ArtifactExplorer, Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph } from '../components/ui.jsx';
-
-const ENT_TABS = [["overview","Overview"],["connections","Connections"],["activity","Timeline"],["transactions","Transactions"],["lineage","Lineage & access"]];
+import { AccessControl, ObjectLineage, MarkingChip } from '../components/Security.jsx';
+import { Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph, EmptyState } from '../components/ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
-   AXIOM — Entity 360° profile
+   AXIOM — Entity 360° profile (UX-01 i18n)
    ============================================================ */
 
 // F-09: label for the “Back” affordance, keyed by the view the entity was opened from.
+// Covers every routed origin so the trail never falls back to a misleading "graph".
 const BACK_LABEL = {
-  graph: "graph", map: "map", explore: "explorer", search: "search",
-  ontology: "ontology", home: "workspace", cases: "cases",
-  watchlist: "watchlists", dashboard: "operations",
+  graph: "graph", graph2: "graph analysis", brushing: "linked analysis",
+  map: "map", explore: "explorer", search: "search",
+  ontology: "ontology", home: "home", cases: "alerts", evidence: "evidence",
+  watchlist: "watchlists", dashboard: "operations", analytics: "analytics",
+  projects: "projects", reports: "reports", actions: "actions",
+  reason: "reason", models: "models", workshop: "workshop",
 };
 
-export function EntityView({ id, backView, openEntity, go, openDossier }) {
+export function EntityView({ id, backView, openEntity, go, openDossier, initialTab }) {
+  const { t: tr } = useI18n();
   const e = ENTITY_BY_ID[id];
-  // Hooks must run on every render in the same order — keep them above the
-  // early return for the not-found case (Rules of Hooks).
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState(initialTab || "overview");
   const [comments, setComments] = useState(COMMENTS);
   const [draft, setDraft] = useState("");
   const noteRef = useRef(null);
-  useEffect(()=>{ setTab("overview"); }, [id]);
-  if (!e) return <div className="content" style={{ padding:40 }}>Object not found.</div>;
+  useEffect(()=>{ setTab(initialTab || "overview"); }, [id, initialTab]);
+  if (!e) return <div className="content" style={{ padding:40 }}>{tr('Object not found.')}</div>;
 
   const t = TYPE_BY_ID[e.type];
   function addComment(){ const x=draft.trim(); if(!x) return; setComments(c=>[{who:"AR", at:"now", on:e.name, text:x, mention:/@\w/.test(x)}, ...c]); setDraft(""); }
@@ -36,7 +38,30 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
     return { rel: ed.rel, dir: ed.s===id, ent: ENTITY_BY_ID[otherId], alert: ed.alert };
   }).filter(c=>c.ent);
 
-  const myTxns = TRANSACTIONS.filter(tx => tx.from.includes("····") || true).slice(0, e.type==="account"?6:4);
+  // BUG-1: transactions scoped to THIS entity — matched by its account label,
+  // the accounts it holds (org → held accounts via EDGES), or its own name.
+  // Non-financial objects (person, vessel, facility) get an empty state instead
+  // of the global feed.
+  const txnLabels = (() => {
+    if (e.type !== "account" && e.type !== "org") return null;
+    const labels = new Set([e.name]);
+    if (e.type === "org") {
+      EDGES.filter(g => g.s === id && g.rel === "holds").forEach(g => {
+        const acct = ENTITY_BY_ID[g.t];
+        if (acct) labels.add(acct.name);
+      });
+    }
+    return labels;
+  })();
+  const myTxns = txnLabels
+    ? TRANSACTIONS
+        .filter(tx => txnLabels.has(tx.from) || txnLabels.has(tx.to))
+        .map(tx => {
+          const outgoing = txnLabels.has(tx.from);
+          return { ...tx, dir: outgoing ? "out" : "in", counterparty: outgoing ? tx.to : tx.from };
+        })
+        .slice(0, e.type === "account" ? 6 : 4)
+    : [];
 
   const timeline = [
     { t:"2026-05-28 14:02", txt:"Layering pattern flagged · TXN-88241", sev:"alert" },
@@ -50,9 +75,9 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
     <div className="content" style={{ overflow:"auto" }}>
       {/* header band */}
       <div style={{ background:"var(--bg-1)", borderBottom:"1px solid var(--line-soft)", padding:"22px 28px 0" }}>
-        <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }}>
+        <div style={{ maxWidth:1180, margin:"0 auto" }}>
           <button className="btn ghost sm" onClick={()=>go(backView||"graph")} style={{ marginBottom:14, paddingLeft:6 }}>
-            <Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>Back to {BACK_LABEL[backView]||"graph"}
+            <Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>{tr('Back to {x}', { x: tr(BACK_LABEL[backView]||"graph") })}
           </button>
           <div className="row gap-20" style={{ alignItems:"flex-start" }}>
             <div className={"tc "+t.cls} style={{ position:"relative" }}>
@@ -61,54 +86,53 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
             </div>
             <div style={{ flex:1, minWidth:0 }}>
               <div className="row gap-10 center" style={{ marginBottom:4 }}>
-                <span className={"badge tc "+t.cls} style={{ color:"var(--c)", borderColor:"color-mix(in oklab,var(--c) 40%,transparent)" }}><span className="type-dot"/>{t.name}</span>
+                <span className={"badge tc "+t.cls} style={{ color:"var(--c)", borderColor:"color-mix(in oklab,var(--c) 40%,transparent)" }}><span className="type-dot"/>{tr(t.name)}</span>
                 <MarkingChip id={e.id} />
-                {e.watch && <Badge kind="alert" dot>Watchlist</Badge>}
+                {e.watch && <Badge kind="alert" dot>{tr('Watchlist')}</Badge>}
               </div>
-              <h1 className="serif" style={{ fontSize:34, fontWeight:500, margin:"2px 0 4px", letterSpacing:"-0.02em" }}>{e.name}</h1>
+              <h1 className="h-hero" style={{ margin:"2px 0 4px" }}>{e.name}</h1>
               <div className="t-dim" style={{ fontSize:14.5 }}>{e.sub}</div>
             </div>
             <div className="col" style={{ alignItems:"flex-end", gap:12 }}>
               <div className="row gap-8">
-                <button className="btn" onClick={()=>{ setTab("overview"); setTimeout(()=>noteRef.current?.focus(), 60); }}><Icon name="note"/>Add note</button>
-                <button className="btn" onClick={openDossier}><Icon name="doc"/>Dossier</button>
-                <button className="btn primary" onClick={()=>go("graph")}><Icon name="graph"/>Expand graph</button>
+                <button className="btn" onClick={()=>{ setTab("overview"); setTimeout(()=>noteRef.current?.focus(), 60); }}><Icon name="note"/>{tr('Add note')}</button>
+                <button className="btn" onClick={openDossier}><Icon name="doc"/>{tr('Dossier')}</button>
+                <button className="btn primary" onClick={()=>go("graph")}><Icon name="graph"/>{tr('Expand graph')}</button>
               </div>
               <div className="row gap-16 center">
                 <div className="col" style={{ alignItems:"flex-end" }}>
-                  <span className="eyebrow">Risk score</span>
+                  <span className="eyebrow">{tr('Risk score')}</span>
                   <RiskPill r={e.risk}/>
                 </div>
               </div>
             </div>
           </div>
           <div style={{ marginTop:18 }}>
-            <Tabs variant="flush"
-              items={ENT_TABS.map(([k,l])=>({ label:l, badge:k==="connections"?conns.length:undefined }))}
-              value={ENT_TABS.findIndex(([k])=>k===tab)}
-              onChange={i=>setTab(ENT_TABS[i][0])} />
+            <Tabs items={[{label:tr('Overview')},{label:tr('Connections')+" · "+conns.length},{label:tr('Timeline')},{label:tr('Transactions')},{label:tr('Lineage & access')}]}
+              value={["overview","connections","activity","transactions","lineage"].indexOf(tab)}
+              onChange={i=>setTab(["overview","connections","activity","transactions","lineage"][i])} />
           </div>
         </div>
       </div>
 
       {/* body */}
-      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in" key={tab}>
+      <div style={{ maxWidth:1180, margin:"0 auto", padding:"var(--page-py) var(--page-px) 60px" }} className="fade-in" key={tab}>
         {tab==="overview" && (
           <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:24 }}>
             <div className="col gap-16">
               <div className="card" style={{ padding:16 }}>
-                <div className="eyebrow" style={{ marginBottom:12 }}>Properties</div>
+                <div className="eyebrow" style={{ marginBottom:12 }}>{tr('Properties')}</div>
                 <div className="col gap-2">
                   {Object.entries(e.attrs).map(([k,v])=>(
                     <div key={k} className="row between" style={{ padding:"7px 0", borderBottom:"1px solid var(--line-soft)", gap:12 }}>
-                      <span className="t-faint" style={{ fontSize:12.5 }}>{k}</span>
+                      <span className="t-faint" style={{ fontSize:12.5 }}>{tr(k)}</span>
                       <span className="mono" style={{ fontSize:12.5, color:"var(--text)", textAlign:"right" }}>{v}</span>
                     </div>
                   ))}
                 </div>
               </div>
               <div className="card" style={{ padding:16 }}>
-                <div className="eyebrow" style={{ marginBottom:10 }}>Source provenance</div>
+                <div className="eyebrow" style={{ marginBottom:10 }}>{tr('Source provenance')}</div>
                 <div className="col gap-8">
                   {[["Corp. Registry API","building"],["SWIFT MT103","swap"],["AIS Vessel Feed","ship"]].map(([s,ic])=>(
                     <div key={s} className="row gap-8 center" style={{ fontSize:12.5 }}>
@@ -118,15 +142,15 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
                 </div>
               </div>
               <div className="card" style={{ padding:16 }}>
-                <div className="eyebrow" style={{ marginBottom:14 }}>Relationship timeline</div>
+                <div className="eyebrow" style={{ marginBottom:14 }}>{tr('Relationship timeline')}</div>
                 <EntityTimeline id={id} conns={conns} />
               </div>
             </div>
             <div className="col gap-16">
               <div className="card" style={{ padding:18 }}>
                 <div className="row between center" style={{ marginBottom:14 }}>
-                  <div className="eyebrow">Key connections</div>
-                  <button className="btn ghost sm" onClick={()=>setTab("connections")}>See all {conns.length}</button>
+                  <div className="eyebrow">{tr('Key connections')}</div>
+                  <button className="btn ghost sm" onClick={()=>setTab("connections")}>{tr('See all {n}', { n: conns.length })}</button>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                   {conns.slice(0,4).map((c,i)=>(
@@ -144,36 +168,34 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
                 </div>
               </div>
               <div className="card" style={{ padding:18 }}>
-                <div className="eyebrow" style={{ marginBottom:12 }}>Analyst summary</div>
+                <div className="eyebrow" style={{ marginBottom:12 }}>{tr('Analyst summary')}</div>
                 <p style={{ fontSize:14, lineHeight:1.6, margin:0 }} className="t-dim">
-                  <b style={{ color:"var(--text)" }}>{e.name}</b> sits at the center of the BLACKFROST network with
-                  a <span className="t-accent">{riskLabel(e.risk).toLowerCase()}</span> risk profile. Resolved across
-                  3 source systems, it shows {conns.length} confirmed links — including {conns.filter(c=>c.alert).length} flagged
-                  relationships routed through sanctioned counterparties. Pattern-of-life consistent with deliberate obfuscation.
+                  {tr('{name} sits at the center of the BLACKFROST network with a {risk} risk profile. Resolved across 3 source systems, it shows {n} confirmed links — including {flagged} flagged relationships routed through sanctioned counterparties. Pattern-of-life consistent with deliberate obfuscation.',
+                    { name: e.name, risk: tr(riskLabel(e.risk)).toLowerCase(), n: conns.length, flagged: conns.filter(c=>c.alert).length })}
                 </p>
                 <div className="row gap-8" style={{ marginTop:14 }}>
-                  <Badge kind="accent"><Icon name="sparkles" size={12}/> AI-generated</Badge>
-                  <span className="t-faint" style={{ fontSize:11.5, alignSelf:"center" }}>Reviewed by A. Reyes · 2h ago</span>
+                  <Badge kind="accent"><Icon name="sparkles" size={12}/> {tr('AI-generated')}</Badge>
+                  <span className="t-faint" style={{ fontSize:11.5, alignSelf:"center" }}>{tr('Reviewed by A. Reyes · 2h ago')}</span>
                 </div>
               </div>
               <div className="card" style={{ padding:18 }}>
                 <div className="row between center" style={{ marginBottom:12 }}>
-                  <div className="eyebrow">Discussion · {comments.length}</div>
-                  <Badge>{comments.filter(c=>c.mention).length} mention</Badge>
+                  <div className="eyebrow">{tr('Discussion')} · {comments.length}</div>
+                  <Badge>{tr('{n} mention', { n: comments.filter(c=>c.mention).length })}</Badge>
                 </div>
                 <div className="col gap-12">
                   {comments.map((c,i)=>(
                     <div key={i} className="row gap-10" style={{ alignItems:"flex-start" }}>
-                      <Avatar who={c.who} name={ANALYSTS[c.who]?.name} size={28}/>
+                      <Avatar who={c.who} size={28}/>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div className="row gap-8 center"><span style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[c.who].name}</span><span className="t-faint mono" style={{ fontSize:10.5 }}>{c.at} · on {c.on}</span></div>
+                        <div className="row gap-8 center"><span style={{ fontSize:13, fontWeight:600 }}>{ANALYSTS[c.who].name}</span><span className="t-faint mono" style={{ fontSize:10.5 }}>{c.at} · {tr('on {on}', { on: c.on })}</span></div>
                         <p style={{ fontSize:13, lineHeight:1.5, margin:"3px 0 0" }} className="t-dim" dangerouslySetInnerHTML={{ __html: c.text.replace(/@(\w+)/g,"<b style='color:var(--accent)'>@$1</b>") }} />
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="row gap-8 center" style={{ marginTop:14, background:"var(--bg-inset)", border:"1px solid var(--line)", borderRadius:10, padding:"6px 6px 6px 12px" }}>
-                  <input ref={noteRef} value={draft} onChange={ev=>setDraft(ev.target.value)} onKeyDown={ev=>{ if(ev.key==="Enter") addComment(); }} placeholder="Comment or @mention…" style={{ flex:1, background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"var(--font-ui)", fontSize:13 }} />
+                  <input ref={noteRef} value={draft} onChange={ev=>setDraft(ev.target.value)} onKeyDown={ev=>{ if(ev.key==="Enter") addComment(); }} placeholder={tr('Comment or @mention…')} style={{ flex:1, background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"var(--font-ui)", fontSize:13 }} />
                   <button className="btn primary sm" style={{ width:32, padding:0 }} onClick={addComment}><Icon name="arrowRight" size={15}/></button>
                 </div>
               </div>
@@ -191,10 +213,10 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
                     <div style={{ fontSize:14.5, fontWeight:600 }}>{c.ent.name}</div>
                     <div className="row gap-8 center" style={{ marginTop:3 }}>
                       <span className="mono" style={{ fontSize:11.5, color:"var(--accent)" }}>{c.dir?"":"← "}{c.rel}{c.dir?" →":""}</span>
-                      <span className="t-faint" style={{ fontSize:12 }}>· {TYPE_BY_ID[c.ent.type].name}</span>
+                      <span className="t-faint" style={{ fontSize:12 }}>· {tr(TYPE_BY_ID[c.ent.type].name)}</span>
                     </div>
                   </div>
-                  {c.alert && <Badge kind="alert" dot>flagged link</Badge>}
+                  {c.alert && <Badge kind="alert" dot>{tr('flagged link')}</Badge>}
                   <RiskPill r={c.ent.risk}/>
                 </div>
               </button>
@@ -211,7 +233,7 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
                   <span style={{ position:"absolute", left:-24, top:2, width:14, height:14, borderRadius:"50%",
                     background:`var(--${tl.sev==="ok"?"ok":tl.sev})`, border:"3px solid var(--bg)", boxShadow:`0 0 0 1px var(--${tl.sev==="ok"?"ok":tl.sev})` }}/>
                   <div className="mono t-faint" style={{ fontSize:11, marginBottom:3 }}>{tl.t} UTC</div>
-                  <div style={{ fontSize:14 }}>{tl.txt}</div>
+                  <div style={{ fontSize:14 }}>{tr(tl.txt)}</div>
                 </div>
               ))}
             </div>
@@ -219,20 +241,35 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
         )}
 
         {tab==="transactions" && (
-          <div style={{ maxWidth:980 }}>
-            <ArtifactExplorer items={myTxns} columns={[
-              { header:"ID", render:tx=><span className="mono" style={{ color:"var(--text)" }}>{tx.id}</span> },
-              { header:"Date", render:tx=><span className="mono">{tx.date}</span> },
-              { header:"Counterparty", key:"to" },
-              { header:"Amount", align:"right", render:tx=><span className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{fmtMoney(tx.amount,tx.ccy)}</span> },
-              { header:"Pattern", render:tx=><Badge kind={tx.flag==="ok"?"ok":tx.flag}>{tx.note}</Badge> },
-            ]} />
+          myTxns.length ? (
+          <div className="card" style={{ overflow:"hidden", maxWidth:980 }}>
+            <table className="tbl">
+              <thead><tr><th>ID</th><th>{tr('Date')}</th><th></th><th>{tr('Counterparty')}</th><th style={{textAlign:"right"}}>{tr('Amount')}</th><th>{tr('Pattern')}</th></tr></thead>
+              <tbody>
+                {myTxns.map(tx=>(
+                  <tr key={tx.id}>
+                    <td className="mono" style={{ color:"var(--text)" }}>{tx.id}</td>
+                    <td className="mono">{tx.date}</td>
+                    <td className="mono" title={tx.dir==="out"?tr('Outgoing'):tr('Incoming')} style={{ color: tx.dir==="out"?"var(--warn)":"var(--ok)", fontWeight:600, textAlign:"center" }}>{tx.dir==="out"?"\u2197":"\u2199"}</td>
+                    <td>{tx.counterparty}</td>
+                    <td className="mono" style={{ textAlign:"right", color:"var(--text)", fontWeight:600 }}>{fmtMoney(tx.amount,tx.ccy)}</td>
+                    <td><Badge kind={tx.flag==="ok"?"ok":tx.flag}>{tr(tx.note)}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          ) : (
+            <div style={{ maxWidth:980 }}>
+              <EmptyState icon="swap" title={tr('No transactions for this object')}
+                hint={tr('This object is not a financial party. Open a linked account or organization to see its transaction history.')} />
+            </div>
+          )
         )}
 
         {tab==="lineage" && (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24, maxWidth:900 }}>
-            <Lineage id={id} />
+            <ObjectLineage id={id} />
             <AccessControl id={id} />
           </div>
         )}
@@ -242,18 +279,18 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
 }
 
 export function EntityTimeline({ id }){
-  // build events from this entity's edges (using EDGE .since) + the entity's own appearance
+  const { t: tr } = useI18n();
   const ent = ENTITY_BY_ID[id];
   const evs = [];
-  if(ent?.since) evs.push({ t:ent.since, label:"First observed", kind:"info" });
+  if(ent?.since) evs.push({ t:ent.since, label:tr("First observed"), kind:"info" });
   EDGES.forEach(ed=>{
     if(ed.s===id || ed.t===id){
       const other = ENTITY_BY_ID[ed.s===id?ed.t:ed.s];
-      if(other) evs.push({ t:ed.since, label:(ed.label||"Linked to")+" "+other.name, kind: other.risk>=80?"alert":other.risk>=60?"warn":"info", oid:other.id });
+      if(other) evs.push({ t:ed.since, label:(ed.label||tr("Linked to"))+" "+other.name, kind: other.risk>=80?"alert":other.risk>=60?"warn":"info", oid:other.id });
     }
   });
   evs.sort((a,b)=>a.t-b.t);
-  if(evs.length===0) return <div className="t-faint" style={{ fontSize:12.5 }}>No temporal data.</div>;
+  if(evs.length===0) return <div className="t-faint" style={{ fontSize:12.5 }}>{tr('No temporal data.')}</div>;
   const span = Math.max(1, T_END - T_START);
   return (
     <div>

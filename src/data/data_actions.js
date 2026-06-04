@@ -2,7 +2,6 @@
    AXIOM — Actions / write-back · data
    Targets reference real ontology objects (ENTITY_BY_ID).
    ============================================================ */
-import { rulesByContext } from './data_rules.js';
 
 // effect kinds → icon + colour
 export const EFFECT = {
@@ -108,5 +107,6 @@ export const SEED_ACTIONS = [
     just:"Designate as UBO of the network.", note:"Returned by Legal — strengthen evidence of control first.", params:{ program:"OFAC SDN" } },
 ];
 
-// AUTO_RULES = las reglas de contexto "ops" del motor único (data_rules.js).
-export const AUTO_RULES = rulesByContext("ops");
+// R1: response automation rules moved to the unified rules engine.
+// See src/data/data_rules.js (RULES with kind: "response"). This export
+// was removed to end the two-engines / double-render duplication.

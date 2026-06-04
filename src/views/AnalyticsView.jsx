@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DIMS, MEASURES, ROWS, aggBy, applyFilters, dimField, fmtMoney, fmtNum, histo, monthly, pivotData } from '../data/data_analytics.js';
-import { Icon, PageHeader, Stat } from '../components/ui.jsx';
+import { Icon, PageHeader, Seg } from '../components/ui.jsx';
+import { useI18n } from '../i18n.jsx';
 
 /* ============================================================
    AXIOM — Analytics (Quiver / Contour)
@@ -78,11 +79,12 @@ function Histo({ buckets }){
   );
 }
 function Pivot({ rowDim, colDim, money, rows }){
+  const { t } = useI18n();
   const max=Math.max(1,...rows.mat.flat());
   return (
     <div style={{ overflow:"auto" }}>
       <table className="tbl" style={{ fontSize:12 }}>
-        <thead><tr><th style={{ position:"sticky", left:0 }}>{DIMS[rowDim].label} ╲ {DIMS[colDim].label}</th>{rows.ck.map(c=><th key={c} style={{ textAlign:"right" }}>{c}</th>)}</tr></thead>
+        <thead><tr><th style={{ position:"sticky", left:0 }}>{t(DIMS[rowDim].label)} ╲ {t(DIMS[colDim].label)}</th>{rows.ck.map(c=><th key={c} style={{ textAlign:"right" }}>{t(c)}</th>)}</tr></thead>
         <tbody>
           {rows.rk.map((r,ri)=>(
             <tr key={r}><td style={{ color:"var(--text)", fontWeight:600 }}>{r}</td>
@@ -94,18 +96,14 @@ function Pivot({ rowDim, colDim, money, rows }){
     </div>
   );
 }
-function Seg({ value, options, onChange }){
-  return <div className="seg">{options.map(o=>{ const v=(o&&typeof o==="object")?o.v:o; const l=(o&&typeof o==="object")?o.l:o;
-    return <button key={v} className={value===v?"on":""} onClick={()=>onChange(v)} style={{ display:"flex", alignItems:"center", gap:6 }}>{o.ic && <Icon name={o.ic} size={14}/>}{l}</button>;
-  })}</div>;
-}
 function Card({ title, sub, children }){
   return <div className="card" style={{ padding:18 }}>
     <div className="row between center" style={{ marginBottom:14 }}><div><div className="eyebrow">{title}</div>{sub && <div className="t-faint" style={{ fontSize:11.5, marginTop:3 }}>{sub}</div>}</div></div>
     {children}
   </div>;
 }
-function Steps({ dim, measure, agg, type, colDim, filters }){
+function Steps({ dim, measure, agg, type, colDim, filters, go }){
+  const { t } = useI18n();
   const fk = Object.keys(filters).filter(k=>filters[k]!=null);
   const step = (ic,label,val,c)=>(
     <div className="row gap-10" style={{ padding:"11px 0", borderBottom:"1px solid var(--line-soft)", alignItems:"flex-start" }}>
@@ -114,21 +112,22 @@ function Steps({ dim, measure, agg, type, colDim, filters }){
     </div>
   );
   return (
-    <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", padding:"16px 16px 30px" }}>
-      <div className="eyebrow" style={{ marginBottom:6 }}>Analysis</div>
-      <div className="t-faint" style={{ fontSize:11.5, marginBottom:8 }}>No-code recipe · re-runs live</div>
-      {step("database","Source","transactions · "+ROWS.length+" rows","var(--info)")}
-      {step("filter","Filter", fk.length? fk.map(k=>`${DIMS[k].label} = ${filters[k]}`).join(" · ") : "no filters","var(--warn)")}
-      {step("share","Group by", DIMS[dim].label + (type==="pivot"?" × "+DIMS[colDim].label:""),"var(--violet)")}
-      {step("bars","Aggregate", (agg==="avg"?"avg":"sum")+"("+MEASURES[measure].label.toLowerCase()+")","var(--ok)")}
-      {step(type==="line"||type==="area"?"line":type==="donut"?"donut":type==="pivot"?"pivot":"bars","Visualize", type.charAt(0).toUpperCase()+type.slice(1),"var(--accent)")}
-      <button className="btn sm" style={{ width:"100%", marginTop:16 }}><Icon name="plus" size={13}/>Add step</button>
-      <button className="btn primary sm" style={{ width:"100%", marginTop:8 }}><Icon name="layers" size={13}/>Publish to dashboard</button>
+    <aside style={{ width:226, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", padding:"16px 16px 30px" }}>
+      <div className="eyebrow" style={{ marginBottom:6 }}>{t('Analysis')}</div>
+      <div className="t-faint" style={{ fontSize:11.5, marginBottom:8 }}>{t('No-code recipe · re-runs live')}</div>
+      {step("database",t('Source'),t('transactions · {n} rows', { n: ROWS.length }),"var(--info)")}
+      {step("filter",t('Filter'), fk.length? fk.map(k=>`${t(DIMS[k].label)} = ${t(filters[k])}`).join(" · ") : t('no filters'),"var(--warn)")}
+      {step("share",t('Group by'), t(DIMS[dim].label) + (type==="pivot"?" × "+t(DIMS[colDim].label):""),"var(--violet)")}
+      {step("bars",t('Aggregate'), (agg==="avg"?"avg":"sum")+"("+t(MEASURES[measure].label).toLowerCase()+")","var(--ok)")}
+      {step(type==="line"||type==="area"?"line":type==="donut"?"donut":type==="pivot"?"pivot":"bars",t('Visualize'), t(type.charAt(0).toUpperCase()+type.slice(1)),"var(--accent)")}
+      <button className="btn sm" style={{ width:"100%", marginTop:16 }}><Icon name="plus" size={13}/>{t('Add step')}</button>
+      <button className="btn primary sm" style={{ width:"100%", marginTop:8 }} onClick={()=>go && go("dashboard")}><Icon name="layers" size={13}/>{t('Publish to dashboard')}</button>
     </aside>
   );
 }
 
-export function AnalyticsView(){
+export function AnalyticsView({ go }){
+  const { t } = useI18n();
   const [dim,setDim] = useState("pattern");
   const [measure,setMeasure] = useState("amount");
   const [agg,setAgg] = useState("sum");
@@ -148,43 +147,46 @@ export function AnalyticsView(){
 
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <Steps dim={dim} measure={measure} agg={agg} type={type} colDim={colDim} filters={filters}/>
+      <Steps dim={dim} measure={measure} agg={agg} type={type} colDim={colDim} filters={filters} go={go}/>
       <div style={{ flex:1, overflow:"auto", padding:"22px 26px 50px" }}>
-        <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
-          <PageHeader eyebrow="Analysis · Quiver" title="Flagged transactions">
-            <button className="btn"><Icon name="download"/>Export</button>
-            <button className="btn primary"><Icon name="plus"/>Add chart</button>
+        <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
+          <PageHeader eyebrow={t('Analyze')} title={t('Analytics')} sub={t('Flagged transactions')}>
+            <button className="btn"><Icon name="download"/>{t('Export')}</button>
+            <button className="btn primary"><Icon name="plus"/>{t('Add chart')}</button>
           </PageHeader>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
             {[["Total volume", fmtMoney(totalAmt), "bars"],["Records", fmtNum(rows.length), "table"],["Flagged", rows.length?Math.round(flagged/rows.length*100)+"%":"0%", "filter"],["Avg risk", avgRisk, "bell"]].map(([l,v,ic])=>(
-              <Stat key={l} label={l} value={v} icon={ic}/>
+              <div key={l} className="card" style={{ padding:16 }}>
+                <div className="row between center"><div className="eyebrow">{t(l)}</div><span className="t-faint"><Icon name={ic} size={15}/></span></div>
+                <div className="mono" style={{ fontSize:24, fontWeight:600, marginTop:8, letterSpacing:"-0.02em" }}>{v}</div>
+              </div>
             ))}
           </div>
           {fk.length>0 && (
             <div className="row gap-8 center wrap" style={{ marginBottom:16, padding:"10px 12px", background:"var(--accent-ghost)", border:"1px solid var(--accent-dim)", borderRadius:10 }}>
-              <span className="t-accent row gap-6 center" style={{ fontSize:12, fontWeight:600 }}><Icon name="filter" size={14}/>Cross-filter</span>
-              {fk.map(k=><span key={k} className="chip on" onClick={()=>pick(k,filters[k])} style={{ cursor:"pointer" }}>{DIMS[k].label}: {filters[k]} <Icon name="x" size={11} style={{ marginLeft:2 }}/></span>)}
-              <button className="btn ghost sm" onClick={()=>setFilters({})} style={{ marginLeft:"auto" }}>Clear all</button>
+              <span className="t-accent row gap-6 center" style={{ fontSize:12, fontWeight:600 }}><Icon name="filter" size={14}/>{t('Cross-filter')}</span>
+              {fk.map(k=><span key={k} className="chip on" onClick={()=>pick(k,filters[k])} style={{ cursor:"pointer" }}>{t(DIMS[k].label)}: {t(filters[k])} <Icon name="x" size={11} style={{ marginLeft:2 }}/></span>)}
+              <button className="btn ghost sm" onClick={()=>setFilters({})} style={{ marginLeft:"auto" }}>{t('Clear all')}</button>
             </div>
           )}
           <div className="card" style={{ padding:"12px 16px", marginBottom:16, display:"flex", gap:18, flexWrap:"wrap", alignItems:"center" }}>
-            <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>Group</span><Seg value={dim} onChange={setDim} options={Object.keys(DIMS).filter(d=>d!=="month").map(d=>({v:d,l:DIMS[d].label}))}/></div>
-            <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>Measure</span><Seg value={measure} onChange={v=>{setMeasure(v); if(v==="count")setAgg("sum");}} options={[{v:"amount",l:"Amount"},{v:"count",l:"Records"}]}/></div>
-            {money && <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>Agg</span><Seg value={agg} onChange={setAgg} options={[{v:"sum",l:"Sum"},{v:"avg",l:"Avg"}]}/></div>}
-            <div className="row gap-8 center" style={{ marginLeft:"auto" }}><span className="t-faint" style={{ fontSize:11.5 }}>Chart</span><Seg value={type} onChange={setType} options={[{v:"bar",ic:"bars"},{v:"line",ic:"line"},{v:"area",ic:"area"},{v:"donut",ic:"donut"},{v:"pivot",ic:"pivot"}]}/></div>
-            {type==="pivot" && <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>Columns</span><Seg value={colDim} onChange={setColDim} options={Object.keys(DIMS).filter(d=>d!==dim&&d!=="month").map(d=>({v:d,l:DIMS[d].label}))}/></div>}
+            <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>{t('Group')}</span><Seg value={dim} onChange={setDim} options={Object.keys(DIMS).filter(d=>d!=="month").map(d=>({v:d,l:t(DIMS[d].label)}))}/></div>
+            <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>{t('Measure')}</span><Seg value={measure} onChange={v=>{setMeasure(v); if(v==="count")setAgg("sum");}} options={[{v:"amount",l:t('Amount')},{v:"count",l:t('Records')}]}/></div>
+            {money && <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>{t('Agg')}</span><Seg value={agg} onChange={setAgg} options={[{v:"sum",l:t('Sum')},{v:"avg",l:t('Avg')}]}/></div>}
+            <div className="row gap-8 center" style={{ marginLeft:"auto" }}><span className="t-faint" style={{ fontSize:11.5 }}>{t('Chart')}</span><Seg value={type} onChange={setType} options={[{v:"bar",ic:"bars"},{v:"line",ic:"line"},{v:"area",ic:"area"},{v:"donut",ic:"donut"},{v:"pivot",ic:"pivot"}]}/></div>
+            {type==="pivot" && <div className="row gap-8 center"><span className="t-faint" style={{ fontSize:11.5 }}>{t('Columns')}</span><Seg value={colDim} onChange={setColDim} options={Object.keys(DIMS).filter(d=>d!==dim&&d!=="month").map(d=>({v:d,l:t(DIMS[d].label)}))}/></div>}
           </div>
-          <Card title={`${agg==="avg"?"Average":"Total"} ${MEASURES[measure].label.toLowerCase()} by ${DIMS[dim].label.toLowerCase()}`} sub={(type==="bar"||type==="donut")?"click a segment to cross-filter the whole board":(type==="pivot"?DIMS[dim].label+" × "+DIMS[colDim].label:"monthly trend by "+DIMS[dim].label.toLowerCase())}>
+          <Card title={t('{agg} {measure} by {dim}', { agg: agg==="avg"?t('Average'):t('Total'), measure: t(MEASURES[measure].label).toLowerCase(), dim: t(DIMS[dim].label).toLowerCase() })} sub={(type==="bar"||type==="donut")?t('click a segment to cross-filter the whole board'):(type==="pivot"?t(DIMS[dim].label)+" × "+t(DIMS[colDim].label):t('monthly trend by {dim}', { dim: t(DIMS[dim].label).toLowerCase() }))}>
             {type==="bar" && <VBars rows={primary} dim={dim} money={money} onPick={pick} filters={filters}/>}
             {(type==="line"||type==="area") && <MultiLine series={series} dim={dim} area={type==="area"}/>}
             {type==="donut" && <Donut rows={primary} dim={dim} money={money} onPick={pick} filters={filters}/>}
             {type==="pivot" && <Pivot rowDim={dim} colDim={colDim} money={money} rows={pv}/>}
           </Card>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginTop:16 }}>
-            <Card title="Volume by jurisdiction" sub="linked · click to filter"><Donut rows={aggBy(rows,"juris","amount","sum")} dim="juris" money onPick={pick} filters={filters}/></Card>
-            <Card title="Risk distribution" sub="all records in view"><Histo buckets={histo(rows)}/></Card>
+            <Card title={t('Volume by jurisdiction')} sub={t('linked · click to filter')}><Donut rows={aggBy(rows,"juris","amount","sum")} dim="juris" money onPick={pick} filters={filters}/></Card>
+            <Card title={t('Risk distribution')} sub={t('all records in view')}><Histo buckets={histo(rows)}/></Card>
           </div>
-          <div style={{ marginTop:16 }}><Card title="Volume over time" sub="multi-series by pattern"><MultiLine series={monthly(rows,"pattern","amount",DIMS.pattern.domain)} dim="pattern" area/></Card></div>
+          <div style={{ marginTop:16 }}><Card title={t('Volume over time')} sub={t('multi-series by pattern')}><MultiLine series={monthly(rows,"pattern","amount",DIMS.pattern.domain)} dim="pattern" area/></Card></div>
         </div>
       </div>
     </div>
