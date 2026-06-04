@@ -84,7 +84,7 @@ export function OntologyAuthor({ go }) {
         </div>
 
         <div className="content" style={{ padding:"24px 28px 60px" }}>
-          <div style={{ maxWidth:920, margin:"0 auto" }} className="fade-in" key={sel}>
+          <div style={{ maxWidth:"var(--page-narrow)", margin:"0 auto" }} className="fade-in" key={sel}>
             {/* properties editor */}
             <div className="row between center" style={{ marginBottom:12 }}>
               <div className="eyebrow">Schema · properties</div>
@@ -107,7 +107,7 @@ export function OntologyAuthor({ go }) {
                   <select className="auth-cell" style={{ flex:"1 1 24%" }} value={p[2]} onChange={e=>setProp(i,2,e.target.value)}>
                     {FLAGS.map(f=><option key={f} value={f}>{f||"—"}</option>)}
                   </select>
-                  <button className="icon-btn sm" title="Delete property" onClick={()=>delProp(i)} style={{ width:30,height:30 }}><Icon name="plus" size={14} style={{ transform:"rotate(45deg)" }}/></button>
+                  <button className="icon-btn sm" title="Delete property" onClick={()=>delProp(i)} style={{ width:30,height:30 }}><Icon name="x" size={14}/></button>
                 </div>
               ))}
               {props.length===0 && <div className="t-faint" style={{ padding:"18px", textAlign:"center", fontSize:13 }}>No properties yet — add one.</div>}

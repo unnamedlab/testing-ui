@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BUILDS, DRIVE, FILES, KW, REPO } from '../data/data_code.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { ArtifactExplorer, Avatar, Badge, Icon, Lineage, PageHeader, Tabs } from '../components/ui.jsx';
+import { ArtifactExplorer, Avatar, Icon, Lineage, PageHeader, StatusBadge, statusMeta, Tabs } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 
 const CR_TABS = [["code","Code"],["history","History"],["builds","Builds"],["drive","Drive"]];
@@ -9,7 +9,6 @@ const CR_TABS = [["code","Code"],["history","History"],["builds","Builds"],["dri
 /* ============================================================
    AXIOM — Code repository + Drive
    ============================================================ */
-const BUILD = { passing:{kind:"ok",label:"passing",icon:"check"}, running:{kind:"accent",label:"running",icon:"play"}, failed:{kind:"alert",label:"failed",icon:"x"} };
 function nm(id){ return (ANALYSTS[id]?.name||id).split(" ")[0]; }
 
 function hlLine(line, lang){
@@ -93,7 +92,7 @@ function CodeTab(){
   const file = FILES.find(f=>f.id===selId);
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:240, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
+      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
         <div className="row between center" style={{ padding:"12px 14px 8px" }}><div className="eyebrow">Files</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
         <Tree selId={selId} onSel={setSelId}/>
       </aside>
@@ -117,7 +116,7 @@ function HistoryTab(){
   FILES.forEach(f=>f.commits.forEach(c=>{ if(!seen.has(c.hash)){ seen.add(c.hash); log.push({...c, file:f.path.split("/").pop()}); } }));
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:900, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Repository · history" title={<>Commits on <span className="mono" style={{ fontSize:18 }}>main</span></>} />
         <div className="card" style={{ overflow:"hidden" }}>
           {log.map((c,i)=>(
@@ -136,25 +135,18 @@ function HistoryTab(){
 function BuildsTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:980, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Repository · CI" title="Builds & checks" />
-        <div className="card" style={{ overflow:"hidden" }}>
-          <table className="tbl">
-            <thead><tr><th>Build</th><th>Status</th><th>Branch</th><th>Commit</th><th>By</th><th>Datasets</th><th>Duration</th><th>When</th></tr></thead>
-            <tbody>
-              {BUILDS.map(b=>{ const m=BUILD[b.status]; return (
-                <tr key={b.id}>
-                  <td className="mono" style={{ color:"var(--text)" }}>{b.id}</td>
-                  <td><Badge kind={m.kind} dot>{m.label}</Badge></td>
-                  <td><span className="row gap-6 center"><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b.branch}</span></td>
-                  <td className="mono" style={{ color:"var(--accent-2)" }}>{b.commit}</td>
-                  <td><span className="row gap-7 center"><Avatar who={b.by} name={ANALYSTS[b.by]?.name} size={20}/>{nm(b.by)}</span></td>
-                  <td className="mono">{b.datasets}</td><td className="mono">{b.dur}</td><td className="mono t-faint">{b.when}</td>
-                </tr>
-              );})}
-            </tbody>
-          </table>
-        </div>
+        <ArtifactExplorer items={BUILDS} columns={[
+          { header:"Build", render:b=><span className="mono" style={{ color:"var(--text)" }}>{b.id}</span> },
+          { header:"Status", render:b=><StatusBadge status={b.status}/> },
+          { header:"Branch", render:b=><span className="row gap-6 center"><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b.branch}</span> },
+          { header:"Commit", render:b=><span className="mono" style={{ color:"var(--accent-2)" }}>{b.commit}</span> },
+          { header:"By", render:b=><span className="row gap-7 center"><Avatar who={b.by} name={ANALYSTS[b.by]?.name} size={20}/>{nm(b.by)}</span> },
+          { header:"Datasets", render:b=><span className="mono">{b.datasets}</span> },
+          { header:"Duration", render:b=><span className="mono">{b.dur}</span> },
+          { header:"When", render:b=><span className="mono t-faint">{b.when}</span> },
+        ]} />
       </div>
     </div>
   );
@@ -169,7 +161,7 @@ function DriveTab(){
   function open(e){ if(e.kind==="folder") setPath(path+"/"+e.name); }
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <div className="row between center" style={{ marginBottom:16 }}>
           <div className="row gap-8 center">
             <span style={{ color:"var(--accent)" }}><Icon name="hdd" size={18}/></span>
@@ -197,7 +189,6 @@ export function CodeRepoView(){
   const [tab,setTab] = useState("code");
   const [bopen,setBopen] = useState(false);
   const [branch,setBranch] = useState(REPO.branch);
-  const m=BUILD[REPO.build.status];
   return (
     <>
       <div style={{ flex:"none", background:"var(--bg-1)", borderBottom:"1px solid var(--line-soft)" }}>
@@ -210,7 +201,7 @@ export function CodeRepoView(){
                 {REPO.branches.map(b=><button key={b} className="row gap-8 center" onClick={()=>{setBranch(b);setBopen(false);}} style={{ width:"100%", border:"none", background: b===branch?"var(--accent-ghost)":"none", borderRadius:7, padding:"8px 10px", cursor:"pointer", textAlign:"left", color:"var(--text)", fontSize:12.5 }}><Icon name="branch" size={13} style={{ color:"var(--text-faint)" }}/>{b}{b===branch&&<span style={{ marginLeft:"auto", color:"var(--accent)" }}><Icon name="check" size={13}/></span>}</button>)}
               </div>}
             </div>
-            <Badge kind={m.kind} dot>build {m.label}</Badge>
+            <StatusBadge status={REPO.build.status} label={`build ${statusMeta(REPO.build.status).label}`}/>
             <span className="t-faint mono" style={{ fontSize:11 }}>{REPO.ahead} ahead · {REPO.build.commit}</span>
           </div>
           <div className="row gap-8"><button className="btn sm"><Icon name="commit" size={14}/>Commit</button><button className="btn sm"><Icon name="branch" size={14}/>Open PR</button><button className="btn primary sm"><Icon name="play" size={14}/>Build</button></div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { ENTITIES, TYPE_BY_ID } from '../data/data.js';
-import { Icon, TypeGlyph, RiskPill } from '../components/ui.jsx';
+import { ENTITIES } from '../data/data.js';
+import { Icon, ObjectList } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — WatchlistView (regenerado)
@@ -32,15 +32,7 @@ export function WatchlistView({ openEntity }) {
         <div style={{ maxWidth: 980 }} className="fade-in">
           <div className="eyebrow" style={{ marginBottom: 6 }}>{LISTS.find((l) => l.id === list).name}</div>
           <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: "0 0 18px", letterSpacing: "-0.02em" }}>{shown.length} objetos vigilados</h1>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
-            {shown.map((e) => (
-              <button key={e.id} className="card hover" onClick={() => openEntity && openEntity(e.id)} style={{ padding: 14, textAlign: "left", cursor: "pointer" }}>
-                <div className="row between center" style={{ marginBottom: 10 }}><TypeGlyph type={e.type} size={32} /><RiskPill r={e.risk} /></div>
-                <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.name}</div>
-                <div className="t-faint" style={{ fontSize: 12, marginTop: 2 }}>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type} · {e.sub}</div>
-              </button>
-            ))}
-          </div>
+          <ObjectList variant="grid" items={shown} openEntity={openEntity} emptyText="Sin objetos en esta lista de vigilancia." />
         </div>
       </div>
     </div>

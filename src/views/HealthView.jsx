@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { CHK, DATASETS, DSTATUS, INCIDENTS, SEV } from '../data/data_health.js';
+import { CHK, DATASETS, INCIDENTS, SEV } from '../data/data_health.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { Badge, Icon, Lineage, PageHeader, Spark, Stat } from '../components/ui.jsx';
+import { ArtifactExplorer, Badge, Drawer, Icon, Lineage, PageHeader, Spark, Stat, StatusBadge, statusMeta } from '../components/ui.jsx';
 import { rulesByContext } from '../data/data_rules.js';
 import { RulesEngine } from '../components/RulesEngine.jsx';
 
@@ -13,15 +13,12 @@ function Dot({ kind }){
   const sh = kind==="alert"?{clipPath:"polygon(50% 0,100% 100%,0 100%)"}:kind==="warn"?{borderRadius:1}:{borderRadius:"50%"};
   return <span style={{ width:8, height:8, background:`var(--${kind})`, display:"inline-block", ...sh }}/>;
 }
-function StatusBadge({ s }){ const m=DSTATUS[s]; return <Badge kind={m.kind} dot>{m.label}</Badge>; }
-
-function Drawer({ ds, onClose }){
+function DatasetDrawer({ ds, onClose }){
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:120, background:"var(--scrim-soft)", backdropFilter:"var(--scrim-blur)" }}>
-      <div onClick={e=>e.stopPropagation()} className="panel" style={{ position:"absolute", top:0, right:0, bottom:0, width:400, background:"var(--bg-1)", borderRadius:0, borderLeft:"1px solid var(--line)", boxShadow:"var(--shadow-3)", overflow:"auto", animation:"slideIn .25s both" }}>
+    <Drawer open onClose={onClose}>
         <div style={{ padding:18, borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row between center" style={{ marginBottom:10 }}>
-            <span className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="layers" size={18}/></span><StatusBadge s={ds.status}/></span>
+            <span className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="layers" size={18}/></span><StatusBadge status={ds.status}/></span>
             <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
           </div>
           <div className="mono" style={{ fontSize:17, fontWeight:600 }}>{ds.name}</div>
@@ -56,8 +53,7 @@ function Drawer({ ds, onClose }){
           </div>
           <div className="row gap-8"><button className="btn" style={{ flex:1 }}><Icon name="play" size={14}/>Re-run build</button><button className="btn primary" style={{ flex:1 }}><Icon name="check" size={14}/>Acknowledge</button></div>
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -73,7 +69,7 @@ export function HealthView(){
   const passPct = Math.round(pass/tot*100);
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Data Integration · observability" title="Data Health">
           <button className="btn"><Icon name="download"/>Export</button>
           <button className={"btn"+(showRules?" primary":"")} onClick={()=>setShowRules(s=>!s)}><Icon name="bell"/>Alert rules</button>
@@ -93,24 +89,14 @@ export function HealthView(){
           ))}
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:20, alignItems:"start" }}>
-          <div className="card" style={{ overflow:"hidden" }}>
-            <div className="row between center" style={{ padding:"13px 16px", borderBottom:"1px solid var(--line-soft)" }}><div className="eyebrow">Pipelines &amp; datasets</div><span className="t-faint mono" style={{ fontSize:11 }}>{DATASETS.length} monitored</span></div>
-            <table className="tbl">
-              <thead><tr><th>Dataset</th><th>Status</th><th>Freshness</th><th>Checks</th><th>Trend</th><th></th></tr></thead>
-              <tbody>
-                {DATASETS.map(d=>{ const dm=DSTATUS[d.status]; return (
-                  <tr key={d.id} onClick={()=>setSel(d.id)}>
-                    <td><span className="row gap-8 center"><Dot kind={dm.kind==="accent"?"info":dm.kind}/><span className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{d.name}</span>{d.drift && <span style={{ color:"var(--warn)" }}><Icon name="drift" size={13}/></span>}</span><div className="t-faint" style={{ fontSize:10.5, marginLeft:16 }}>{d.layer}</div></td>
-                    <td><StatusBadge s={d.status}/></td>
-                    <td><span className="mono" style={{ fontSize:11.5, color: d.slaOk?"var(--text-dim)":"var(--alert)" }}>{d.last}</span></td>
-                    <td><span className="mono" style={{ fontSize:11.5, color: d.pass===d.total?"var(--ok)":d.status==="building"?"var(--text-faint)":"var(--alert)" }}>{d.status==="building"?"—":d.pass+"/"+d.total}</span></td>
-                    <td><Spark data={d.spark} w={80} h={24} color={d.status==="failed"?"var(--alert)":d.status==="degraded"?"var(--warn)":"var(--accent)"}/></td>
-                    <td style={{ textAlign:"right", color:"var(--text-faint)" }}><Icon name="chevron" size={15}/></td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
-          </div>
+          <ArtifactExplorer items={DATASETS} onOpen={d=>setSel(d.id)} title="Pipelines & datasets" meta={`${DATASETS.length} monitored`} columns={[
+            { header:"Dataset", render:d=>{ const dm=statusMeta(d.status); return <><span className="row gap-8 center"><Dot kind={dm.kind==="accent"?"info":dm.kind}/><span className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{d.name}</span>{d.drift && <span style={{ color:"var(--warn)" }}><Icon name="drift" size={13}/></span>}</span><div className="t-faint" style={{ fontSize:10.5, marginLeft:16 }}>{d.layer}</div></>; } },
+            { header:"Status", render:d=><StatusBadge status={d.status}/> },
+            { header:"Freshness", render:d=><span className="mono" style={{ fontSize:11.5, color: d.slaOk?"var(--text-dim)":"var(--alert)" }}>{d.last}</span> },
+            { header:"Checks", render:d=><span className="mono" style={{ fontSize:11.5, color: d.pass===d.total?"var(--ok)":d.status==="building"?"var(--text-faint)":"var(--alert)" }}>{d.status==="building"?"—":d.pass+"/"+d.total}</span> },
+            { header:"Trend", render:d=><Spark data={d.spark} w={80} h={24} color={d.status==="failed"?"var(--alert)":d.status==="degraded"?"var(--warn)":"var(--accent)"}/> },
+            { header:"", align:"right", render:()=><span style={{ color:"var(--text-faint)" }}><Icon name="chevron" size={15}/></span> },
+          ]} />
           <div className="col gap-16">
             <div className="card" style={{ padding:18 }}>
               <div className="row between center" style={{ marginBottom:8 }}><div className="eyebrow">Checks pass rate</div><span className="mono" style={{ fontSize:13, fontWeight:600, color:passPct>=90?"var(--ok)":"var(--warn)" }}>{passPct}%</span></div>
@@ -131,7 +117,7 @@ export function HealthView(){
           </div>
         </div>
       </div>
-      {ds && <Drawer ds={ds} onClose={()=>setSel(null)}/>}
+      {ds && <DatasetDrawer ds={ds} onClose={()=>setSel(null)}/>}
     </div>
   );
 }

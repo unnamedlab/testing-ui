@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENTITY_BY_ID } from '../data/data.js';
-import { Icon, RiskPill, TypeGlyph } from './ui.jsx';
+import { Drawer, Icon, RiskPill, TypeGlyph } from './ui.jsx';
 import { complete, isModelAvailable } from '../services/claude.js';
 
 /* ============================================================
@@ -116,17 +116,14 @@ export function Copilot({ open, onClose, go, openEntity }){
     }
   }
 
-  if(!open) return null;
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:130, background:"var(--scrim-soft)", backdropFilter:"var(--scrim-blur)" }}>
-      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:420, background:"var(--bg-1)",
-        borderLeft:"1px solid var(--line)", boxShadow:"var(--shadow-3)", display:"flex", flexDirection:"column", animation:"slideIn .26s both" }}>
+    <Drawer open={open} onClose={onClose} zIndex={130} panelStyle={{ overflow:"hidden" }}>
         <div className="row between center" style={{ padding:"14px 18px", borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row gap-10 center">
             <div style={{ width:32,height:32,borderRadius:9,display:"grid",placeItems:"center",background:"linear-gradient(150deg,var(--accent),var(--accent-2))",color:"var(--accent-text)" }}><Icon name="sparkles" size={18}/></div>
             <div><div style={{ fontSize:14, fontWeight:600 }}>Copilot</div><div className="t-faint" style={{ fontSize:11 }}>AIP · ontology-aware</div></div>
           </div>
-          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{ transform:"rotate(45deg)" }}/></button>
+          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
         </div>
 
         <div ref={scrollRef} style={{ flex:1, overflow:"auto", padding:18 }}>
@@ -154,7 +151,6 @@ export function Copilot({ open, onClose, go, openEntity }){
             <button className="btn primary sm" style={{ width:34, padding:0 }} onClick={()=>send()} disabled={busy}><Icon name="arrowRight" size={16}/></button>
           </div>
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }

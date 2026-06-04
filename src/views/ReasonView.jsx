@@ -3,7 +3,7 @@ import { AGENTS, EVALS, FUNCTIONS, TOOLS } from '../data/data_agents.js';
 
 const RSN_TABS = [["agents","Agent Studio"],["logic","Logic functions"],["evals","Evals"]];
 import { ENTITY_BY_ID } from '../data/data.js';
-import { Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { ArtifactExplorer, Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Reason · Agent / Logic builder
@@ -33,7 +33,7 @@ function Console({ agent }){
   }
   const r = agent.run;
   return (
-    <aside style={{ width:392, flex:"none", borderLeft:"1px solid var(--line-soft)", background:"var(--bg-inset)", display:"flex", flexDirection:"column", minHeight:0 }}>
+    <aside style={{ width:"var(--drawer)", flex:"none", borderLeft:"1px solid var(--line-soft)", background:"var(--bg-inset)", display:"flex", flexDirection:"column", minHeight:0 }}>
       <div className="row between center" style={{ padding:"13px 16px", borderBottom:"1px solid var(--line-soft)", flex:"none" }}>
         <div className="row gap-8 center"><span style={{ color:"var(--accent)" }}><Icon name="play" size={16}/></span><span className="serif" style={{ fontSize:15 }}>Test console</span></div>
         <Badge>preview</Badge>
@@ -135,7 +135,7 @@ function AgentsTab(){
   const agent = AGENTS.find(a=>a.id===selId);
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:230, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
+      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
         <div className="row between center" style={{ padding:"14px 14px 8px" }}><div className="eyebrow">Agents · {AGENTS.length}</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
         <div style={{ padding:"0 8px 16px" }}>
           {AGENTS.map(a=>(
@@ -154,7 +154,7 @@ function AgentsTab(){
 function LogicTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1000, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Reason · Logic" title="Functions" sub="Reusable, typed building blocks — deterministic logic the agents and the ontology call." />
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:16 }}>
           {FUNCTIONS.map(f=>(
@@ -172,24 +172,16 @@ function LogicTab(){
 function EvalsTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:920, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-narrow)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Reason · Evaluation" title="Evals" />
-        <div className="card" style={{ overflow:"hidden" }}>
-          <table className="tbl">
-            <thead><tr><th>Agent</th><th>Test cases</th><th>Passing</th><th>Score</th><th>Last run</th><th></th></tr></thead>
-            <tbody>
-              {EVALS.map(e=>{ const pct=parseInt(e.score); return (
-                <tr key={e.agent}>
-                  <td style={{ color:"var(--text)", fontWeight:600 }}>{e.agent}</td>
-                  <td className="mono">{e.cases}</td><td className="mono">{e.pass}/{e.cases}</td>
-                  <td><span className="row gap-8 center" style={{ maxWidth:140 }}><div className="meter" style={{ flex:1 }}><i style={{ width:e.score, background: pct>=95?"var(--ok)":pct>=85?"var(--warn)":"var(--alert)" }}/></div><span className="mono" style={{ fontSize:11.5, color: pct>=95?"var(--ok)":pct>=85?"var(--warn)":"var(--alert)" }}>{e.score}</span></span></td>
-                  <td className="mono t-faint">{e.last}</td>
-                  <td style={{ textAlign:"right" }}><button className="btn ghost sm"><Icon name="play" size={13}/>Run</button></td>
-                </tr>
-              );})}
-            </tbody>
-          </table>
-        </div>
+        <ArtifactExplorer items={EVALS} columns={[
+          { header:"Agent", render:e=><span style={{ color:"var(--text)", fontWeight:600 }}>{e.agent}</span> },
+          { header:"Test cases", render:e=><span className="mono">{e.cases}</span> },
+          { header:"Passing", render:e=><span className="mono">{e.pass}/{e.cases}</span> },
+          { header:"Score", render:e=>{ const pct=parseInt(e.score); return <span className="row gap-8 center" style={{ maxWidth:140 }}><div className="meter" style={{ flex:1 }}><i style={{ width:e.score, background: pct>=95?"var(--ok)":pct>=85?"var(--warn)":"var(--alert)" }}/></div><span className="mono" style={{ fontSize:11.5, color: pct>=95?"var(--ok)":pct>=85?"var(--warn)":"var(--alert)" }}>{e.score}</span></span>; } },
+          { header:"Last run", render:e=><span className="mono t-faint">{e.last}</span> },
+          { header:"", align:"right", render:()=><button className="btn ghost sm"><Icon name="play" size={13}/>Run</button> },
+        ]} />
       </div>
     </div>
   );

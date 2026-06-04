@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { T_END } from '../data/data_ext.js';
 import { EDGES, ENTITIES, ENTITY_BY_ID, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
-import { Badge, Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
+import { Badge, Icon, RiskPill, TypeGlyph, useViewport } from '../components/ui.jsx';
 import { GraphEdge, GraphNode } from '../components/GraphCanvas.jsx';
 
 /* ============================================================
@@ -39,7 +39,7 @@ export function GraphView({ openEntity, focusId }) {
     ENTITIES.forEach(e => { m[e.id] = { x: e.x*GW, y: e.y*GH }; });
     return m;
   });
-  const [view, setView] = useState({ x: 0, y: 0, k: 0.78 });
+  const { ref: svgRef, view, setView, size, onWheel, zoomBy, fit } = useViewport({ minK: 0.35, maxK: 2.2, initial: { x: 0, y: 0, k: 0.78 } });
   const [sel, setSel] = useState(focusId || "p-sorenson");
   const [hover, setHover] = useState(null);
   const [showLabels, setShowLabels] = useState(true);
@@ -48,20 +48,11 @@ export function GraphView({ openEntity, focusId }) {
   const [t, setT, playing, setPlaying] = useTimeline(T_END);
   const [focusMode, setFocusMode] = useState(false);
   const [revealed, setRevealed] = useState(()=>new Set([focusId||"p-sorenson"]));
-  const [size, setSize] = useState({ w:1000, h:700 });
-  const svgRef = useRef(null);
   const drag = useRef(null);
 
   const hiddenByTime = useCallback((eid)=> temporal && ENTITY_BY_ID[eid].since > t, [temporal, t]);
 
   useEffect(()=>{ if(focusId){ setSel(focusId); setRevealed(new Set([focusId])); } }, [focusId]);
-
-  // track svg size for minimap viewport
-  useEffect(()=>{
-    const el = svgRef.current; if(!el) return;
-    const ro = new ResizeObserver(()=>{ const r=el.getBoundingClientRect(); setSize({w:r.width,h:r.height}); });
-    ro.observe(el); return ()=>ro.disconnect();
-  }, []);
 
   // center on mount
   useEffect(()=>{
@@ -164,31 +155,6 @@ export function GraphView({ openEntity, focusId }) {
     window.removeEventListener("pointermove", onPointerMove);
     window.removeEventListener("pointerup", onPointerUp);
   }
-  function onWheel(e) {
-    e.preventDefault();
-    const el = svgRef.current.getBoundingClientRect();
-    const mx = e.clientX - el.left, my = e.clientY - el.top;
-    setView(v => {
-      const k2 = Math.min(2.2, Math.max(0.35, v.k * (e.deltaY<0 ? 1.12 : 0.89)));
-      const gx = (mx - v.x)/v.k, gy = (my - v.y)/v.k;
-      return { k:k2, x: mx - gx*k2, y: my - gy*k2 };
-    });
-  }
-  function zoom(f) {
-    const el = svgRef.current.getBoundingClientRect();
-    const mx = el.width/2, my = el.height/2;
-    setView(v => {
-      const k2 = Math.min(2.2, Math.max(0.35, v.k*f));
-      const gx = (mx - v.x)/v.k, gy = (my - v.y)/v.k;
-      return { k:k2, x: mx - gx*k2, y: my - gy*k2 };
-    });
-  }
-  function fit() {
-    const el = svgRef.current.getBoundingClientRect();
-    const k = Math.min(el.width/GW, el.height/GH)*0.9;
-    setView({ k, x: el.width/2 - (GW/2)*k, y: el.height/2 - (GH/2)*k });
-  }
-
   function toggleType(t) {
     setTypeFilter(prev => { const n = new Set(prev); n.has(t)?n.delete(t):n.add(t); return n; });
   }
@@ -257,9 +223,9 @@ export function GraphView({ openEntity, focusId }) {
         {/* top-left toolbar */}
         <div style={{ position:"absolute", top:14, left:14, display:"flex", gap:10, flexWrap:"wrap", maxWidth:"60%" }}>
           <div className="panel row gap-2" style={{ padding:4 }}>
-            <button className="icon-btn" onClick={()=>zoom(1.2)} title="Zoom in"><Icon name="zoomIn"/></button>
-            <button className="icon-btn" onClick={()=>zoom(0.83)} title="Zoom out"><Icon name="zoomOut"/></button>
-            <button className="icon-btn" onClick={fit} title="Fit"><Icon name="target"/></button>
+            <button className="icon-btn" onClick={()=>zoomBy(1.2)} title="Zoom in"><Icon name="zoomIn"/></button>
+            <button className="icon-btn" onClick={()=>zoomBy(0.83)} title="Zoom out"><Icon name="zoomOut"/></button>
+            <button className="icon-btn" onClick={()=>fit({ w: GW, h: GH })} title="Fit"><Icon name="target"/></button>
             <button className={"icon-btn"} onClick={()=>setShowLabels(s=>!s)} title="Labels" style={{ color: showLabels?"var(--accent)":"var(--text-dim)" }}><Icon name="doc"/></button>
             <button className={"icon-btn"} onClick={()=>setTemporal(s=>!s)} title="Temporal analysis" style={{ color: temporal?"var(--accent)":"var(--text-dim)" }}><Icon name="clock"/></button>
             <button className={"icon-btn"} onClick={toggleFocus} title="Focus / expand mode" style={{ color: focusMode?"var(--accent)":"var(--text-dim)" }}><Icon name="focus"/></button>
@@ -304,7 +270,7 @@ export function GraphView({ openEntity, focusId }) {
             <div style={{ padding:16, borderBottom:"1px solid var(--line-soft)" }}>
               <div className="row between" style={{ alignItems:"flex-start" }}>
                 <TypeGlyph type={selEnt.type} size={44}/>
-                <button className="icon-btn" onClick={()=>setSel(null)} style={{ width:28,height:28 }}><Icon name="plus" size={16} style={{ transform:"rotate(45deg)" }}/></button>
+                <button className="icon-btn" onClick={()=>setSel(null)} style={{ width:28,height:28 }}><Icon name="x" size={16}/></button>
               </div>
               <div className="serif" style={{ fontSize:19, fontWeight:500, marginTop:10 }}>{selEnt.name}</div>
               <div className="t-faint" style={{ fontSize:12.5, marginTop:2 }}>{TYPE_BY_ID[selEnt.type].name} · {selEnt.sub}</div>

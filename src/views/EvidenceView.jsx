@@ -27,7 +27,7 @@ function Mention({ ent, surface, selected, onClick }){
 function PdfView({ doc, sel, onSel }){
   const byId = useMemo(()=>Object.fromEntries(doc.entities.map(e=>[e.id,e])),[doc]);
   return (
-    <div style={{ maxWidth:720, margin:"0 auto", background:"var(--bg-1)", border:"1px solid var(--line)", borderRadius:10, boxShadow:"var(--shadow-2)", overflow:"hidden" }}>
+    <div style={{ maxWidth:"var(--page-read)", margin:"0 auto", background:"var(--bg-1)", border:"1px solid var(--line)", borderRadius:10, boxShadow:"var(--shadow-2)", overflow:"hidden" }}>
       <div style={{ background:`color-mix(in oklab, var(--alert) 16%, var(--bg-inset))`, borderBottom:"1px solid color-mix(in oklab,var(--alert) 40%,transparent)", textAlign:"center", padding:"5px", fontFamily:"var(--font-mono)", fontSize:10.5, letterSpacing:".18em", fontWeight:600, color:"var(--alert)" }}>{doc.cls} // AXIOM-INT // NEED-TO-KNOW</div>
       <div style={{ padding:"34px 44px 44px" }}>
         <div className="eyebrow" style={{ marginBottom:8 }}>{doc.sub}</div>
@@ -47,7 +47,7 @@ function PdfView({ doc, sel, onSel }){
 }
 function ImageView({ doc, sel, onSel }){
   return (
-    <div style={{ maxWidth:760, margin:"0 auto" }}>
+    <div style={{ maxWidth:"var(--page-read)", margin:"0 auto" }}>
       <div style={{ position:"relative", borderRadius:10, overflow:"hidden", border:"1px solid var(--line)", boxShadow:"var(--shadow-2)", aspectRatio:"16 / 10", backgroundImage:"repeating-linear-gradient(45deg, var(--bg-2) 0 14px, var(--bg-inset) 14px 28px)" }}>
         <div style={{ position:"absolute", inset:0, display:"grid", placeItems:"center" }}><span className="mono" style={{ fontSize:12, color:"var(--text-faint)", letterSpacing:".08em" }}>satellite imagery — drop real capture here</span></div>
         {doc.boxes.map(b=>{ const on=sel===b.id; const e=doc.entities.find(x=>x.id===b.id);
@@ -66,7 +66,7 @@ function ImageView({ doc, sel, onSel }){
 }
 function CsvView({ doc, sel, onSel }){
   return (
-    <div style={{ maxWidth:880, margin:"0 auto" }}>
+    <div style={{ maxWidth:"var(--page-narrow)", margin:"0 auto" }}>
       <div className="card" style={{ padding:16, marginBottom:14 }}>
         <div className="eyebrow" style={{ marginBottom:10 }}>Column mapping → ontology</div>
         <div className="row gap-8 wrap">
@@ -153,7 +153,7 @@ function ExtractionPanel({ doc, sel, onSel }){
 }
 function DocList({ docs, selId, onSel }){
   return (
-    <aside style={{ width:248, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
+    <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
       <div style={{ padding:"16px 16px 8px" }} className="row between center"><div className="eyebrow">Evidence · {docs.length}</div><button className="btn ghost sm" style={{ width:26, padding:0 }}><Icon name="plus" size={15}/></button></div>
       <div style={{ padding:"0 8px 16px" }}>
         {docs.map(d=>{ const on=selId===d.id; const ic=d.kind==="image"?"image":d.kind==="csv"?"table":"doc";

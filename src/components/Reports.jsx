@@ -22,13 +22,13 @@ export function DossierModal({ open, onClose, caseId }){
         <div className="row gap-10 center"><Icon name="doc" size={18}/><span className="serif" style={{ fontSize:16 }}>Dossier · {c.name}</span><Badge kind="accent"><Icon name="sparkles" size={11}/>AI-assembled</Badge></div>
         <div className="row gap-8">
           <button className="btn" onClick={()=>window.print()}><Icon name="download"/>Export PDF</button>
-          <button className="btn ghost" onClick={onClose}><Icon name="plus" size={16} style={{transform:"rotate(45deg)"}}/>Close</button>
+          <button className="btn ghost" onClick={onClose}><Icon name="x" size={16}/>Close</button>
         </div>
       </div>
 
       {/* document */}
       <div style={{ flex:1, overflow:"auto", padding:"28px 20px", display:"flex", justifyContent:"center" }}>
-        <div className="dossier" style={{ width:"100%", maxWidth:780, background:"#fff", color:"#16181d", borderRadius:6, boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
+        <div className="dossier" style={{ width:"100%", maxWidth:"var(--page-read)", background:"#fff", color:"#16181d", borderRadius:6, boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
           {/* class banner */}
           <div style={{ background:ink, color:"#fff", textAlign:"center", padding:"5px", fontFamily:"var(--font-mono)", fontSize:11, letterSpacing:".18em", fontWeight:600 }}>
             {c.classification}{' // '}{CLASSIFICATION.compartment}{' // '}{CLASSIFICATION.caveat}

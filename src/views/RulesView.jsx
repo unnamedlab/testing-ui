@@ -13,7 +13,7 @@ export function RulesView() {
   const toggle = (id) => setRules((rs) => rs.map((r) => (r.id === id ? { ...r, on: !r.on } : r)));
   return (
     <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "22px 22px 50px" }} className="fade-in">
+      <div style={{ maxWidth: "var(--page)", margin: "0 auto", padding: "22px 22px 50px" }} className="fade-in">
         <RulesEngine rules={rules} onToggle={toggle} />
       </div>
     </div>

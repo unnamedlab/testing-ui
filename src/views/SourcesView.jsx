@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { CONNECTORS, SOURCES } from '../data/data_ext.js';
-import { Badge, Icon, PageHeader, Stat } from '../components/ui.jsx';
+import { Icon, PageHeader, Stat, StatusBadge, statusColor } from '../components/ui.jsx';
 import { SourceWizard } from './AdminView.jsx';
 
 /* ============================================================
@@ -26,7 +26,7 @@ export function SourcesView() {
 
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }} className="fade-in">
+      <div style={{ maxWidth: "var(--page)", margin: "0 auto" }} className="fade-in">
         {/* header */}
         <PageHeader eyebrow="Data integration · Sources" title="Sources">
           <button className="btn primary" onClick={() => setWizard(true)}><Icon name="plus" />Add source</button>
@@ -66,12 +66,12 @@ export function SourcesView() {
                   <div style={{ width: 38, height: 38, borderRadius: 10, display: "grid", placeItems: "center", background: "var(--bg-2)", color: "var(--accent)" }}><Icon name={s.icon} size={19} /></div>
                   <div><div style={{ fontSize: 14, fontWeight: 600 }}>{s.name}</div><div className="t-faint" style={{ fontSize: 11.5 }}>{s.vendor} · {s.proto}</div></div>
                 </div>
-                <Badge kind={s.status === "healthy" ? "ok" : "warn"} dot>{s.status === "healthy" ? "connected" : s.status}</Badge>
+                <StatusBadge status={s.status === "healthy" ? "connected" : s.status} />
               </div>
 
               {/* ingest framing: connector → upstream */}
               <div className="row gap-8 center" style={{ marginBottom: 12, fontFamily: "var(--font-mono)", fontSize: 10.5, color: "var(--text-faint)" }}>
-                <span style={{ color: s.status === "healthy" ? "var(--ok)" : "var(--warn)" }}>● connector</span>
+                <span style={{ color: statusColor(s.status === "healthy" ? "connected" : s.status) }}>● connector</span>
                 <Icon name="arrowRight" size={12} />
                 <span>upstream · fresh {s.fresh}</span>
               </div>

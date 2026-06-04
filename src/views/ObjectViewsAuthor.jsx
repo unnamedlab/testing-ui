@@ -113,7 +113,7 @@ export function ObjectViewsAuthor() {
                     <div className="row gap-2">
                       <button className="icon-btn sm" onClick={() => move(id, -1)} disabled={i === 0} style={{ width: 26, height: 26, opacity: i === 0 ? .4 : 1 }}><Icon name="chevron" size={14} style={{ transform: "rotate(-90deg)" }} /></button>
                       <button className="icon-btn sm" onClick={() => move(id, 1)} disabled={i === layout.length - 1} style={{ width: 26, height: 26, opacity: i === layout.length - 1 ? .4 : 1 }}><Icon name="chevron" size={14} style={{ transform: "rotate(90deg)" }} /></button>
-                      <button className="icon-btn sm" onClick={() => toggleCard(id)} style={{ width: 26, height: 26 }} title="Remove"><Icon name="plus" size={14} style={{ transform: "rotate(45deg)" }} /></button>
+                      <button className="icon-btn sm" onClick={() => toggleCard(id)} style={{ width: 26, height: 26 }} title="Remove"><Icon name="x" size={14} /></button>
                     </div>
                   </div>
                 );

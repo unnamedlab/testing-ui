@@ -1,11 +1,7 @@
 /* AXIOM — data_models.js · fixture de demo regenerado
-   Consumido por ModelsView (MODELS, OBJECTIVES, VST). */
-export const VST = {
-  champion: { kind: "accent", label: "champion" },
-  staging:  { kind: "warn",   label: "staging" },
-  archived: { kind: "",       label: "archivado" },
-  failed:   { kind: "alert",  label: "fallido" },
-};
+   Consumido por ModelsView (MODELS, OBJECTIVES).
+   El estado de versión/modelo (champion/staging/archived/deployed) usa ahora el
+   registro STATUS único de components/ui.jsx. */
 const spark = (s) => Array.from({ length: 12 }, (_, i) => 40 + Math.round(30 * Math.abs(Math.sin(s + i * 0.6))));
 export const MODELS = [
   {

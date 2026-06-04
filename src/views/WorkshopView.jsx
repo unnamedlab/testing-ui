@@ -17,7 +17,7 @@ const TEMPLATES = [
 export function WorkshopView() {
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }} className="fade-in">
+      <div style={{ maxWidth: "var(--page)", margin: "0 auto" }} className="fade-in">
         <PageHeader eyebrow="Workshop" title="Aplicaciones operativas">
           <button className="btn primary"><Icon name="plus" />Nueva app</button>
         </PageHeader>

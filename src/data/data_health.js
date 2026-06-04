@@ -1,11 +1,7 @@
 /* AXIOM — data_health.js · fixture de demo regenerado
-   Consumido por HealthView (CHK, DATASETS, DSTATUS, INCIDENTS, SEV). */
-export const DSTATUS = {
-  healthy:  { kind: "ok",     label: "healthy" },
-  degraded: { kind: "warn",   label: "degraded" },
-  building: { kind: "accent", label: "building" },
-  failed:   { kind: "alert",  label: "failed" },
-};
+   Consumido por HealthView (CHK, DATASETS, INCIDENTS, SEV).
+   El estado de dataset (healthy/degraded/building/failed) usa ahora el registro
+   STATUS único de components/ui.jsx; aquí solo viven SEV (severidad) y CHK (checks). */
 export const CHK = {
   pass: { c: "var(--ok)",    ic: "check" },
   warn: { c: "var(--warn)",  ic: "flag" },

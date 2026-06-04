@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { G2_EDGES, G2_NODES } from '../data/data_graph2.js';
 import { Icon } from '../components/ui.jsx';
 import { GraphEdge, GraphNode, GRAPH_TYPE_GLYPH as TG, typeColor } from '../components/GraphCanvas.jsx';
@@ -50,9 +50,21 @@ export function GraphAnalysisView(){
   }
   const nr = (id)=> mode==="central" ? 3 + (cenById[id].score/100)*4.5 : 3.6;
 
+  // pan/zoom in viewBox units (the graph renders in a 0..100 / 0..86 viewBox)
+  const SV = useRef(null); const pan = useRef(null);
+  const [v, setV] = useState({ x:0, y:0, k:1 });
+  function vbPoint(e){ const svg=SV.current; const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+  function onWheel(e){ e.preventDefault(); const p=vbPoint(e); setV(s=>{ const k2=Math.min(4,Math.max(1,s.k*(e.deltaY<0?1.12:0.89))); const gx=(p.x-s.x)/s.k, gy=(p.y-s.y)/s.k; return {k:k2, x:p.x-gx*k2, y:p.y-gy*k2}; }); }
+  function onDown(e){ const start=vbPoint(e); pan.current={start, orig:{x:v.x,y:v.y}};
+    const move=ev=>{ const d=pan.current; if(!d) return; const cur=vbPoint(ev); setV(s=>({...s, x:d.orig.x+(cur.x-d.start.x), y:d.orig.y+(cur.y-d.start.y)})); };
+    const up=()=>{ pan.current=null; window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); };
+    window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); }
+  function zoomBy(f){ setV(s=>{ const k2=Math.min(4,Math.max(1,s.k*f)); const cx=50, cy=43; const gx=(cx-s.x)/s.k, gy=(cy-s.y)/s.k; return {k:k2, x:cx-gx*k2, y:cy-gy*k2}; }); }
+  function reset(){ setV({x:0,y:0,k:1}); }
+
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:288, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", padding:"16px 16px 30px" }}>
+      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", padding:"16px 16px 30px" }}>
         <div className="eyebrow" style={{ marginBottom:10 }}>Graph analysis</div>
         <div className="seg" style={{ width:"100%", marginBottom:18 }}>{MODES.map(([k,l,ic])=><button key={k} className={mode===k?"on":""} onClick={()=>setMode2(k)} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}><Icon name={ic} size={13}/></button>)}</div>
         <div style={{ fontSize:14, fontWeight:600, marginBottom:4 }}>{MODES.find(m=>m[0]===mode)[1]}</div>
@@ -111,7 +123,10 @@ export function GraphAnalysisView(){
         )}
       </aside>
       <div className="canvas-fill grid-bg" style={{ position:"relative", flex:1 }}>
-        <svg viewBox="0 0 100 86" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style={{ display:"block" }}>
+        <svg ref={SV} viewBox="0 0 100 86" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
+          onWheel={onWheel} onPointerDown={onDown}
+          style={{ display:"block", cursor: pan.current?"grabbing":"grab", touchAction:"none" }}>
+          <g transform={`translate(${v.x} ${v.y}) scale(${v.k})`}>
           {G2_EDGES.map(([a,a2],i)=>{ const A=NBY[a],B=NBY[a2]; const onP=pathEdge(a,a2);
             const dim = (mode==="path"&&path&&!onP) || (mode==="common"&&picks.length===2);
             return <GraphEdge key={i} a={A} b={B} highlighted={onP} dim={dim} baseOpacity={0.6}
@@ -128,9 +143,15 @@ export function GraphAnalysisView(){
               </GraphNode>
             );
           })}
+          </g>
         </svg>
+        <div className="panel row gap-2" style={{ position:"absolute", bottom:14, right:14, padding:4 }}>
+          <button className="icon-btn" onClick={()=>zoomBy(1.2)} title="Zoom in"><Icon name="zoomIn"/></button>
+          <button className="icon-btn" onClick={()=>zoomBy(0.83)} title="Zoom out"><Icon name="zoomOut"/></button>
+          <button className="icon-btn" onClick={reset} title="Reset view"><Icon name="target"/></button>
+        </div>
         <div className="panel" style={{ position:"absolute", bottom:14, left:14, padding:"7px 12px" }}>
-          <span className="t-faint mono" style={{ fontSize:11 }}>{mode==="central"?"node size = centrality":"click two nodes to analyze"}</span>
+          <span className="t-faint mono" style={{ fontSize:11 }}>{mode==="central"?"node size = centrality":"drag · pan · scroll · zoom · click two nodes"}</span>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { EDGES, ENTITIES, LINK_TYPES, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
-import { Badge, Icon, ListSkeleton, ObjectList, PageHeader, RiskPill, SectionHead, Stat, TypeGlyph, useLoad } from '../components/ui.jsx';
+import { Badge, Icon, ListSkeleton, ObjectList, PageHeader, SectionHead, Stat, TypeGlyph, useLoad } from '../components/ui.jsx';
 import { OBJECT_SCHEMA } from '../data/ontology_schema.js';
 
 /* ============================================================
@@ -50,7 +50,7 @@ export function OntologyView({ openEntity, go }) {
             <TypeGlyph type={sel} size={48}/>
             <div>
               <div className="eyebrow">Object type</div>
-              <h1 className="serif" style={{ fontSize:30, fontWeight:500, margin:"2px 0", letterSpacing:"-0.01em" }}>{t.name}</h1>
+              <h1 className="serif" style={{ fontSize:28, fontWeight:500, margin:"2px 0", letterSpacing:"-0.01em" }}>{t.name}</h1>
             </div>
             <div className="grow" />
             <button className="btn" onClick={()=>go("resolve")}><Icon name="merge"/>Resolution queue</button>
@@ -109,19 +109,7 @@ export function OntologyView({ openEntity, go }) {
             <SectionHead eyebrow={"Instances · "+samples.length+" of "+t.count.toLocaleString()} title="Sample objects">
               <button className="btn ghost sm">Open table view <Icon name="table" size={14}/></button>
             </SectionHead>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(230px,1fr))", gap:12 }}>
-              {samples.map(e=>(
-                <button key={e.id} className="card hover" onClick={()=>openEntity(e.id)} style={{ padding:14, textAlign:"left", cursor:"pointer" }}>
-                  <div className="row between center" style={{ marginBottom:10 }}>
-                    <TypeGlyph type={e.type} size={32}/>
-                    {e.watch && <Badge kind="alert" dot>watch</Badge>}
-                  </div>
-                  <div style={{ fontSize:14, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.name}</div>
-                  <div className="t-faint" style={{ fontSize:12, marginTop:2, marginBottom:10 }}>{e.sub}</div>
-                  <RiskPill r={e.risk}/>
-                </button>
-              ))}
-            </div>
+            <ObjectList variant="grid" items={samples} openEntity={openEntity} />
           </>}
         </div>
       </div>
@@ -141,7 +129,7 @@ export function SearchView({ query, openEntity }) {
 
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Search" title={query ? <>Results for “{query}”</> : "All objects"} />
         <div className="t-faint" style={{ fontSize:13, marginBottom:18 }}>{res.length} objects across the ontology</div>
 

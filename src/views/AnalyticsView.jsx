@@ -114,7 +114,7 @@ function Steps({ dim, measure, agg, type, colDim, filters }){
     </div>
   );
   return (
-    <aside style={{ width:226, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", padding:"16px 16px 30px" }}>
+    <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto", padding:"16px 16px 30px" }}>
       <div className="eyebrow" style={{ marginBottom:6 }}>Analysis</div>
       <div className="t-faint" style={{ fontSize:11.5, marginBottom:8 }}>No-code recipe · re-runs live</div>
       {step("database","Source","transactions · "+ROWS.length+" rows","var(--info)")}
@@ -150,7 +150,7 @@ export function AnalyticsView(){
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
       <Steps dim={dim} measure={measure} agg={agg} type={type} colDim={colDim} filters={filters}/>
       <div style={{ flex:1, overflow:"auto", padding:"22px 26px 50px" }}>
-        <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
+        <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
           <PageHeader eyebrow="Analysis · Quiver" title="Flagged transactions">
             <button className="btn"><Icon name="download"/>Export</button>
             <button className="btn primary"><Icon name="plus"/>Add chart</button>

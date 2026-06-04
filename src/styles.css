@@ -58,7 +58,23 @@
   --radius-sm: 7px;
   --radius-lg: 16px;
 
+  /* canonical content widths — replace the 16+ ad-hoc maxWidth magic numbers.
+     page wrappers map to this 4-step scale; master-rail asides and side panels
+     share one width each so views/tabs stop "jumping" between sizes. */
+  --page-wide:   1180px;
+  --page:        1080px;
+  --page-narrow:  920px;
+  --page-read:    760px;
+  --sidebar:      240px;
+  --drawer:       400px;
+
   --grid-color: oklch(0.30 0.015 248 / 0.5);
+
+  /* overlay scrims — were referenced everywhere (Modal/Drawer) but never defined,
+     so modals had no dimmed backdrop. Defined here for the shared shells. */
+  --scrim:      oklch(0.12 0.02 248 / 0.55);
+  --scrim-soft: oklch(0.12 0.02 248 / 0.34);
+  --scrim-blur: blur(3px);
 }
 
 [data-theme="light"] {

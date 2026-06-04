@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { ALERTS, ALERT_STATUSES, ANALYSTS, CASES, CASE_BY_ID } from '../data/data_ext.js';
 import { ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { AccessControl, MarkingChip } from '../components/Security.jsx';
-import { Avatar, Badge, Icon, RiskPill, Stat, TypeGlyph } from '../components/ui.jsx';
+import { Avatar, Badge, Drawer, Icon, RiskPill, Stat, TypeGlyph } from '../components/ui.jsx';
 import { RulesView } from './RulesView.jsx';
 import { EvidenceView } from './EvidenceView.jsx';
 
@@ -64,13 +64,11 @@ export function AlertDrawer({ id, alerts, setAlerts, onClose, openEntity }){
   const sev = SEV_META[a.sev]; const ent = ENTITY_BY_ID[a.entity];
   function set(patch){ setAlerts(as=>as.map(x=>x.id===id?{...x,...patch}:x)); }
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:120, background:"var(--scrim-soft)", backdropFilter:"var(--scrim-blur)" }}>
-      <div onClick={e=>e.stopPropagation()} className="panel" style={{ position:"absolute", top:0, right:0, bottom:0, width:380, background:"var(--bg-1)",
-        borderRadius:0, borderLeft:"1px solid var(--line)", boxShadow:"var(--shadow-3)", overflow:"auto", animation:"slideIn .25s both" }}>
+    <Drawer open onClose={onClose}>
         <div style={{ padding:18, borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row between center">
             <span className="row gap-8 center"><span style={{ width:9,height:9,borderRadius:"50%",background:sev.c }}/><span className="mono t-faint" style={{ fontSize:12 }}>{a.id}</span><Badge kind={a.sev==="critical"?"alert":a.sev==="high"?"warn":"info"}>{sev.label}</Badge></span>
-            <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{ transform:"rotate(45deg)" }}/></button>
+            <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
           </div>
           <h2 className="serif" style={{ fontSize:21, fontWeight:500, margin:"12px 0 6px", letterSpacing:"-0.01em" }}>{a.title}</h2>
           <div className="t-dim" style={{ fontSize:13 }}>{a.type} · {a.conf} · {a.created} ago</div>
@@ -105,15 +103,13 @@ export function AlertDrawer({ id, alerts, setAlerts, onClose, openEntity }){
           <button className="btn" style={{ flex:1 }} onClick={()=>set({status:"escalated"})}><Icon name="flag"/>Escalate</button>
           <button className="btn primary" style={{ flex:1 }} onClick={()=>{ set({status:"closed"}); onClose(); }}><Icon name="check"/>Resolve</button>
         </div>
-      </div>
-      <style>{`@keyframes slideIn{from{transform:translateX(34px)}to{transform:none}}`}</style>
-    </div>
+    </Drawer>
   );
 }
 
 export function CaseDetail({ c, onBack, openDossier, go }){
   return (
-    <div style={{ maxWidth:1080, margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in">
+    <div style={{ maxWidth:"var(--page)", margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in">
       <button className="btn ghost sm" onClick={onBack} style={{ marginBottom:16, paddingLeft:6 }}><Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>All cases</button>
       <div className="row between" style={{ alignItems:"flex-start", marginBottom:20 }}>
         <div>
@@ -209,7 +205,7 @@ export function CasesView({ openEntity, go, openDossier, initialMode }){
         : mode==="alerts"
         ? <div style={{ flex:1, overflow:"hidden" }}><AlertsBoard alerts={shown} setAlerts={setAlerts} openAlert={setDrawer} /></div>
         : <div style={{ flex:1, overflow:"auto", padding:"22px 20px" }}>
-            <div style={{ maxWidth:1000, margin:"0 auto", display:"grid", gap:14 }}>
+            <div style={{ maxWidth:"var(--page)", margin:"0 auto", display:"grid", gap:14 }}>
               {CASES.map(c=>(
                 <button key={c.id} className="card hover" onClick={()=>setCaseId(c.id)} style={{ padding:18, textAlign:"left", cursor:"pointer" }}>
                   <div className="row between center">

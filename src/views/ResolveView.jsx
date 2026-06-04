@@ -23,7 +23,7 @@ export function ResolveView() {
   function resolve(id) { setPairs((p) => p.filter((x) => x.id !== id)); }
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }} className="fade-in">
+      <div style={{ maxWidth: "var(--page)", margin: "0 auto" }} className="fade-in">
         <PageHeader eyebrow="Ontología · resolución de entidades" title="Cola de resolución" sub="Pares de objetos que el motor cree que son la misma entidad. Confírmalos o sepáralos." />
 
         <div className="col" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -39,7 +39,7 @@ export function ResolveView() {
                 <div className="row gap-10 center" style={{ flex: 1, minWidth: 0 }}><TypeGlyph type={p.b.type} size={34} /><div style={{ minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600 }}>{p.b.name}</div><div className="t-faint" style={{ fontSize: 12 }}>{p.b.sub}</div></div><RiskPill r={p.b.risk} /></div>
               </div>
               <div className="row gap-8" style={{ justifyContent: "flex-end" }}>
-                <button className="btn" onClick={() => resolve(p.id)}><Icon name="plus" size={14} style={{ transform: "rotate(45deg)" }} />Son distintos</button>
+                <button className="btn" onClick={() => resolve(p.id)}><Icon name="x" size={14} />Son distintos</button>
                 <button className="btn primary" onClick={() => resolve(p.id)}><Icon name="merge" size={14} />Fusionar</button>
               </div>
             </div>

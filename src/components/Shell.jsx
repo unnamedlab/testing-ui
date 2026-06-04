@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ENTITIES, NOTIFS, TYPE_BY_ID } from '../data/data.js';
-import { Badge, Icon, RiskPill, TypeGlyph } from './ui.jsx';
+import { Badge, Icon, Modal, RiskPill, TypeGlyph } from './ui.jsx';
 
 /* ============================================================
    AXIOM — App shell (rail, topbar, command palette, notifs)
@@ -363,18 +363,16 @@ export function NotifDrawer({ open, onClose }) {
 }
 
 export function ShortcutsModal({ open, onClose }) {
-  if (!open) return null;
   const groups = [
     ["Navigation", [["⌘ K","Search & command palette"],["⌘ J","Open Copilot"],["?","Keyboard shortcuts"],["Esc","Close overlay"]]],
     ["Graph", [["Drag","Pan canvas / move node"],["Scroll","Zoom"],["2× click","Open 360° / expand"],["Click","Select node"]]],
     ["Actions", [["G then C","New investigation"],["E","Export dossier"],["T","Toggle theme"]]],
   ];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
-      <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(560px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
+    <Modal open={open} onClose={onClose} width="min(560px,92vw)">
         <div className="row between center" style={{ padding:"15px 20px", borderBottom:"1px solid var(--line-soft)" }}>
           <span className="serif" style={{ fontSize:18, whiteSpace:"nowrap" }}>Keyboard shortcuts</span>
-          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{transform:"rotate(45deg)"}}/></button>
+          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
         </div>
         <div style={{ padding:"8px 20px 20px" }}>
           {groups.map(([g,rows])=>(
@@ -389,7 +387,6 @@ export function ShortcutsModal({ open, onClose }) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

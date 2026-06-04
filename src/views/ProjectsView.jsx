@@ -91,7 +91,7 @@ function List({ onOpen }){
   });
   return (
     <div className="content" style={{ padding:"28px 32px 60px" }}>
-      <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }} className="fade-in">
         <div className="row between" style={{ alignItems:"flex-end", marginBottom:24 }}>
           <div>
             <div className="eyebrow" style={{ marginBottom:8 }}>Workspaces</div>
@@ -369,7 +369,7 @@ function Detail({ p, onBack }){
   return (
     <div className="content" style={{ overflow:"auto" }}>
       <div style={{ background:"var(--bg-1)", borderBottom:"1px solid var(--line-soft)", padding:"20px 28px 0" }}>
-        <div style={{ maxWidth:1180, margin:"0 auto" }}>
+        <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }}>
           <button className="btn ghost sm" onClick={onBack} style={{ marginBottom:14, paddingLeft:6 }}>
             <Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>All workspaces
           </button>
@@ -407,7 +407,7 @@ function Detail({ p, onBack }){
           </div>
         </div>
       </div>
-      <div style={{ maxWidth:1180, margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in" key={tab}>
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in" key={tab}>
         {tab==="overview" && <Overview p={p}/>}
         {tab==="alerts" && <WorkspaceAlerts p={p}/>}
         {tab==="artifacts" && <Artifacts p={p}/>}

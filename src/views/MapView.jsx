@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { T_END } from '../data/data_ext.js';
 import { ENTITY_BY_ID, MAP_PLACES, MAP_ROUTES, MAP_VESSELS, riskLabel } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
-import { Icon, RiskPill, Switch, TypeGlyph } from '../components/ui.jsx';
+import { Icon, RiskPill, Switch, TypeGlyph, useViewport } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Geospatial / tactical map
@@ -11,11 +11,9 @@ import { Icon, RiskPill, Switch, TypeGlyph } from '../components/ui.jsx';
 export function MapView({ openEntity }) {
   const [sel, setSel] = useState("v-blackfrost");
   const [layers, setLayers] = useState({ routes:true, vessels:true, ports:true, risk:true });
-  const wrapRef = useRef(null);
-  const [dims, setDims] = useState({ w:1200, h:800 });
   const [temporal, setTemporal] = useState(false);
   const [tm, setTm, playing, setPlaying] = useTimeline(T_END);
-  const [mv, setMv] = useState({ x:0, y:0, k:1 });
+  const { ref: wrapRef, view: mv, setView: setMv, size: dims, onWheel: mWheel, zoomBy: mZoom, reset: mReset } = useViewport({ minK: 1, maxK: 4, initial: { x: 0, y: 0, k: 1 } });
   const mdrag = useRef(null);
 
   function mDown(e){
@@ -25,25 +23,6 @@ export function MapView({ openEntity }) {
     const up=()=>{ mdrag.current=null; window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); };
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up);
   }
-  function mWheel(e){
-    e.preventDefault();
-    const r=wrapRef.current.getBoundingClientRect();
-    const mx=e.clientX-r.left, my=e.clientY-r.top;
-    setMv(v=>{ const k2=Math.min(4,Math.max(1,v.k*(e.deltaY<0?1.12:0.89)));
-      const gx=(mx-v.x)/v.k, gy=(my-v.y)/v.k; return {k:k2, x:mx-gx*k2, y:my-gy*k2}; });
-  }
-  function mZoom(f){
-    const cx=dims.w/2, cy=dims.h/2;
-    setMv(v=>{ const k2=Math.min(4,Math.max(1,v.k*f)); const gx=(cx-v.x)/v.k, gy=(cy-v.y)/v.k; return {k:k2,x:cx-gx*k2,y:cy-gy*k2}; });
-  }
-  function mReset(){ setMv({x:0,y:0,k:1}); }
-
-  useEffect(()=>{
-    const el = wrapRef.current; if(!el) return;
-    const ro = new ResizeObserver(()=>{ const r=el.getBoundingClientRect(); setDims({w:r.width,h:r.height}); });
-    ro.observe(el); return ()=>ro.disconnect();
-  }, []);
-
   // interpolate a vessel's position along its track at time tm
   function vesselAt(v){
     if(!temporal || !v.track) return { x:v.x, y:v.y, hd:v.hd };
@@ -180,7 +159,7 @@ export function MapView({ openEntity }) {
         <div className="panel row gap-2" style={{ position:"absolute", bottom:14, left:14, padding:4 }}>
           <button className="icon-btn" onClick={()=>mZoom(1.25)}><Icon name="zoomIn"/></button>
           <button className="icon-btn" onClick={()=>mZoom(0.8)}><Icon name="zoomOut"/></button>
-          <button className="icon-btn" onClick={mReset}><Icon name="target"/></button>
+          <button className="icon-btn" onClick={()=>mReset({x:0,y:0,k:1})}><Icon name="target"/></button>
           <button className="icon-btn" title="Temporal analysis" onClick={()=>setTemporal(s=>!s)} style={{ color: temporal?"var(--accent)":"var(--text-dim)" }}><Icon name="clock"/></button>
         </div>
 

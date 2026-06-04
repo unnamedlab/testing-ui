@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ENTITIES, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
-import { Icon, ListSkeleton, ObjectList, useLoad } from '../components/ui.jsx';
+import { Icon, ListSkeleton, ObjectList, PageHeader, useLoad } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — ExploreView (regenerado)
@@ -20,17 +20,13 @@ export function ExploreView({ openEntity }) {
 
   return (
     <div className="content" style={{ padding: "22px 26px 60px" }}>
-      <div style={{ maxWidth: 1080, margin: "0 auto" }} className="fade-in">
-        <div className="row between center" style={{ marginBottom: 16, gap: 14, flexWrap: "wrap" }}>
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 5 }}>Ontología · objetos</div>
-            <h1 className="serif" style={{ fontSize: 28, fontWeight: 500, margin: 0, letterSpacing: "-0.02em" }}>Explorador de objetos</h1>
-          </div>
-          <div className="search" style={{ maxWidth: 320 }}>
+      <div style={{ maxWidth: "var(--page)", margin: "0 auto" }} className="fade-in">
+        <PageHeader eyebrow="Ontología · objetos" title="Explorador de objetos">
+          <div className="search" style={{ width: 320 }}>
             <Icon name="search" size={16} />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filtrar objetos…" />
           </div>
-        </div>
+        </PageHeader>
 
         <div className="row gap-6 wrap" style={{ marginBottom: 16 }}>
           <button className={"chip" + (type === "all" ? " on" : "")} onClick={() => setType("all")}>Todos · {ENTITIES.length}</button>

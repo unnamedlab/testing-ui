@@ -127,15 +127,6 @@ export function lineageFor(id){
   ];
 }
 
-// ---------- Notebook ----------
-export const NOTEBOOK = [
-  { type:"md", text:"# BLACKFROST — Network exposure\nWorking analysis of layered flows between **Aurora Trading** and **Helios Maritime**." },
-  { type:"query", lang:"AQL", text:"FROM Transaction\nWHERE to_account.holder = 'Helios Maritime'\n  AND amount > 1000000\nGROUP BY from_account\nORDER BY sum(amount) DESC", rows:4, ms:212 },
-  { type:"result" },
-  { type:"md", text:"Three counterparties account for **87%** of inbound volume. Aurora USD ····9920 dominates — consistent with a pass-through layering hub." },
-  { type:"chart" },
-];
-
 // ---------- Collaboration ----------
 export const BOARDS = [
   { id:"b1", name:"BLACKFROST · Link chart", kind:"graph", owner:"AR", collab:3, updated:"12m" },
@@ -147,37 +138,3 @@ export const COMMENTS = [
   { who:"JD", at:"1h",  on:"Helios Maritime", text:"Registry agent Castor formed 1,940+ shells — flag the whole cluster?", reacts:1 },
   { who:"AR", at:"2h",  on:"Aurora USD ····9920", text:"@Marcus can you pull the correspondent leg on TXN-88241?", reacts:0, mention:true },
 ];
-
-// ---------- Object Explorer: synthetic population ----------
-export const JURIS = ["Cyprus","UAE","BVI","Panama","Russia","Liberia","Singapore","Malta","Lebanon","UK"];
-export const FLAGS = ["Panama","Liberia","Cook Is.","Marshall Is.","Malta","Cyprus"];
-export const STATUSES = ["Active","Dormant","Flagged","Dissolved"];
-export const FIRST = ["Viktor","Elena","Daniel","Yusuf","Anatoly","Mei","Omar","Sofia","Lars","Priya","Hassan","Nadia","Kwame","Ingrid","Tariq"];
-export const LAST  = ["Sørensen","Marchetti","Okonkwo","Haddad","Volkov","Tan","Saleh","Rossi","Eriksen","Nair","Aziz","Kovač","Mensah","Lindqvist","Rahman"];
-export const ORGW  = ["Helios","Aurora","Northwind","Castor","Meridian","Polaris","Orion","Vega","Tethys","Caspian","Black Sea","Levant"];
-export const ORGS2 = ["Maritime","Trading","Holdings","Shipping","Logistics","Capital","Ventures","Petroleum","Freight","Marine"];
-export function rng(seed){ let s=seed; return ()=>{ s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; }; }
-export function buildExplorerRows(){
-  const r = rng(7); const rows = [];
-  // seed with the real entities first
-  ENTITIES.forEach(e=>rows.push({ id:e.id, name:e.name, type:e.type, risk:e.risk,
-    juris: e.attrs?.Nationality?.split(",")[0]?.trim() || e.attrs?.["Jurisdiction"] || JURIS[Math.floor(r()*JURIS.length)],
-    flag: e.attrs?.Flag?.split(" ")[0] || FLAGS[Math.floor(r()*FLAGS.length)],
-    status: e.watch?"Flagged":"Active", conns: EDGES.filter(ed=>ed.s===e.id||ed.t===e.id).length, real:true }));
-  for(let i=0;i<74;i++){
-    const types = ["person","org","vessel","account","txn","shipment"];
-    const ty = types[Math.floor(r()*types.length)];
-    let name;
-    if(ty==="person") name = FIRST[Math.floor(r()*FIRST.length)]+" "+LAST[Math.floor(r()*LAST.length)];
-    else if(ty==="org") name = ORGW[Math.floor(r()*ORGW.length)]+" "+ORGS2[Math.floor(r()*ORGS2.length)]+" "+["Ltd","FZE","LLC","Inc","SA"][Math.floor(r()*5)];
-    else if(ty==="vessel") name = "MV "+["Aurora","Pioneer","Crest","Horizon","Nordic","Valiant","Sable","Tempest"][Math.floor(r()*8)]+" "+["Wave","Star","Trader","Spirit"][Math.floor(r()*4)];
-    else if(ty==="account") name = ["EUR","USD","AED","CHF"][Math.floor(r()*4)]+" ····"+(1000+Math.floor(r()*8999));
-    else if(ty==="txn") name = "TXN-"+(80000+Math.floor(r()*9999));
-    else name = "BL-"+(200000+Math.floor(r()*9999));
-    rows.push({ id:"syn-"+i, name, type:ty, risk: Math.floor(r()*100),
-      juris: JURIS[Math.floor(r()*JURIS.length)], flag: FLAGS[Math.floor(r()*FLAGS.length)],
-      status: STATUSES[Math.floor(r()*STATUSES.length)], conns: Math.floor(r()*40) });
-  }
-  return rows;
-}
-export const EXPLORER_ROWS = buildExplorerRows();

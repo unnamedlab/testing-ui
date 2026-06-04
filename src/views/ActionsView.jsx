@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ACTION_TYPES, AUTO_RULES, EFFECT, SEED_ACTIONS, nextId } from '../data/data_actions.js';
 import { ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { ANALYSTS } from '../data/data_ext.js';
-import { Avatar, Badge, Icon, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { ArtifactExplorer, Avatar, Badge, Icon, Modal, PageHeader, Switch, Tabs, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 import { RulesEngine } from '../components/RulesEngine.jsx';
 
@@ -65,8 +65,7 @@ function InvokeModal({ preAction, onClose, onSubmit }){
   const at = ACTION_TYPES[actionId]; const needsApproval = at.approval.length>0;
   const o = ENTITY_BY_ID[target];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center", padding:20 }}>
-      <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(900px,96vw)", maxHeight:"90vh", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden", display:"flex", flexDirection:"column" }}>
+    <Modal open onClose={onClose} width="min(900px,96vw)" scrimPad={20} panelStyle={{ maxHeight:"90vh", display:"flex", flexDirection:"column" }}>
         <div className="row between center" style={{ padding:"15px 20px", borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row gap-10 center"><span style={{ color:"var(--accent)" }}><Icon name="bolt" size={18}/></span><span className="serif" style={{ fontSize:18 }}>Take an action</span></div>
           <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
@@ -124,15 +123,13 @@ function InvokeModal({ preAction, onClose, onSubmit }){
             <button className="btn primary" onClick={()=>onSubmit({ type:actionId, target, params, just })}><Icon name={needsApproval?"arrowRight":"bolt"} size={15}/>{needsApproval ? "Submit for approval" : "Apply action"}</button>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 function ReviewModal({ act, onClose, onDecide }){
   const at = ACTION_TYPES[act.type]; const o = ENTITY_BY_ID[act.target];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center", padding:20 }}>
-      <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(560px,94vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
+    <Modal open onClose={onClose} width="min(560px,94vw)" scrimPad={20}>
         <div className="row between center" style={{ padding:"15px 20px", borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row gap-10 center"><ActionGlyph type={act.type} size={30}/><div><div style={{ fontSize:15, fontWeight:600 }}>{at.name}</div><div className="t-faint mono" style={{ fontSize:11 }}>{act.id}</div></div></div>
           <MarkingChip level={at.cls}/>
@@ -153,8 +150,7 @@ function ReviewModal({ act, onClose, onDecide }){
           <span className="t-faint" style={{ fontSize:11.5 }}>Two-person integrity · you are <b style={{ color:"var(--text)" }}>{ANALYSTS[ME].name}</b></span>
           <div className="row gap-8"><button className="btn" onClick={()=>onDecide("rejected")}><Icon name="x" size={15}/>Reject</button><button className="btn primary" onClick={()=>onDecide("approve")}><Icon name="check" size={15}/>Approve &amp; apply</button></div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 function PendingCard({ act, onReview }){
@@ -199,7 +195,7 @@ function ActionCenter({ actions, onNew, onReview, rules, toggleRule }){
   const today = actions.filter(a=>a.status==="applied"||a.status==="executing").length;
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Operations · Action center" title="Actions">
           <button className="btn primary" onClick={onNew}><Icon name="bolt"/>New action</button>
         </PageHeader>
@@ -247,7 +243,7 @@ function ActionCenter({ actions, onNew, onReview, rules, toggleRule }){
 function Catalog({ onRun }){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Operations · Action types" title="Action catalog" sub="Defined, governed actions that operate on ontology objects. Each declares its targets, effects and approval chain." />
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))", gap:16 }}>
           {Object.keys(ACTION_TYPES).map(k=>{ const a=ACTION_TYPES[k]; return (
@@ -267,29 +263,20 @@ function Catalog({ onRun }){
 function Log({ actions, go }){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Operations · Audit · kind=action" title="Action log">
           <button className="btn ghost sm" onClick={()=>go && go("govern")}>Full audit log <Icon name="arrowRight" size={14}/></button>
         </PageHeader>
-        <div className="card" style={{ overflow:"hidden" }}>
-          <table className="tbl">
-            <thead><tr><th>ID</th><th>Action</th><th>Target</th><th>Actor</th><th>Approver</th><th>Status</th><th>Class</th><th>When</th></tr></thead>
-            <tbody>
-              {actions.map(a=>{ const at=ACTION_TYPES[a.type]; const o=ENTITY_BY_ID[a.target]; return (
-                <tr key={a.id}>
-                  <td className="mono" style={{ color:"var(--text)" }}>{a.id}</td>
-                  <td><span className="row gap-8 center"><span style={{ color:at.color }}><Icon name={at.icon} size={15}/></span>{at.name}</span></td>
-                  <td>{o.name}</td>
-                  <td><span className="row gap-7 center"><Avatar who={a.by} name={ANALYSTS[a.by]?.name} size={20}/>{ANALYSTS[a.by]?.name||a.by}</span></td>
-                  <td className="t-dim">{a.approver==="auto"?"auto":a.approver?(ANALYSTS[a.approver]?.name||a.approver):"—"}</td>
-                  <td><StatusBadge s={a.status}/></td>
-                  <td><MarkingChip level={at.cls} size="sm"/></td>
-                  <td className="mono t-faint">{a.ts}</td>
-                </tr>
-              );})}
-            </tbody>
-          </table>
-        </div>
+        <ArtifactExplorer items={actions} columns={[
+          { header:"ID", render:a=><span className="mono" style={{ color:"var(--text)" }}>{a.id}</span> },
+          { header:"Action", render:a=>{ const at=ACTION_TYPES[a.type]; return <span className="row gap-8 center"><span style={{ color:at.color }}><Icon name={at.icon} size={15}/></span>{at.name}</span>; } },
+          { header:"Target", render:a=>ENTITY_BY_ID[a.target]?.name },
+          { header:"Actor", render:a=><span className="row gap-7 center"><Avatar who={a.by} name={ANALYSTS[a.by]?.name} size={20}/>{ANALYSTS[a.by]?.name||a.by}</span> },
+          { header:"Approver", dim:true, render:a=>a.approver==="auto"?"auto":a.approver?(ANALYSTS[a.approver]?.name||a.approver):"—" },
+          { header:"Status", render:a=><StatusBadge s={a.status}/> },
+          { header:"Class", render:a=><MarkingChip level={ACTION_TYPES[a.type].cls} size="sm"/> },
+          { header:"When", render:a=><span className="mono t-faint">{a.ts}</span> },
+        ]} />
       </div>
     </div>
   );
@@ -299,7 +286,7 @@ function Automations({ rules, toggleRule }){
   const on = rules.filter(r=>r.on).length;
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1180, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Operations · Automations" title="Event-driven actions">
           <span className="live-dot"/><span className="t-faint mono" style={{ fontSize:11.5 }}>{on} of {rules.length} active</span>
         </PageHeader>

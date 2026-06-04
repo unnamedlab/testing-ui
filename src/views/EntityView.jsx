@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ANALYSTS, COMMENTS, T_END, T_START, dstr } from '../data/data_ext.js';
 import { EDGES, ENTITY_BY_ID, TRANSACTIONS, TYPE_BY_ID, fmtMoney, riskLabel } from '../data/data.js';
 import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx';
-import { Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { ArtifactExplorer, Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph } from '../components/ui.jsx';
 
 const ENT_TABS = [["overview","Overview"],["connections","Connections"],["activity","Timeline"],["transactions","Transactions"],["lineage","Lineage & access"]];
 
@@ -50,7 +50,7 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
     <div className="content" style={{ overflow:"auto" }}>
       {/* header band */}
       <div style={{ background:"var(--bg-1)", borderBottom:"1px solid var(--line-soft)", padding:"22px 28px 0" }}>
-        <div style={{ maxWidth:1180, margin:"0 auto" }}>
+        <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto" }}>
           <button className="btn ghost sm" onClick={()=>go(backView||"graph")} style={{ marginBottom:14, paddingLeft:6 }}>
             <Icon name="arrowRight" size={15} style={{ transform:"rotate(180deg)" }}/>Back to {BACK_LABEL[backView]||"graph"}
           </button>
@@ -92,7 +92,7 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
       </div>
 
       {/* body */}
-      <div style={{ maxWidth:1180, margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in" key={tab}>
+      <div style={{ maxWidth:"var(--page-wide)", margin:"0 auto", padding:"24px 28px 60px" }} className="fade-in" key={tab}>
         {tab==="overview" && (
           <div style={{ display:"grid", gridTemplateColumns:"320px 1fr", gap:24 }}>
             <div className="col gap-16">
@@ -219,21 +219,14 @@ export function EntityView({ id, backView, openEntity, go, openDossier }) {
         )}
 
         {tab==="transactions" && (
-          <div className="card" style={{ overflow:"hidden", maxWidth:980 }}>
-            <table className="tbl">
-              <thead><tr><th>ID</th><th>Date</th><th>Counterparty</th><th style={{textAlign:"right"}}>Amount</th><th>Pattern</th></tr></thead>
-              <tbody>
-                {myTxns.map(tx=>(
-                  <tr key={tx.id}>
-                    <td className="mono" style={{ color:"var(--text)" }}>{tx.id}</td>
-                    <td className="mono">{tx.date}</td>
-                    <td>{tx.to}</td>
-                    <td className="mono" style={{ textAlign:"right", color:"var(--text)", fontWeight:600 }}>{fmtMoney(tx.amount,tx.ccy)}</td>
-                    <td><Badge kind={tx.flag==="ok"?"ok":tx.flag}>{tx.note}</Badge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ maxWidth:980 }}>
+            <ArtifactExplorer items={myTxns} columns={[
+              { header:"ID", render:tx=><span className="mono" style={{ color:"var(--text)" }}>{tx.id}</span> },
+              { header:"Date", render:tx=><span className="mono">{tx.date}</span> },
+              { header:"Counterparty", key:"to" },
+              { header:"Amount", align:"right", render:tx=><span className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{fmtMoney(tx.amount,tx.ccy)}</span> },
+              { header:"Pattern", render:tx=><Badge kind={tx.flag==="ok"?"ok":tx.flag}>{tx.note}</Badge> },
+            ]} />
           </div>
         )}
 

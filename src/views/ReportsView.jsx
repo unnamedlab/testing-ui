@@ -84,7 +84,7 @@ function Block({ b, openEntity, onChange, onRemove }) {
   const wrap = (inner, insertLabel) => (
     <div className="rep-block">
       <div className="rep-block-rail">
-        <button className="icon-btn sm" title="Remove block" onClick={onRemove}><Icon name="plus" size={13} style={{ transform:"rotate(45deg)" }} /></button>
+        <button className="icon-btn sm" title="Remove block" onClick={onRemove}><Icon name="x" size={13} /></button>
       </div>
       <div style={{ flex:1, minWidth:0 }}>
         {insertLabel && <div className="eyebrow" style={{ marginBottom:8 }}>{insertLabel}</div>}
@@ -158,7 +158,7 @@ function Editor({ report, openEntity, onExport }) {
 
       {/* document */}
       <div className="content" style={{ padding:"28px 0 70px" }}>
-        <div style={{ maxWidth:760, margin:"0 auto", padding:"0 28px" }} className="fade-in">
+        <div style={{ maxWidth:"var(--page-read)", margin:"0 auto", padding:"0 28px" }} className="fade-in">
           <div className="row gap-10 center" style={{ marginBottom:6 }}>
             <Badge kind="accent"><Icon name="sparkles" size={11}/>AI-assembled draft</Badge>
             <StatusDot s={report.status} />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ROLES, USERS } from '../data/data_admin.js';
 import { ANALYSTS, CONNECTORS } from '../data/data_ext.js';
 import { MarkingChip } from '../components/Security.jsx';
-import { Avatar, Badge, Icon, PageHeader, SectionHead } from '../components/ui.jsx';
+import { ArtifactExplorer, Avatar, Badge, Icon, Modal, PageHeader, SectionHead } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Admin: data sources, onboarding wizard, audit log
@@ -12,14 +12,12 @@ export function SourceWizard({ open, onClose }){
   const [step, setStep] = useState(0);
   const [conn, setConn] = useState(null);
   useEffect(()=>{ if(open){ setStep(0); setConn(null); } }, [open]);
-  if(!open) return null;
   const steps = ["Connector","Configure","Map to ontology","Review"];
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:140, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
-      <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(680px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
+    <Modal open={open} onClose={onClose} width="min(680px,92vw)" zIndex={140}>
         <div className="row between center" style={{ padding:"16px 20px", borderBottom:"1px solid var(--line-soft)" }}>
           <span className="serif" style={{ fontSize:18 }}>Connect a data source</span>
-          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{transform:"rotate(45deg)"}}/></button>
+          <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
         </div>
         {/* stepper */}
         <div className="row" style={{ padding:"14px 20px", gap:8, borderBottom:"1px solid var(--line-soft)" }}>
@@ -74,8 +72,7 @@ export function SourceWizard({ open, onClose }){
             {step<3?<>Continue <Icon name="arrowRight" size={15}/></>:<><Icon name="check"/>Connect source</>}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -91,7 +88,7 @@ export function AdminView(){
   }
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="Administration" title="Users & roles" sub="Usuarios, roles y permisos. El registro de auditoría vive ahora en Governance.">
           <button className="btn primary" onClick={()=>setInviting(true)}><Icon name="plus"/>Invite user</button>
         </PageHeader>
@@ -99,22 +96,13 @@ export function AdminView(){
         <div style={{ display:"grid", gridTemplateColumns:"1.7fr 1fr", gap:24 }}>
             <div>
               <SectionHead eyebrow={"Users · "+USERS.length} title="Members" />
-              <div className="card" style={{ overflow:"hidden" }}>
-                <table className="tbl">
-                  <thead><tr><th>User</th><th>Role</th><th>Clearance</th><th>Status</th><th>Active</th></tr></thead>
-                  <tbody>
-                    {users.map(u=>(
-                      <tr key={u.id}>
-                        <td><span className="row gap-10 center"><Avatar who={u.id} name={ANALYSTS[u.id]?.name} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{u.name}</span></span></td>
-                        <td>{u.role}</td>
-                        <td><MarkingChip level={u.clearance==="TS/SCI"?"SECRET":u.clearance} size="sm"/></td>
-                        <td><Badge kind={u.status==="active"?"ok":"alert"} dot>{u.status}</Badge></td>
-                        <td className="mono">{u.last}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ArtifactExplorer items={users} columns={[
+                { header:"User", render:u=><span className="row gap-10 center"><Avatar who={u.id} name={ANALYSTS[u.id]?.name} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{u.name}</span></span> },
+                { header:"Role", key:"role" },
+                { header:"Clearance", render:u=><MarkingChip level={u.clearance==="TS/SCI"?"SECRET":u.clearance} size="sm"/> },
+                { header:"Status", render:u=><Badge kind={u.status==="active"?"ok":"alert"} dot>{u.status}</Badge> },
+                { header:"Active", render:u=><span className="mono">{u.last}</span> },
+              ]} />
             </div>
             <div>
               <SectionHead eyebrow={"Roles · "+ROLES.length} title="Roles" />
@@ -134,12 +122,10 @@ export function AdminView(){
             </div>
           </div>
       </div>
-      {inviting && (
-        <div onClick={()=>setInviting(false)} style={{ position:"fixed", inset:0, zIndex:140, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center" }}>
-          <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(440px,92vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
+      <Modal open={inviting} onClose={()=>setInviting(false)} width="min(440px,92vw)" zIndex={140}>
             <div className="row between center" style={{ padding:"15px 18px", borderBottom:"1px solid var(--line-soft)" }}>
               <span className="serif" style={{ fontSize:17, whiteSpace:"nowrap" }}>Invite user</span>
-              <button className="icon-btn" onClick={()=>setInviting(false)} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{transform:"rotate(45deg)"}}/></button>
+              <button className="icon-btn" onClick={()=>setInviting(false)} style={{ width:30,height:30 }}><Icon name="x" size={16}/></button>
             </div>
             <div style={{ padding:18 }} className="col gap-14">
               <div><div className="t-faint" style={{ fontSize:12, marginBottom:5 }}>Full name</div>
@@ -152,9 +138,7 @@ export function AdminView(){
               <button className="btn ghost" onClick={()=>setInviting(false)}>Cancel</button>
               <button className="btn primary" onClick={invite}><Icon name="check"/>Send invite</button>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

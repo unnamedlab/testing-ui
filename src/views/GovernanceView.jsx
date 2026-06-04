@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ENTITIES, ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { ANALYSTS, CASES, CLASS_LEVELS } from '../data/data_ext.js';
 import { AUDIT_EVENTS, AUDIT_KIND_META } from '../data/data_audit.js';
-import { Badge, Icon, Tabs, TypeGlyph } from '../components/ui.jsx';
+import { ArtifactExplorer, Icon, Tabs, TypeGlyph } from '../components/ui.jsx';
 import { AccessControl, Lineage, MarkingChip } from '../components/Security.jsx';
 
 /* ============================================================
@@ -37,29 +37,20 @@ function AuditLog() {
   const rows = f === "all" ? AUDIT_EVENTS : AUDIT_EVENTS.filter(r => r.kind === f);
   const filters = [["all","All"],["action","Actions"],["access","Access"],["export","Exports"],["view","Views"],["system","System"],["auth","Sessions"]];
   return (
-    <div style={{ maxWidth:1040, margin:"0 auto" }} className="fade-in">
+    <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
       <div className="row between center" style={{ marginBottom:16 }}>
         <div className="row gap-6">{filters.map(([k,l])=>(
           <button key={k} className={"chip"+(f===k?" on":"")} onClick={()=>setF(k)}>{l}</button>
         ))}</div>
         <button className="btn ghost sm"><Icon name="download" size={13}/>Export log</button>
       </div>
-      <div className="card" style={{ overflow:"hidden" }}>
-        <table className="tbl">
-          <thead><tr><th>Event</th><th>Actor</th><th>Object</th><th>Class</th><th>When</th></tr></thead>
-          <tbody>
-            {rows.map((r,i)=>{ const m=AUDIT_KIND_META[r.kind]||{c:"var(--text-dim)",icon:"dots"}; const o=ENTITY_BY_ID[r.object]; return (
-              <tr key={i}>
-                <td><span className="row gap-9 center"><span style={{ width:26,height:26,borderRadius:7,flex:"none",display:"grid",placeItems:"center",color:m.c,background:`color-mix(in oklab, ${m.c} 14%, transparent)` }}><Icon name={m.icon} size={14}/></span><span style={{ fontWeight:500 }}>{r.event}</span></span></td>
-                <td className="t-dim">{A(r.actor)}</td>
-                <td>{o ? o.name : (r.target || "—")}</td>
-                <td><ClsChip c={r.cls} /></td>
-                <td className="mono t-faint" style={{ whiteSpace:"nowrap" }}>{r.ts}</td>
-              </tr>
-            );})}
-          </tbody>
-        </table>
-      </div>
+      <ArtifactExplorer items={rows} columns={[
+        { header:"Event", render:r=>{ const m=AUDIT_KIND_META[r.kind]||{c:"var(--text-dim)",icon:"dots"}; return <span className="row gap-9 center"><span style={{ width:26,height:26,borderRadius:7,flex:"none",display:"grid",placeItems:"center",color:m.c,background:`color-mix(in oklab, ${m.c} 14%, transparent)` }}><Icon name={m.icon} size={14}/></span><span style={{ fontWeight:500 }}>{r.event}</span></span>; } },
+        { header:"Actor", dim:true, render:r=>A(r.actor) },
+        { header:"Object", render:r=>{ const o=ENTITY_BY_ID[r.object]; return o ? o.name : (r.target || "—"); } },
+        { header:"Class", render:r=><ClsChip c={r.cls} /> },
+        { header:"When", render:r=><span className="mono t-faint" style={{ whiteSpace:"nowrap" }}>{r.ts}</span> },
+      ]} />
     </div>
   );
 }
@@ -69,7 +60,7 @@ function AccessReview() {
   const obj = ENTITIES.find(e=>e.risk>=70) || ENTITIES[0];
   function resolve(i){ setReqs(rs=>rs.filter((_,j)=>j!==i)); }
   return (
-    <div style={{ maxWidth:1040, margin:"0 auto", display:"grid", gridTemplateColumns:"1.5fr 1fr", gap:24 }} className="fade-in">
+    <div style={{ maxWidth:"var(--page)", margin:"0 auto", display:"grid", gridTemplateColumns:"1.5fr 1fr", gap:24 }} className="fade-in">
       <div>
         <div className="eyebrow" style={{ marginBottom:12 }}>Pending access requests · {reqs.length}</div>
         <div className="col gap-10">
@@ -106,7 +97,7 @@ function Markings() {
   const buckets = {};
   levels.forEach((lv,idx)=>{ buckets[lv] = ENTITIES.filter((_,i)=>i%levels.length===idx); });
   return (
-    <div style={{ maxWidth:1040, margin:"0 auto" }} className="fade-in">
+    <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
       <div className="eyebrow" style={{ marginBottom:14 }}>Classification markings · {levels.length} levels</div>
       <div className="col gap-12">
         {levels.map(lv=>{
@@ -138,7 +129,7 @@ function LineageTab() {
   const objs = ENTITIES.filter(e=>e.risk>=60).slice(0,5);
   const [sel, setSel] = useState(objs[0]?.id);
   return (
-    <div style={{ maxWidth:1040, margin:"0 auto", display:"grid", gridTemplateColumns:"240px 1fr", gap:24 }} className="fade-in">
+    <div style={{ maxWidth:"var(--page)", margin:"0 auto", display:"grid", gridTemplateColumns:"240px 1fr", gap:24 }} className="fade-in">
       <div>
         <div className="eyebrow" style={{ marginBottom:12 }}>Select object</div>
         <div className="col gap-6">

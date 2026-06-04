@@ -10,7 +10,7 @@ import { Badge, Bars, Gauge, Icon, RiskPill, SectionHead, Stat, TypeGlyph } from
 export function HomeView({ go, openProject }) {
   return (
     <div className="content" style={{ padding: "28px 32px 60px" }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto" }} className="fade-in">
+      <div style={{ maxWidth: "var(--page-wide)", margin: "0 auto" }} className="fade-in">
         {/* hero */}
         <div className="row between" style={{ alignItems:"flex-end", marginBottom: 28 }}>
           <div>
@@ -150,9 +150,9 @@ export function DashboardView({ go }) {
   function setEnt(e){ setFilter(f=> f&&f.kind==="entity"&&f.value===e.id ? null : {kind:"entity", value:e.id, label:e.name}); }
   return (
     <div className="content" style={{ padding: "24px 28px 60px" }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto" }} className="fade-in">
+      <div style={{ maxWidth: "var(--page-wide)", margin: "0 auto" }} className="fade-in">
         <SectionHead eyebrow="Case BLACKFROST · live" title="Operations overview">
-          {filter && <button className="chip on" onClick={()=>setFilter(null)} style={{ marginRight:4 }}>Filtered: {filter.label} <Icon name="plus" size={12} style={{transform:"rotate(45deg)", marginLeft:2}}/></button>}
+          {filter && <button className="chip on" onClick={()=>setFilter(null)} style={{ marginRight:4 }}>Filtered: {filter.label} <Icon name="x" size={12} style={{ marginLeft:2 }}/></button>}
           <div className="seg">
             <button>24h</button><button className="on">7d</button><button>30d</button>
           </div>

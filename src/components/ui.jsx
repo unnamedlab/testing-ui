@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { EDGES, TYPE_BY_ID, riskBand, riskLabel } from '../data/data.js';
 
 /* ============================================================
@@ -116,6 +116,33 @@ export function Badge({ kind, children, dot }) {
 export function RiskPill({ r }) {
   const band = riskBand(r);
   return <span className={"badge " + band}><span className="dt" />{r} · {riskLabel(r)}</span>;
+}
+
+// ---- Single source of truth for status tokens (replaces the per-view ST / DSTATUS /
+// VST / BUILD maps and the inline `x==="healthy"?"ok":"warn"` ternaries). Maps a
+// status string → Badge kind + display label. Severity (SEV) and check icons (CHK)
+// are a different axis and stay in their data modules. ----
+export const STATUS = {
+  healthy:   { kind: "ok",     label: "healthy" },
+  building:  { kind: "accent", label: "building" },
+  degraded:  { kind: "warn",   label: "degraded" },
+  failed:    { kind: "alert",  label: "failed" },
+  passing:   { kind: "ok",     label: "passing" },
+  running:   { kind: "accent", label: "running" },
+  deployed:  { kind: "ok",     label: "deployed" },
+  serving:   { kind: "ok",     label: "serving" },
+  offline:   { kind: "warn",   label: "offline" },
+  connected: { kind: "ok",     label: "connected" },
+  staging:   { kind: "warn",   label: "staging" },
+  archived:  { kind: "",       label: "archived" },
+  champion:  { kind: "accent", label: "champion" },
+};
+const STATUS_VAR = { ok: "var(--ok)", warn: "var(--warn)", alert: "var(--alert)", info: "var(--info)", accent: "var(--accent)", violet: "var(--violet)", "": "var(--text-dim)" };
+export function statusMeta(status) { return STATUS[status] || { kind: "", label: String(status ?? "—") }; }
+export function statusColor(status) { return STATUS_VAR[statusMeta(status).kind] || "var(--text-dim)"; }
+export function StatusBadge({ status, label, icon }) {
+  const m = statusMeta(status);
+  return <Badge kind={m.kind} dot>{icon && <Icon name={icon} size={11} />}{label || m.label}</Badge>;
 }
 
 // ---- F-06: single source of truth for on/off toggles ----
@@ -323,6 +350,112 @@ export function Tabs({ items, value, onChange, variant }) {
   );
 }
 
+/* ============================================================
+   Cámara compartida + shells de overlay (integración auditoría)
+   ============================================================ */
+
+// ---- useViewport: motor de cámara pan/zoom (GraphView + MapView). Antes cada
+// vista duplicaba wheel-zoom-about-cursor, zoom-about-center, fit/reset y el
+// ResizeObserver; solo cambiaban los límites de k. ----
+export function useViewport({ minK = 0.5, maxK = 4, initial = { x: 0, y: 0, k: 1 } } = {}) {
+  const ref = useRef(null);
+  const [view, setView] = useState(initial);
+  const [size, setSize] = useState({ w: 1000, h: 700 });
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    const ro = new ResizeObserver(() => { const r = el.getBoundingClientRect(); setSize({ w: r.width, h: r.height }); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const clampK = useCallback((k) => Math.min(maxK, Math.max(minK, k)), [minK, maxK]);
+  // zoom about a point in element-pixel space (sx, sy relative to the element)
+  const zoomAt = useCallback((sx, sy, factor) => {
+    setView((v) => { const k2 = clampK(v.k * factor); const gx = (sx - v.x) / v.k, gy = (sy - v.y) / v.k; return { k: k2, x: sx - gx * k2, y: sy - gy * k2 }; });
+  }, [clampK]);
+  const onWheel = useCallback((e) => {
+    e.preventDefault();
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 0.89);
+  }, [zoomAt]);
+  const zoomBy = useCallback((factor) => {
+    const el = ref.current; const r = el ? el.getBoundingClientRect() : { width: size.w, height: size.h };
+    zoomAt(r.width / 2, r.height / 2, factor);
+  }, [zoomAt, size]);
+  const fit = useCallback(({ w, h, pad = 0.9 }) => {
+    const el = ref.current; if (!el) return; const r = el.getBoundingClientRect();
+    const k = Math.min(r.width / w, r.height / h) * pad;
+    setView({ k, x: r.width / 2 - (w / 2) * k, y: r.height / 2 - (h / 2) * k });
+  }, []);
+  const reset = useCallback((v) => setView(v), []);
+  return { ref, view, setView, size, onWheel, zoomBy, fit, reset };
+}
+
+// ---- useOverlay: Esc-to-close + focus-trap + focus-restore for modal/drawer
+// shells. Capture-phase keydown so it wins over global handlers. ----
+function useOverlay(open, onClose) {
+  const ref = useRef(null);
+  // onClose via ref so re-renders (e.g. typing in a modal input that passes an
+  // inline onClose) don't re-run the effect and steal focus. Effect deps = [open]
+  // only → focus is grabbed once on open, restored once on close.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  useEffect(() => {
+    if (!open) return;
+    const prev = typeof document !== "undefined" ? document.activeElement : null;
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onCloseRef.current && onCloseRef.current(); return; }
+      if (e.key === "Tab" && ref.current) {
+        const f = ref.current.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+    document.addEventListener("keydown", onKey, true);
+    const id = setTimeout(() => {
+      const el = ref.current; if (!el || el.contains(document.activeElement)) return; // respect autoFocus / existing focus
+      el.querySelector('input,textarea,select,button,[tabindex]:not([tabindex="-1"])')?.focus?.();
+    }, 30);
+    return () => { document.removeEventListener("keydown", onKey, true); clearTimeout(id); try { prev?.focus?.(); } catch { /* ignore */ } };
+  }, [open]);
+  return ref;
+}
+
+// ---- Modal: centered dialog shell (scrim + Esc + focus-trap + click-outside).
+// Replaces the hand-rolled scrim/panel chrome in Actions/Admin/Shortcuts. ----
+export function Modal({ open, onClose, children, width = "min(560px,94vw)", zIndex = 200, scrimPad, panelStyle, panelClass }) {
+  const ref = useOverlay(open, onClose);
+  if (!open) return null;
+  return (
+    <div onClick={onClose} role="presentation" style={{ position: "fixed", inset: 0, zIndex, background: "var(--scrim)", backdropFilter: "var(--scrim-blur)", display: "grid", placeItems: "center", padding: scrimPad }}>
+      <div ref={ref} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}
+        className={"panel rise" + (panelClass ? " " + panelClass : "")}
+        style={{ width, background: "var(--bg-1)", boxShadow: "var(--shadow-3)", overflow: "hidden", ...panelStyle }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ---- Drawer: side panel shell (scrim + Esc + focus-trap + slideIn). Replaces
+// the hand-rolled right-drawer chrome in Copilot/Cases/Health. ----
+export function Drawer({ open, onClose, children, width = "var(--drawer)", zIndex = 120, side = "right", panelStyle, panelClass }) {
+  const ref = useOverlay(open, onClose);
+  if (!open) return null;
+  const edge = side === "left" ? { left: 0, borderRight: "1px solid var(--line)" } : { right: 0, borderLeft: "1px solid var(--line)" };
+  return (
+    <div onClick={onClose} role="presentation" style={{ position: "fixed", inset: 0, zIndex, background: "var(--scrim-soft)", backdropFilter: "var(--scrim-blur)" }}>
+      <div ref={ref} role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}
+        className={"panel" + (panelClass ? " " + panelClass : "")}
+        style={{ position: "absolute", top: 0, bottom: 0, ...edge, width, background: "var(--bg-1)", borderRadius: 0, boxShadow: "var(--shadow-3)", display: "flex", flexDirection: "column", overflow: "auto", animation: "slideIn .26s cubic-bezier(.2,.7,.2,1) both", ...panelStyle }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ---- Lineage (reemplaza Security.Lineage + las 3 versiones inline de Health/Models/Code) ----
 // chain: [{ stage?, label, meta?, glyph? }] · origen → transformación → destino.
 export function Lineage({ chain }) {
@@ -342,11 +475,30 @@ export function Lineage({ chain }) {
   );
 }
 
-// ---- ObjectList: lista de objetos de la ontología compartida (Explore + Search) ----
-// items: entidades ya filtradas. variant "table" (Explore) | "cards" (Search).
+// ---- ObjectList: lista de objetos de la ontología compartida ----
+// items: entidades ya filtradas. variant "table" (Explore) | "cards" (Search)
+// | "grid" (Watchlist + Ontology sample objects — tarjetas en rejilla).
 export function ObjectList({ items, variant = "cards", openEntity, emptyText }) {
   if (!items || items.length === 0)
     return <div className="t-faint" style={{ textAlign: "center", padding: "26px 0", fontSize: 13 }}>{emptyText || "Sin objetos que coincidan."}</div>;
+
+  if (variant === "grid") {
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 12 }}>
+        {items.map((e) => (
+          <button key={e.id} className="card hover" onClick={() => openEntity && openEntity(e.id)} style={{ padding: 14, textAlign: "left", cursor: "pointer" }}>
+            <div className="row between center" style={{ marginBottom: 10 }}>
+              <TypeGlyph type={e.type} size={32} />
+              {e.watch && <Badge kind="alert" dot>watch</Badge>}
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.name}</div>
+            <div className="t-faint" style={{ fontSize: 12, marginTop: 2, marginBottom: 10 }}>{TYPE_BY_ID[e.type] ? TYPE_BY_ID[e.type].name : e.type} · {e.sub}</div>
+            <RiskPill r={e.risk} />
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   if (variant === "table") {
     return (
@@ -394,13 +546,20 @@ export function ObjectList({ items, variant = "cards", openEntity, emptyText }) 
   );
 }
 
-// ---- ArtifactExplorer: tabla de artefactos/ficheros parametrizable (Drive · Files) ----
+// ---- ArtifactExplorer: tabla de datos/artefactos parametrizable ----
 // items: filas · columns: [{ header, align?, dim?, key?, render?(item) }] · onOpen?(item)
-export function ArtifactExplorer({ items, columns, onOpen, empty }) {
+// title/meta: barra-cabecera opcional dentro de la card (p.ej. "Datasets · 4 monitored").
+export function ArtifactExplorer({ items, columns, onOpen, empty, title, meta }) {
   if (!items || items.length === 0)
     return <div className="t-faint" style={{ padding: "28px", textAlign: "center", fontSize: 13 }}>{empty || "Sin elementos."}</div>;
   return (
     <div className="card" style={{ overflow: "hidden" }}>
+      {(title || meta) && (
+        <div className="row between center" style={{ padding: "13px 16px", borderBottom: "1px solid var(--line-soft)" }}>
+          {title && <div className="eyebrow">{title}</div>}
+          {meta && <span className="t-faint mono" style={{ fontSize: 11 }}>{meta}</span>}
+        </div>
+      )}
       <table className="tbl">
         <thead><tr>{columns.map((c, i) => <th key={i} style={c.align ? { textAlign: c.align } : undefined}>{c.header}</th>)}</tr></thead>
         <tbody>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { MODELS, OBJECTIVES, VST } from '../data/data_models.js';
-import { Badge, Icon, Lineage, PageHeader, Spark, Stat, Switch, Tabs } from '../components/ui.jsx';
+import { MODELS, OBJECTIVES } from '../data/data_models.js';
+import { ArtifactExplorer, Badge, Icon, Lineage, PageHeader, Spark, Stat, StatusBadge, statusColor, Switch, Tabs } from '../components/ui.jsx';
 
 /* ============================================================
    AXIOM — Model / ML management
@@ -12,12 +12,12 @@ function Registry(){
   const champ = m.versions.find(v=>v.st==="champion");
   return (
     <div className="content" style={{ display:"flex", padding:0, overflow:"hidden" }}>
-      <aside style={{ width:236, flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
+      <aside style={{ width:"var(--sidebar)", flex:"none", borderRight:"1px solid var(--line-soft)", background:"var(--bg-1)", overflow:"auto" }}>
         <div className="row between center" style={{ padding:"14px 14px 8px" }}><div className="eyebrow">Models · {MODELS.length}</div></div>
         <div style={{ padding:"0 8px 16px" }}>
           {MODELS.map(x=>(
             <button key={x.id} onClick={()=>setSel(x.id)} className="row gap-10 center" style={{ width:"100%", textAlign:"left", border:"none", background:sel===x.id?"var(--accent-ghost)":"none", borderRadius:9, padding:"10px", cursor:"pointer", marginBottom:2, boxShadow:sel===x.id?"inset 0 0 0 1px var(--accent-dim)":"none" }}>
-              <span style={{ width:30,height:30,borderRadius:8,flex:"none",display:"grid",placeItems:"center",background:"var(--bg-2)",color:x.status==="deployed"?"var(--ok)":"var(--warn)" }}><Icon name="model" size={16}/></span>
+              <span style={{ width:30,height:30,borderRadius:8,flex:"none",display:"grid",placeItems:"center",background:"var(--bg-2)",color:statusColor(x.status) }}><Icon name="model" size={16}/></span>
               <div style={{ flex:1, minWidth:0 }}><div className="mono" style={{ fontSize:12, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color:sel===x.id?"var(--text)":"var(--text-dim)" }}>{x.name}</div><div className="t-faint" style={{ fontSize:10.5, marginTop:1 }}>{x.type} · {x.status}</div></div>
             </button>
           ))}
@@ -27,7 +27,7 @@ function Registry(){
         <div style={{ maxWidth:760 }}>
           <div className="row between" style={{ alignItems:"flex-start", marginBottom:18 }}>
             <div>
-              <div className="row gap-10 center" style={{ marginBottom:5 }}><span className="eyebrow">{m.obj}</span><Badge kind={m.status==="deployed"?"ok":"warn"} dot>{m.status}</Badge></div>
+              <div className="row gap-10 center" style={{ marginBottom:5 }}><span className="eyebrow">{m.obj}</span><StatusBadge status={m.status}/></div>
               <h1 className="serif mono" style={{ fontSize:25, fontWeight:600, margin:0, letterSpacing:"-0.01em" }}>{m.name}</h1>
               <div className="t-faint" style={{ fontSize:12.5, marginTop:3 }}>{m.type} · owner {m.owner} · champion {champ.v}</div>
             </div>
@@ -39,23 +39,16 @@ function Registry(){
             <Stat label="Inference" value={m.deploy.p95} valueColor={m.deploy.live?"var(--accent)":"var(--text-faint)"}/>
           </div>
           <div className="eyebrow" style={{ marginBottom:10 }}>Versions</div>
-          <div className="card" style={{ overflow:"hidden", marginBottom:22 }}>
-            <table className="tbl">
-              <thead><tr><th>Version</th><th>Status</th><th>{m.m1.n}</th><th>{m.m2.n}</th><th>By</th><th>When</th><th></th></tr></thead>
-              <tbody>
-                {m.versions.map(v=>{ const s=VST[v.st]; return (
-                  <tr key={v.v}>
-                    <td className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{v.v}</td>
-                    <td>{v.st==="champion"?<Badge kind="accent" dot><Icon name="crown" size={11}/> champion</Badge>:<Badge kind={s.kind} dot>{s.label}</Badge>}</td>
-                    <td className="mono">{v.a.split(" ")[1]}</td>
-                    <td className="mono">{v.b.split(" ")[1]}</td>
-                    <td>{v.by}</td>
-                    <td className="mono t-faint">{v.when}</td>
-                    <td style={{ textAlign:"right" }}>{v.st==="archived" && <button className="btn ghost sm">Promote</button>}</td>
-                  </tr>
-                );})}
-              </tbody>
-            </table>
+          <div style={{ marginBottom:22 }}>
+            <ArtifactExplorer items={m.versions} columns={[
+              { header:"Version", render:v=><span className="mono" style={{ color:"var(--text)", fontWeight:600 }}>{v.v}</span> },
+              { header:"Status", render:v=>v.st==="champion"?<Badge kind="accent" dot><Icon name="crown" size={11}/> champion</Badge>:<StatusBadge status={v.st}/> },
+              { header:m.m1.n, render:v=><span className="mono">{v.a.split(" ")[1]}</span> },
+              { header:m.m2.n, render:v=><span className="mono">{v.b.split(" ")[1]}</span> },
+              { header:"By", key:"by" },
+              { header:"When", render:v=><span className="mono t-faint">{v.when}</span> },
+              { header:"", align:"right", render:v=>v.st==="archived" ? <button className="btn ghost sm">Promote</button> : null },
+            ]} />
           </div>
           <div className="eyebrow" style={{ marginBottom:10 }}>Deploy as function</div>
           <div className="card" style={{ padding:16, marginBottom:22 }}>
@@ -89,12 +82,12 @@ function Registry(){
 function ObjectivesTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:1080, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="ML · objectives" title="Modeling objectives" sub="Each objective frames a problem, its data, the metric to beat and the candidate models competing for champion." />
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(330px,1fr))", gap:16 }}>
           {OBJECTIVES.map(o=>(
             <div key={o.name} className="card" style={{ padding:18, display:"flex", flexDirection:"column", gap:12 }}>
-              <div className="row between center"><span style={{ color:"var(--accent)" }}><Icon name="target" size={20}/></span><Badge kind={o.status==="deployed"?"ok":"warn"} dot>{o.status}</Badge></div>
+              <div className="row between center"><span style={{ color:"var(--accent)" }}><Icon name="target" size={20}/></span><StatusBadge status={o.status}/></div>
               <div><div style={{ fontSize:15, fontWeight:600 }}>{o.name}</div><div className="t-faint mono" style={{ fontSize:12, marginTop:3 }}>{o.model} · {o.type}</div></div>
               <div className="row between center" style={{ padding:"10px 0", borderTop:"1px solid var(--line-soft)", borderBottom:"1px solid var(--line-soft)" }}>
                 <div><div className="t-faint" style={{ fontSize:10.5 }}>Target metric</div><div className="mono" style={{ fontSize:14, marginTop:2 }}>{o.metric.n} {o.metric.v}</div></div>
@@ -111,25 +104,16 @@ function ObjectivesTab(){
 function DeploymentsTab(){
   return (
     <div className="content" style={{ padding:"24px 28px 60px" }}>
-      <div style={{ maxWidth:980, margin:"0 auto" }} className="fade-in">
+      <div style={{ maxWidth:"var(--page)", margin:"0 auto" }} className="fade-in">
         <PageHeader eyebrow="ML · serving" title="Deployments" />
-        <div className="card" style={{ overflow:"hidden" }}>
-          <table className="tbl">
-            <thead><tr><th>Function</th><th>Model</th><th>Mode</th><th>Calls</th><th>p95</th><th>Status</th></tr></thead>
-            <tbody>
-              {MODELS.map(m=>(
-                <tr key={m.id}>
-                  <td><span className="row gap-8 center"><span style={{ color:m.deploy.live?"var(--accent)":"var(--text-faint)" }}><Icon name="func" size={15}/></span><span className="mono" style={{ color:"var(--text)" }}>{m.deploy.fn.split("(")[0]}()</span></span></td>
-                  <td className="mono t-dim">{m.name}:{m.versions.find(v=>v.st==="champion")?.v}</td>
-                  <td>{m.deploy.live?"Live":"Batch"}</td>
-                  <td className="mono">{m.deploy.calls}</td>
-                  <td className="mono">{m.deploy.p95}</td>
-                  <td>{m.deploy.live?<Badge kind="ok" dot>serving</Badge>:<Badge kind="warn" dot>offline</Badge>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ArtifactExplorer items={MODELS} columns={[
+          { header:"Function", render:m=><span className="row gap-8 center"><span style={{ color:m.deploy.live?"var(--accent)":"var(--text-faint)" }}><Icon name="func" size={15}/></span><span className="mono" style={{ color:"var(--text)" }}>{m.deploy.fn.split("(")[0]}()</span></span> },
+          { header:"Model", dim:true, render:m=><span className="mono">{m.name}:{m.versions.find(v=>v.st==="champion")?.v}</span> },
+          { header:"Mode", render:m=>m.deploy.live?"Live":"Batch" },
+          { header:"Calls", render:m=><span className="mono">{m.deploy.calls}</span> },
+          { header:"p95", render:m=><span className="mono">{m.deploy.p95}</span> },
+          { header:"Status", render:m=><StatusBadge status={m.deploy.live?"serving":"offline"}/> },
+        ]} />
       </div>
     </div>
   );
