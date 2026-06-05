@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ENTITIES, ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
 import { ANALYSTS } from '../data/data_ext.js';
 import { PROJECTS, PROJECT_BY_ID, caseRef } from '../data/data_projects.js';
-import { Badge, Icon, RiskPill, SectionHead, TypeGlyph } from '../components/ui.jsx';
+import { Badge, Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
 import { DossierModal } from '../components/Reports.jsx';
 import { useI18n } from '../i18n.jsx';
@@ -239,7 +239,7 @@ function Editor({ report, openEntity, onExport }) {
   );
 }
 
-export function ReportsView({ openEntity, go }) {
+export function ReportsView({ openEntity }) {
   const { t } = useI18n();
   const [reports] = useState(SEED_REPORTS);
   const [selId, setSelId] = useState(SEED_REPORTS[0].id);

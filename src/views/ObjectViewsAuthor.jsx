@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
 import { Badge, Icon, TypeGlyph } from '../components/ui.jsx';
 import { SEED_SCHEMA } from './OntologyAuthor.jsx';

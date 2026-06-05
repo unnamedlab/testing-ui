@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ANALYSTS, COMMENTS, T_END, T_START, dstr } from '../data/data_ext.js';
-import { EDGES, ENTITY_BY_ID, TRANSACTIONS, TYPE_BY_ID, fmtMoney, riskLabel } from '../data/data.js';
+import { EDGES, ENTITY_BY_ID, TRANSACTIONS, TYPE_BY_ID, fmtMoney, riskLabel, linkLabel } from '../data/data.js';
 import { AccessControl, ObjectLineage, MarkingChip } from '../components/Security.jsx';
 import { Avatar, Badge, Icon, RiskPill, Tabs, TypeGlyph, EmptyState } from '../components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
@@ -286,7 +286,7 @@ export function EntityTimeline({ id }){
   EDGES.forEach(ed=>{
     if(ed.s===id || ed.t===id){
       const other = ENTITY_BY_ID[ed.s===id?ed.t:ed.s];
-      if(other) evs.push({ t:ed.since, label:(ed.label||tr("Linked to"))+" "+other.name, kind: other.risk>=80?"alert":other.risk>=60?"warn":"info", oid:other.id });
+      if(other) evs.push({ t:ed.since, label:linkLabel(ed.rel)+" · "+other.name, kind: other.risk>=80?"alert":other.risk>=60?"warn":"info", oid:other.id });
     }
   });
   evs.sort((a,b)=>a.t-b.t);

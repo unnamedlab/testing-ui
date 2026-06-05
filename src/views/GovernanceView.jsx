@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ENTITIES, ENTITY_BY_ID, TYPE_BY_ID } from '../data/data.js';
-import { ANALYSTS, CLASS_LEVELS } from '../data/data_ext.js';
+import { ANALYSTS, CLASS_LEVELS, markingFor } from '../data/data_ext.js';
 import { ACTION_TYPES, SEED_ACTIONS } from '../data/data_actions.js';
 import { Icon, WBBar, TypeGlyph } from '../components/ui.jsx';
 import { AccessControl, MarkingChip } from '../components/Security.jsx';
@@ -17,14 +17,14 @@ const pick = (arr, i) => arr[i % arr.length];
 
 // Synthesized governance feed: actions + access + exports in one ledger.
 const AUDIT = [
-  ...SEED_ACTIONS.slice(0, 5).map((a, i) => ({
+  ...SEED_ACTIONS.slice(0, 5).map((a) => ({
     kind: "action", ts: a.ts, actor: a.by,
     event: `${ACTION_TYPES[a.type]?.name || a.type}`,
     object: a.target, cls: ACTION_TYPES[a.type]?.cls || "CONFIDENTIAL",
   })),
   { kind: "access", ts: "8m ago",  actor: pick(ACTORS,1), event: "Granted Read · Write", object: ENTITIES[2]?.id, cls: "SECRET" },
   { kind: "export", ts: "23m ago", actor: pick(ACTORS,0), event: "Exported dossier (PDF)", object: ENTITIES[0]?.id, cls: "SECRET" },
-  { kind: "access", ts: "1h ago",  actor: pick(ACTORS,2), event: "Access denied — clearance", object: ENTITIES[4]?.id, cls: "TOP SECRET" },
+  { kind: "access", ts: "1h ago",  actor: pick(ACTORS,2), event: "Access denied — clearance", object: ENTITIES[4]?.id, cls: "SECRET" },
   { kind: "view",   ts: "2h ago",  actor: pick(ACTORS,3), event: "Opened object 360°", object: ENTITIES[1]?.id, cls: "CONFIDENTIAL" },
   { kind: "export", ts: "4h ago",  actor: pick(ACTORS,1), event: "Shared with liaison partner", object: ENTITIES[3]?.id, cls: "SECRET" },
 ];
@@ -100,9 +100,11 @@ function AccessReview() {
 
 function Markings() {
   const { t } = useI18n();
-  const levels = Object.keys(CLASS_LEVELS || { SECRET:1, CONFIDENTIAL:1, UNCLASSIFIED:1 });
+  const levels = Object.keys(CLASS_LEVELS);
   const buckets = {};
-  levels.forEach((lv,idx)=>{ buckets[lv] = ENTITIES.filter((_,i)=>i%levels.length===idx); });
+  // Agrupa por la marca REAL de cada objeto (el mismo markingFor() que usa el
+  // chip del 360°) en vez de un round-robin por índice que lo contradecía.
+  levels.forEach((lv)=>{ buckets[lv] = ENTITIES.filter((e)=> markingFor(e.id) === lv); });
   return (
     <div style={{ maxWidth:1040, margin:"0 auto" }} className="fade-in">
       <div className="eyebrow" style={{ marginBottom:14 }}>{t('Classification markings · {n} levels', { n: levels.length })}</div>

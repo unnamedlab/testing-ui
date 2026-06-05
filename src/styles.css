@@ -45,6 +45,11 @@
   --shadow-3: 0 16px 48px oklch(0 0 0 / 0.55);
   --glow: 0 0 0 1px var(--accent-ghost), 0 0 24px -6px var(--accent);
 
+  /* overlay scrims — modal/drawer backdrops (background + backdrop-filter) */
+  --scrim:      oklch(0.10 0.012 248 / 0.62);
+  --scrim-soft: oklch(0.10 0.012 248 / 0.40);
+  --scrim-blur: blur(8px) saturate(118%);
+
   --font-ui: "Space Grotesk", system-ui, sans-serif;
   --font-serif: "Newsreader", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -97,10 +102,22 @@
   --info:  oklch(0.55 0.16 250);
   --violet:oklch(0.55 0.18 300);
 
+  /* Ghost tints re-based on the light semantic colors (dark values are too pale
+     over a light page). Derived from the solids so they track any palette change. */
+  --ok-ghost:    color-mix(in oklab, var(--ok) 14%, transparent);
+  --warn-ghost:  color-mix(in oklab, var(--warn) 14%, transparent);
+  --alert-ghost: color-mix(in oklab, var(--alert) 14%, transparent);
+  --info-ghost:  color-mix(in oklab, var(--info) 14%, transparent);
+  --violet-ghost:color-mix(in oklab, var(--violet) 14%, transparent);
+
   --shadow-1: 0 1px 2px oklch(0.4 0.02 248 / 0.10);
   --shadow-2: 0 6px 20px oklch(0.4 0.02 248 / 0.12);
   --shadow-3: 0 18px 50px oklch(0.4 0.02 248 / 0.18);
   --glow: 0 0 0 1px var(--accent-ghost), 0 2px 12px -4px var(--accent);
+
+  /* lighter dim over a light page (blur inherited from :root) */
+  --scrim:      oklch(0.28 0.02 248 / 0.40);
+  --scrim-soft: oklch(0.28 0.02 248 / 0.22);
 
   --grid-color: oklch(0.80 0.01 248 / 0.55);
 }
@@ -431,6 +448,7 @@ body {
 .col { display: flex; flex-direction: column; }
 .gap-2 { gap: 2px; } .gap-4 { gap: 4px; } .gap-6 { gap: 6px; } .gap-8 { gap: 8px; }
 .gap-10 { gap: 10px; } .gap-12 { gap: 12px; } .gap-16 { gap: 16px; } .gap-20 { gap: 20px; } .gap-24 { gap: 24px; }
+.gap-5 { gap: 5px; } .gap-7 { gap: 7px; } .gap-9 { gap: 9px; } .gap-14 { gap: 14px; } .gap-18 { gap: 18px; }
 .grow { flex: 1; } .wrap { flex-wrap: wrap; }
 .center { align-items: center; } .between { justify-content: space-between; }
 .mono-num { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ACCESS_MATRIX, PROJ_ROLES, PROJECTS } from '../data/data_projects.js';
+import { ACCESS_MATRIX, PROJ_ROLES, PROJECTS, projectRoleOf } from '../data/data_projects.js';
 import { ANALYSTS } from '../data/data_ext.js';
 import { Avatar, Badge, Icon, Switch, Tabs, PageHeader } from '../components/ui.jsx';
 import { MarkingChip } from '../components/Security.jsx';
@@ -269,8 +269,8 @@ function Members({ p }){
             <tbody>
               {p.members.map(m=>(
                 <tr key={m}>
-                  <td><span className="row gap-10 center"><Avatar who={m} size={26}/><span style={{ color:"var(--text)", fontWeight:600 }}>{ANALYSTS[m].name}</span></span></td>
-                  <td>{t(ANALYSTS[m].role)}{m===p.lead && <span className="t-accent" style={{ marginLeft:6, fontSize:11 }}>· {t('Lead')}</span>}</td>
+                  <td><span className="row gap-10 center"><Avatar who={m} size={26}/><div style={{ minWidth:0 }}><div style={{ color:"var(--text)", fontWeight:600 }}>{ANALYSTS[m].name}</div><div className="t-faint" style={{ fontSize:11 }}>{t(ANALYSTS[m].role)}</div></div></span></td>
+                  <td>{t(projectRoleOf(p,m))}</td>
                   <td><Badge kind="ok" dot>{t('active')}</Badge></td>
                 </tr>
               ))}
@@ -282,7 +282,7 @@ function Members({ p }){
         <div className="eyebrow" style={{ marginBottom:14 }}>{t('Roles in this project')}</div>
         <div className="col gap-10">
           {PROJ_ROLES.map(r=>(
-            <RoleCard key={r.name} name={r.name} meta={t('{n} in project', { n: p.members.filter(m=>ANALYSTS[m].role===r.name).length })} scope={r.scope} />
+            <RoleCard key={r.name} name={r.name} meta={t('{n} in project', { n: p.members.filter(m=>projectRoleOf(p,m)===r.name).length })} scope={r.scope} />
           ))}
         </div>
       </div>

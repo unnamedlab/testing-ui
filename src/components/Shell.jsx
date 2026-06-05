@@ -166,7 +166,7 @@ export const CRUMBS = {
 };
 
 // ---- Context switcher: the active case/workspace lives here, not in the rail ----
-function ContextSwitcher({ go }) {
+function ContextSwitcher({ go, openProject }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -198,7 +198,7 @@ function ContextSwitcher({ go }) {
             <span className="ctx-pill">{t('lead')}</span>
           </button>
           {CTX_OTHERS.map(p=>(
-            <button key={p.id} type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); go("projects"); }}>
+            <button key={p.id} type="button" className="ctx-item" role="menuitem" onClick={()=>{ setOpen(false); openProject(p.id); }}>
               <span className={"ctx-dot" + (p.sla==="At risk"?" amber":"")} aria-hidden="true"></span>
               <span className="ctx-item-name">{t(p.name)}</span>
             </button>
@@ -216,7 +216,7 @@ function ContextSwitcher({ go }) {
   );
 }
 
-export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, openNotifs, notifCount, openCopilot }) {
+export function TopBar({ view, origin, leaf, go, openProject, openSearch, theme, setTheme, openNotifs, notifCount, openCopilot }) {
   const { t, lang, setLang } = useI18n();
   const ME = ANALYSTS[CURRENT_USER];
   // F-09: for the entity 360 the trail comes from where it was opened (origin),
@@ -224,7 +224,7 @@ export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, op
   const crumbs = (view === "entity" ? CRUMBS[origin] : CRUMBS[view]) || ["Home"];
   return (
     <header className="topbar">
-      <ContextSwitcher go={go} />
+      <ContextSwitcher go={go} openProject={openProject} />
       <div className="vdivider" style={{ height:22, margin:"0 12px 0 2px" }} />
       <div className="crumbs">
         {crumbs.map((c,i)=>(
@@ -244,7 +244,7 @@ export function TopBar({ view, origin, leaf, go, openSearch, theme, setTheme, op
 
       <div className="topbar-right">
         <button className="btn sm" onClick={openCopilot} style={{ gap:6, background:"var(--accent-ghost)", borderColor:"var(--accent-dim)", color:"var(--accent)" }}>
-          <Icon name="sparkles" size={15}/>Copilot
+          <Icon name="sparkles" size={15}/>{t('Copilot')}
         </button>
         <button className="icon-btn" onClick={()=>setLang(lang==="en"?"es":"en")} title={t('Switch language')} aria-label={t('Switch language')}
           style={{ display:"flex", alignItems:"center", width:"auto", padding:"0 9px", gap:6, fontFamily:"var(--font-mono)", fontSize:11, fontWeight:700, letterSpacing:".06em" }}>

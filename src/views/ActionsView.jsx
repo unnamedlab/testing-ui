@@ -134,6 +134,8 @@ function InvokeModal({ preAction, onClose, onSubmit }){
 function ReviewModal({ act, onClose, onDecide }){
   const { t } = useI18n();
   const at = ACTION_TYPES[act.type]; const o = ENTITY_BY_ID[act.target];
+  // Two-person integrity: a requester can never approve their own action.
+  const isOwn = act.by === ME;
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:200, background:"var(--scrim)", backdropFilter:"var(--scrim-blur)", display:"grid", placeItems:"center", padding:20 }}>
       <div onClick={e=>e.stopPropagation()} className="panel rise" style={{ width:"min(560px,94vw)", background:"var(--bg-1)", boxShadow:"var(--shadow-3)", overflow:"hidden" }}>
@@ -154,8 +156,12 @@ function ReviewModal({ act, onClose, onDecide }){
           <div style={{ marginBottom:6 }}>{at.effects.map((e,i)=><EffectRow key={i} e={e}/>)}</div>
         </div>
         <div className="row between center" style={{ padding:"14px 20px", borderTop:"1px solid var(--line-soft)" }}>
-          <span className="t-faint" style={{ fontSize:11.5 }}>{t('Two-person integrity · you are')} <b style={{ color:"var(--text)" }}>{ANALYSTS[ME].name}</b></span>
-          <div className="row gap-8"><button className="btn" onClick={()=>onDecide("rejected")}><Icon name="x" size={15}/>{t('Reject')}</button><button className="btn primary" onClick={()=>onDecide("approve")}><Icon name="check" size={15}/>{t('Approve & apply')}</button></div>
+          <span className="t-faint" style={{ fontSize:11.5 }}>
+            {isOwn
+              ? t('Two-person integrity · you requested this; approval needs another reviewer.')
+              : <>{t('Two-person integrity · you are')} <b style={{ color:"var(--text)" }}>{ANALYSTS[ME].name}</b></>}
+          </span>
+          <div className="row gap-8"><button className="btn" onClick={()=>onDecide("rejected")}><Icon name="x" size={15}/>{t('Reject')}</button><button className="btn primary" onClick={()=>onDecide("approve")} disabled={isOwn} title={isOwn?t('You cannot approve an action you requested.'):undefined}><Icon name="check" size={15}/>{t('Approve & apply')}</button></div>
         </div>
       </div>
     </div>
@@ -319,7 +325,11 @@ export function ActionsView({ go }){
     if(!needs) setTimeout(()=>setActions(a=>a.map(x=>x.id===act.id?{...x,status:"applied",approver:"auto"}:x)), 900);
   }
   function decide(kind){
-    const id=review; setReview(null);
+    const id=review;
+    // Two-person integrity: never let the requester approve their own action
+    // (the Approve button is also disabled, this is the defensive backstop).
+    if(kind==="approve" && actions.find(a=>a.id===id)?.by===ME){ setReview(null); return; }
+    setReview(null);
     if(kind==="rejected"){ setActions(a=>a.map(x=>x.id===id?{...x,status:"rejected",approver:ME}:x)); return; }
     setActions(a=>a.map(x=>x.id===id?{...x,status:"executing",approver:ME}:x));
     setTimeout(()=>setActions(a=>a.map(x=>x.id===id?{...x,status:"applied"}:x)), 1000);

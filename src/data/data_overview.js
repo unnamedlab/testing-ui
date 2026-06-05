@@ -14,6 +14,21 @@ import { PROJECTS } from './data_projects.js';
 export const OPEN_ALERTS = ALERTS.filter((a) => a.status !== 'closed').length;
 export const ACTIVE_PROJECTS = PROJECTS.filter((p) => p.status === 'Active').length;
 
+// Alertas abiertas / críticas de un caso, derivadas de ALERTS — para que la
+// tarjeta del proyecto, el dossier y el Copilot lean SIEMPRE el mismo número
+// (antes "12" hardcodeado chocaba con las 7 reales del tablero y el board).
+export const openAlertsFor = (caseId) =>
+  ALERTS.filter((a) => a.case === caseId && a.status !== 'closed').length;
+export const criticalAlertsFor = (caseId) =>
+  ALERTS.filter((a) => a.case === caseId && a.status !== 'closed' && a.sev === 'critical').length;
+
+// blackfrost es el único caso con ALERTS sembradas: derivamos su conteo abierto
+// (era un 12 fijo). Se muta el objeto PROJECTS compartido para que tarjeta,
+// stat y dossier coincidan con Operaciones y la cola de Alertas. Mismo patrón
+// de "derivar al cargar" que data_ext.js usa para `since`.
+const _bf = PROJECTS.find((p) => p.id === 'blackfrost');
+if (_bf) _bf.counts.alerts = openAlertsFor('blackfrost');
+
 // KPIs de cabecera. `seriesKey` apunta a SERIES (en data.js) para el sparkline,
 // así los datos de serie siguen viviendo donde estaban.
 export const OVERVIEW_KPIS = [

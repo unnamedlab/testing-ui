@@ -32,7 +32,7 @@ function Panel({ icon, title, sub, children }){
 function GraphPanel({ active, isDim, onHover, onPick }){
   return (
     <svg viewBox="0 0 100 90" width="100%" height="100%" style={{ display:"block" }} preserveAspectRatio="xMidYMid meet" onMouseLeave={()=>onHover(null)}>
-      {B_EDGES.map(([s,t,rel,al],i)=>{ const a=EBY[s],b=EBY[t]; const on=active&&(s===active||t===active); const dim=isDim(s)||isDim(t);
+      {B_EDGES.map(([s,t,,al],i)=>{ const a=EBY[s],b=EBY[t]; const on=active&&(s===active||t===active); const dim=isDim(s)||isDim(t);
         return <GraphEdge key={i} a={{x:a.gx,y:a.gy}} b={{x:b.gx,y:b.gy}} alert={al} highlighted={on} dim={dim}
           width={on?0.9:0.5} dash={al?"2 1.4":undefined} baseOpacity={on?1:0.5} transition={false} />;
       })}

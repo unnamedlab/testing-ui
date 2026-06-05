@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { T_END } from '../data/data_ext.js';
-import { EDGES, ENTITIES, ENTITY_BY_ID, OBJECT_TYPES, TYPE_BY_ID } from '../data/data.js';
+import { T_START, T_END } from '../data/data_ext.js';
+import { EDGES, ENTITIES, ENTITY_BY_ID, OBJECT_TYPES, TYPE_BY_ID, linkLabel } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
 import { Badge, Icon, RiskPill, TypeGlyph } from '../components/ui.jsx';
 import { GraphEdge, GraphNode } from '../components/GraphCanvas.jsx';
@@ -47,7 +47,7 @@ export function GraphView({ openEntity, focusId }) {
   const [showLabels, setShowLabels] = useState(true);
   const [typeFilter, setTypeFilter] = useState(new Set());
   const [temporal, setTemporal] = useState(false);
-  const [t, setT, playing, setPlaying] = useTimeline(T_END);
+  const [t, setT, playing, setPlaying] = useTimeline(T_START, T_END);
   const [focusMode, setFocusMode] = useState(false);
   const [revealed, setRevealed] = useState(()=>new Set([focusId||"p-sorenson"]));
   const [size, setSize] = useState({ w:1000, h:700 });
@@ -220,15 +220,16 @@ export function GraphView({ openEntity, focusId }) {
               const dim = isDim(ed.s) || isDim(ed.t);
               const onActive = active && (ed.s===active||ed.t===active);
               const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+              const rel = linkLabel(ed.rel);
               return (
                 <GraphEdge key={i} a={a} b={b} alert={ed.alert} highlighted={onActive} dim={dim}
                   marker={ed.alert?"url(#arrowA)":"url(#arrow)"}
                   label={(onActive||ed.alert) && showLabels && (
                     <g transform={`translate(${mx},${my})`}>
-                      <rect x={-(ed.rel.length*3.3+8)} y="-9" width={ed.rel.length*6.6+16} height="18" rx="9"
+                      <rect x={-(rel.length*3.3+8)} y="-9" width={rel.length*6.6+16} height="18" rx="9"
                         fill="var(--bg-1)" stroke={ed.alert?"var(--alert)":"var(--line)"} strokeWidth="1"/>
                       <text textAnchor="middle" y="4" fontSize="10.5" fontFamily="var(--font-mono)"
-                        fill={ed.alert?"var(--alert)":"var(--text-dim)"}>{ed.rel}</text>
+                        fill={ed.alert?"var(--alert)":"var(--text-dim)"}>{rel}</text>
                     </g>
                   )} />
               );
@@ -296,7 +297,7 @@ export function GraphView({ openEntity, focusId }) {
         {/* temporal scrubber */}
         {temporal && (
           <div style={{ position:"absolute", bottom:14, left:"50%", transform:"translateX(-50%)" }}>
-            <TimeScrubber value={t} onChange={setT} playing={playing} setPlaying={setPlaying} width={580} />
+            <TimeScrubber value={t} onChange={setT} playing={playing} setPlaying={setPlaying} width={580} min={T_START} />
           </div>
         )}
 

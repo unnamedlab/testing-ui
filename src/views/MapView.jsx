@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { T_END } from '../data/data_ext.js';
+import { T_START, T_END } from '../data/data_ext.js';
 import { ENTITY_BY_ID, MAP_PLACES, MAP_ROUTES, MAP_VESSELS, riskLabel } from '../data/data.js';
 import { TimeScrubber, useTimeline } from '../components/TimeScrubber.jsx';
 import { Icon, RiskPill, Switch, TypeGlyph } from '../components/ui.jsx';
@@ -17,7 +17,7 @@ export function MapView({ openEntity }) {
   const wrapRef = useRef(null);
   const [dims, setDims] = useState({ w:1200, h:800 });
   const [temporal, setTemporal] = useState(false);
-  const [tm, setTm, playing, setPlaying] = useTimeline(T_END);
+  const [tm, setTm, playing, setPlaying] = useTimeline(T_START, T_END);
   const [mv, setMv] = useState({ x:0, y:0, k:1 });
   const mdrag = useRef(null);
 
@@ -157,7 +157,7 @@ export function MapView({ openEntity }) {
         {/* temporal scrubber */}
         {temporal && (
           <div style={{ position:"absolute", bottom:14, left:"50%", transform:"translateX(-50%)" }}>
-            <TimeScrubber value={tm} onChange={setTm} playing={playing} setPlaying={setPlaying} width={560} />
+            <TimeScrubber value={tm} onChange={setTm} playing={playing} setPlaying={setPlaying} width={560} min={T_START} />
           </div>
         )}
 
@@ -189,7 +189,7 @@ export function MapView({ openEntity }) {
             </div>
             <div className="col gap-2" style={{ marginTop:14 }}>
               {(MAP_VESSELS.includes(selObj)
-                ? [["Speed",selObj.speed],["Heading",selObj.hd+"°"],["Status",tr(selObj.status)],["Position","34.4°N 33.0°E"]]
+                ? [["Speed",selObj.speed],["Course",selObj.hd+"°"],["Status",tr(selObj.status)],["Position","34.4°N 33.0°E"]]
                 : [["LOCODE",ENTITY_BY_ID[selObj.id]?.attrs?.LOCODE||"—"],["Type",tr("Port")],["Risk",tr(riskLabel(selObj.risk))]]
               ).map(([k,v])=>(
                 <div key={k} className="row between" style={{ padding:"7px 0", borderBottom:"1px solid var(--line-soft)" }}>

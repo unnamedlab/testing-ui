@@ -31,7 +31,7 @@ function PdfView({ doc, sel, onSel }){
   const byId = useMemo(()=>Object.fromEntries(doc.entities.map(e=>[e.id,e])),[doc]);
   return (
     <div style={{ maxWidth:720, margin:"0 auto", background:"var(--bg-1)", border:"1px solid var(--line)", borderRadius:10, boxShadow:"var(--shadow-2)", overflow:"hidden" }}>
-      <div style={{ background:`color-mix(in oklab, var(--alert) 16%, var(--bg-inset))`, borderBottom:"1px solid color-mix(in oklab,var(--alert) 40%,transparent)", textAlign:"center", padding:"5px", fontFamily:"var(--font-mono)", fontSize:10.5, letterSpacing:".18em", fontWeight:600, color:"var(--alert)" }}>{doc.cls} // AXIOM-INT // NEED-TO-KNOW</div>
+      <div style={{ background:`color-mix(in oklab, var(--alert) 16%, var(--bg-inset))`, borderBottom:"1px solid color-mix(in oklab,var(--alert) 40%,transparent)", textAlign:"center", padding:"5px", fontFamily:"var(--font-mono)", fontSize:10.5, letterSpacing:".18em", fontWeight:600, color:"var(--alert)" }}>{doc.cls}{" // AXIOM-INT // NEED-TO-KNOW"}</div>
       <div style={{ padding:"34px 44px 44px" }}>
         <div className="eyebrow" style={{ marginBottom:8 }}>{t(doc.sub)}</div>
         <h2 className="h-section" style={{ margin:"0 0 22px", lineHeight:1.2 }}>{t(doc.title)}</h2>

@@ -9,9 +9,11 @@ import { EDGES, ENTITIES, MAP_VESSELS } from './data.js';
 // ---------- Security / classification ----------
 export const CLASSIFICATION = { level: "CONFIDENTIAL", compartment: "AXIOM-INT", caveat: "NEED-TO-KNOW", color: "var(--warn)" };
 export const CLASS_LEVELS = {
-  "UNCLASS":      { color: "var(--ok)",     short: "U" },
-  "CONFIDENTIAL": { color: "var(--warn)",   short: "C" },
-  "SECRET":       { color: "var(--alert)",  short: "S" },
+  // `ink` is a print-safe hex used by the dossier banner (white document, no
+  // theme vars) so the bar matches the on-screen hue: U→green, C→amber, S→red.
+  "UNCLASS":      { color: "var(--ok)",     short: "U", ink: "#047857" },
+  "CONFIDENTIAL": { color: "var(--warn)",   short: "C", ink: "#b54708" },
+  "SECRET":       { color: "var(--alert)",  short: "S", ink: "#b42318" },
 };
 // per-entity markings
 export const ENTITY_MARKINGS = {

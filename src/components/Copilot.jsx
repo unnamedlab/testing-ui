@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ENTITY_BY_ID } from '../data/data.js';
+import { openAlertsFor, criticalAlertsFor } from '../data/data_overview.js';
 import { Icon, RiskPill, TypeGlyph } from './ui.jsx';
 import { complete, isModelAvailable } from '../services/claude.js';
 import { useI18n } from '../i18n.jsx';
@@ -44,7 +45,7 @@ export function matchIntent(q){
   }
   if(/summar|risk|overview|brief/.test(s)){
     return {
-      text: "**BLACKFROST network risk: 84 / Critical.** A Cyprus–UAE shell structure (Helios, Aurora, Northwind) operates 2 vessels engaged in suspected sanctions evasion. Maritime risk (90) is driven by AIS gaps near sanctioned ports; financial risk (78) by layered trade-finance flows. 12 alerts open, 3 critical.",
+      text: `**BLACKFROST network risk: 84 / Critical.** A Cyprus–UAE shell structure (Helios, Aurora, Northwind) operates 2 vessels engaged in suspected sanctions evasion. Maritime risk (90) is driven by AIS gaps near sanctioned ports; financial risk (78) by layered trade-finance flows. ${openAlertsFor("blackfrost")} alerts open, ${criticalAlertsFor("blackfrost")} critical.`,
       entities: ["p-sorenson","o-helios","v-blackfrost","a-aurora-usd"],
       actions: [["dashboard","Open operations dashboard","layers"],["graph","Open link chart","graph"]],
     };
@@ -126,7 +127,7 @@ export function Copilot({ open, onClose, go, openEntity }){
         <div className="row between center" style={{ padding:"14px 18px", borderBottom:"1px solid var(--line-soft)" }}>
           <div className="row gap-10 center">
             <div style={{ width:32,height:32,borderRadius:9,display:"grid",placeItems:"center",background:"linear-gradient(150deg,var(--accent),var(--accent-2))",color:"var(--accent-text)" }}><Icon name="sparkles" size={18}/></div>
-            <div><div style={{ fontSize:14, fontWeight:600 }}>Copilot</div><div className="t-faint" style={{ fontSize:11 }}>{t('AIP · ontology-aware')}</div></div>
+            <div><div style={{ fontSize:14, fontWeight:600 }}>{t('Copilot')}</div><div className="t-faint" style={{ fontSize:11 }}>{t('AIP · ontology-aware')}</div></div>
           </div>
           <button className="icon-btn" onClick={onClose} style={{ width:30,height:30 }}><Icon name="plus" size={16} style={{ transform:"rotate(45deg)" }}/></button>
         </div>

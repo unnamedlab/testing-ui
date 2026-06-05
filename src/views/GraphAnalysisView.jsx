@@ -65,7 +65,7 @@ export function GraphAnalysisView(){
             <div className="row between center" style={{ marginBottom:10 }}><div className="eyebrow">{t('Shortest path')}</div><span className="badge accent"><span className="dt"/>{t('{n} hops', { n: path.length-1 })}</span></div>
             <div style={{ position:"relative", paddingLeft:14 }}>
               <div style={{ position:"absolute", left:4, top:6, bottom:6, width:2, background:"var(--accent-dim)" }}/>
-              {path.map((id,i)=>(
+              {path.map((id)=>(
                 <div key={id} className="row gap-8 center" style={{ position:"relative", padding:"5px 0" }}>
                   <span style={{ position:"absolute", left:-14, width:9, height:9, borderRadius:"50%", background:TC[NBY[id].type], border:"2px solid var(--bg-1)" }}/>
                   <span style={{ fontSize:12.5, fontWeight:600 }}>{NBY[id].name}</span>

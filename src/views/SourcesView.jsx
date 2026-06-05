@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CONNECTORS, SOURCES } from '../data/data_ext.js';
+import { SOURCES } from '../data/data_ext.js';
 import { Badge, Icon, PageHeader } from '../components/ui.jsx';
 import { SourceWizard } from './SourceWizard.jsx';
 import { useI18n } from '../i18n.jsx';
@@ -12,7 +12,7 @@ export function SourcesView() {
   const { t } = useI18n();
   const [sources] = useState(SOURCES);
   const [wizard, setWizard] = useState(false);
-  const [q, setQ] = useState("");
+  const [q] = useState("");
 
   const stats = useMemo(() => {
     const healthy = sources.filter(s => s.status === "healthy").length;

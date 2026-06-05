@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DIMS, MEASURES, ROWS, aggBy, applyFilters, dimField, fmtMoney, fmtNum, histo, monthly, pivotData } from '../data/data_analytics.js';
+import { DIMS, MEASURES, ROWS, aggBy, applyFilters, fmtMoney, fmtNum, histo, monthly, pivotData } from '../data/data_analytics.js';
 import { Icon, PageHeader, Seg } from '../components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
 

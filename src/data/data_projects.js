@@ -14,7 +14,7 @@
 
    Schema (superset — every consumer reads from these fields):
      id, name, sub
-     status      "Active" | "Review" | "Monitoring"
+     status      "Active" | "In review" | "Monitoring"
      cls         classification: "SECRET" | "CONFIDENTIAL"
      scheduled   bool · standing/automated monitor
      pinned      bool · surfaced first on Home
@@ -48,7 +48,7 @@ export const PROJECTS = [
       { kind: "file", name: "swift_mt103_apr.csv", owner: "AR", meta: "CSV · 1.2 MB", updated: "2d", cls: "SECRET" },
       { kind: "file", name: "northwind_registry.pdf", owner: "AR", meta: "PDF · 14 pp.", updated: "1d", cls: "SECRET" },
     ],
-    activity: [["AR", "updated the report", "12m", "user"], ["SYS", "SWIFT pipeline completed", "1h", "system"], ["MC", "escalated ALR-3187", "6h", "alert"]],
+    activity: [["AR", "updated the report", "12m", "user"], ["SYS", "SWIFT pipeline completed", "1h", "system"], ["MC", "escalated AL-3371", "6h", "alert"]],
   },
   {
     id: "nightjar", name: "Operation Nightjar", sub: "Sanctions evasion · maritime",
@@ -98,7 +98,7 @@ export const PROJECTS = [
   },
   {
     id: "meridian", name: "Meridian Review", sub: "Forwarder due diligence",
-    status: "Review", cls: "CONFIDENTIAL", scheduled: false, pinned: false,
+    status: "In review", cls: "CONFIDENTIAL", scheduled: false, pinned: false,
     lead: "MC", members: ["MC", "AR"], opened: "20 May 2026", updated: "4h", progress: 70, sla: "On track",
     summary: "Counterparty due diligence on Meridian Logistics as a freight forwarder, ahead of a closing recommendation.",
     counts: { objects: 188, alerts: 1, sources: 3 },
@@ -142,3 +142,13 @@ export const PROJ_ROLES = [
   { name: "Reviewer", scope: "Read · comment" },
   { name: "Read-only", scope: "Read" },
 ];
+
+// Project-level role of a member — a PROJ_ROLES name ("Lead" | "Investigator" |
+// …), distinct from the analyst's job title (ANALYSTS[id].role, e.g. "Financial
+// Analyst"). The lead carries "Lead"; every other member is an "Investigator".
+// Single source of truth so the Members table and the per-role counts agree and
+// never compare job titles against project-role names (which never match → the
+// counts used to always render 0).
+export function projectRoleOf(project, memberId) {
+  return memberId === project.lead ? "Lead" : "Investigator";
+}

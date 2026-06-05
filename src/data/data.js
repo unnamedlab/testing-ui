@@ -28,7 +28,18 @@ export const LINK_TYPES = [
   { id: "shipped",    label: "shipped",         from: "vessel",  to: "shipment" },
   { id: "calledAt",   label: "called at",       from: "vessel",  to: "port" },
   { id: "uses",       label: "uses",            from: "person",  to: "device" },
+  // relations exercised by the BLACKFROST edge set below
+  { id: "formed",      label: "formed",         from: "org",     to: "org" },
+  { id: "transfers",   label: "transfers",      from: "account", to: "account" },
+  { id: "contracts",   label: "contracts",      from: "person",  to: "org" },
+  { id: "facilitates", label: "facilitates",    from: "person",  to: "account" },
+  { id: "contacts",    label: "contacts",       from: "person",  to: "person" },
+  { id: "booked",      label: "booked",         from: "person",  to: "vessel" },
 ];
+export const LINK_BY_ID = Object.fromEntries(LINK_TYPES.map(l => [l.id, l]));
+// Human label for an edge's relation id; falls back to the raw value so an
+// unknown/legacy rel still renders rather than vanishing.
+export const linkLabel = (rel) => LINK_BY_ID[rel]?.label || rel;
 
 // ---- Core entities (the investigation's main objects) ----
 // graph layout coords are normalized 0..1 within the graph canvas
@@ -45,7 +56,7 @@ export const ENTITIES = [
 
   // orgs
   { id: "o-helios", type: "org", name: "Helios Maritime Ltd", sub: "Shipping · Limassol", risk: 88, x: .50, y: .50,
-    attrs: { "Incorporated": "2016-05-12 · Cyprus", "Status": "Active", "Registered agent": "Castor Corp Svcs", "Vessels operated": "7", "Sanctions": "EU Annex IV match" } },
+    attrs: { "Incorporated": "2016-05-12 · Cyprus", "Status": "Active", "Registered agent": "Castor Corp Svcs", "Vessels operated": "2", "Sanctions": "EU Annex IV match" } },
   { id: "o-aurora", type: "org", name: "Aurora Trading FZE", sub: "Trade · Jebel Ali FZ", risk: 79, x: .26, y: .68,
     attrs: { "Incorporated": "2019-02-28 · UAE", "Status": "Active", "Directors": "Marchetti +2 nominees", "SIC": "Wholesale, petroleum" } },
   { id: "o-northwind", type: "org", name: "Northwind Holdings", sub: "Holding · BVI", risk: 70, x: .72, y: .30,
@@ -89,10 +100,10 @@ export const EDGES = [
   { s: "o-helios", t: "a-helios-eur", rel: "holds", strength: 2 },
   { s: "o-aurora", t: "a-aurora-usd", rel: "holds", strength: 2 },
   { s: "a-aurora-usd", t: "a-helios-eur", rel: "transfers", strength: 3, alert: true },
-  { s: "v-blackfrost", t: "f-novoross", rel: "called at", strength: 2, alert: true },
-  { s: "v-blackfrost", t: "f-limassol", rel: "called at", strength: 1 },
-  { s: "v-northstar", t: "f-jebelali", rel: "called at", strength: 2 },
-  { s: "v-northstar", t: "f-limassol", rel: "called at", strength: 1 },
+  { s: "v-blackfrost", t: "f-novoross", rel: "calledAt", strength: 2, alert: true },
+  { s: "v-blackfrost", t: "f-limassol", rel: "calledAt", strength: 1 },
+  { s: "v-northstar", t: "f-jebelali", rel: "calledAt", strength: 2 },
+  { s: "v-northstar", t: "f-limassol", rel: "calledAt", strength: 1 },
   { s: "p-okonkwo", t: "o-aurora", rel: "contracts", strength: 1 },
   { s: "p-haddad", t: "a-aurora-usd", rel: "facilitates", strength: 2 },
   { s: "p-haddad", t: "p-sorenson", rel: "contacts", strength: 1 },
@@ -165,7 +176,7 @@ export const APPS = [
   { id: "map", name: "Geospatial", desc: "Vessels, ports & routes", icon: "globe", view: "map", color: "var(--warn)" },
   { id: "pipeline", name: "Pipeline Builder", desc: "Integrate & transform data", icon: "pipeline", view: "pipeline", color: "var(--ok)" },
   { id: "dashboard", name: "Operations", desc: "Live metrics & alerts", icon: "grid", view: "dashboard", color: "var(--info)" },
-  { id: "workshop", name: "Workshop", desc: "Build analytic apps", icon: "blocks", view: "dashboard", color: "oklch(0.74 0.13 330)" },
+  { id: "workshop", name: "Workshop", desc: "Build analytic apps", icon: "blocks", view: "workshop", color: "oklch(0.74 0.13 330)" },
 ];
 
 // ---- Projects / investigations ----

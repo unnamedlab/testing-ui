@@ -15,3 +15,6 @@ npm-debug.log*
 
 # vite cache
 .vite/
+
+# claude code local state (lock files, etc.)
+.claude/

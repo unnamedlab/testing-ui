@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { CHK, DATASETS, DSTATUS, INCIDENTS, SEV } from '../data/data_health.js';
-import { ANALYSTS } from '../data/data_ext.js';
 import { Badge, Icon, Spark, PageHeader, LineageCard } from '../components/ui.jsx';
 import { useI18n } from '../i18n.jsx';
 

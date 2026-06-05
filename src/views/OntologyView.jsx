@@ -9,6 +9,10 @@ import { useI18n } from '../i18n.jsx';
    AXIOM — Ontology Explorer + Entity 360 + Search (UX-01 i18n)
    ============================================================ */
 
+// Derived from the type counts (was a hardcoded "56,041" that didn't match the
+// real sum), so the header total can never drift from OBJECT_TYPES.
+const TOTAL_OBJECTS = OBJECT_TYPES.reduce((sum, t) => sum + t.count, 0);
+
 export function OntologyView({ openEntity, go }) {
   const { t: tr } = useI18n();
   const [sel, setSel] = useState("vessel");
@@ -25,7 +29,7 @@ export function OntologyView({ openEntity, go }) {
       <aside style={{ borderRight:"1px solid var(--line-soft)", overflow:"auto", background:"var(--bg-1)" }}>
         <div style={{ padding:"16px 16px 10px" }}>
           <div className="eyebrow">{tr('Object types')}</div>
-          <div className="t-faint mono" style={{ fontSize:11, marginTop:4 }}>{tr('{n} types · 56,041 objects', { n: OBJECT_TYPES.length })}</div>
+          <div className="t-faint mono" style={{ fontSize:11, marginTop:4 }}>{tr('{n} types · {total} objects', { n: OBJECT_TYPES.length, total: TOTAL_OBJECTS.toLocaleString() })}</div>
         </div>
         <div style={{ padding:"0 8px 16px" }}>
           {OBJECT_TYPES.map(ot=>(

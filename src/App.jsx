@@ -140,6 +140,9 @@ export function App() {
   const [entityOrigin, setEntityOrigin] = useState("home");
   const viewRef = useRef(view);
   viewRef.current = view;
+  // Latest runAction reachable from the one-time keydown listener below, so the
+  // global handler never re-subscribes when theme/state changes.
+  const runActionRef = useRef(null);
 
   // apply tweaks → DOM
   useEffect(()=>{
@@ -151,13 +154,28 @@ export function App() {
     r.style.setProperty("--font-ui", `"${t.uiFont}", system-ui, sans-serif`);
   }, [t.theme, t.density, t.accentH, t.uiFont, t.glow]);
 
-  // cmd+k / cmd+j (copilot)
+  // Global keyboard shortcuts — kept in sync with ShortcutsModal (Shell.jsx).
+  // Modifier combos and Escape fire from anywhere; bare-key shortcuts are
+  // suppressed while typing so they don't hijack inputs.
   useEffect(()=>{
+    let gAt = 0; // timestamp of a pending "G" prefix, for the "G then C" chord
+    const typing = () => {
+      const el = document.activeElement;
+      return /input|textarea|select/i.test(el?.tagName||"") || !!el?.isContentEditable;
+    };
     function onKey(e){
-      if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); setPaletteOpen(o=>!o); }
-      if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="j"){ e.preventDefault(); setCopilotOpen(o=>!o); }
-      if(e.key==="?" && !/input|textarea/i.test(document.activeElement?.tagName||"")){ e.preventDefault(); setShortcutsOpen(o=>!o); }
-      if(e.key==="Escape"){ setPaletteOpen(false); setNotifOpen(false); setShortcutsOpen(false); }
+      if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="k"){ e.preventDefault(); setPaletteOpen(o=>!o); return; }
+      if((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==="j"){ e.preventDefault(); setCopilotOpen(o=>!o); return; }
+      if(e.key==="Escape"){ setPaletteOpen(false); setNotifOpen(false); setShortcutsOpen(false); return; }
+      // Single-key shortcuts: never while typing or with a modifier held.
+      if(e.metaKey||e.ctrlKey||e.altKey || typing()) return;
+      const k = e.key.toLowerCase();
+      if(k==="?"){ e.preventDefault(); setShortcutsOpen(o=>!o); return; }
+      if(k==="g"){ gAt = Date.now(); return; }                                   // arm "G then C"
+      if(k==="c" && Date.now()-gAt < 1000){ gAt = 0; e.preventDefault(); runActionRef.current?.("new-case"); return; }
+      gAt = 0;                                                                    // any other key clears the chord
+      if(k==="e"){ e.preventDefault(); runActionRef.current?.("dossier"); return; } // Export dossier
+      if(k==="t"){ e.preventDefault(); runActionRef.current?.("theme");   return; } // Toggle theme
     }
     window.addEventListener("keydown", onKey);
     return ()=>window.removeEventListener("keydown", onKey);
@@ -186,6 +204,7 @@ export function App() {
     else if(id==="theme") setTweak("theme", t.theme==="dark"?"light":"dark");
     else if(id==="shortcuts") setShortcutsOpen(true);
   }, [go, openProject, t.theme, setTweak]);
+  runActionRef.current = runAction;
 
   const leaf = view==="entity" && entityId ? ENTITY_BY_ID[entityId]?.name : null;
 
@@ -194,7 +213,7 @@ export function App() {
       <Rail view={RAIL_PARENT[view] || view} go={go} />
       <div className="main">
         <ClassificationBanner level={CLASSIFICATION.level} />
-        <TopBar view={view} origin={entityOrigin} leaf={leaf} go={go}
+        <TopBar view={view} origin={entityOrigin} leaf={leaf} go={go} openProject={openProject}
           openSearch={()=>setPaletteOpen(true)}
           theme={t.theme} setTheme={(th)=>setTweak("theme",th)}
           openNotifs={()=>setNotifOpen(o=>!o)} notifCount={NOTIFS.length}
